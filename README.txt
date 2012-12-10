@@ -32,10 +32,10 @@ IDL
 >>>FILES
 1) alcbeam.pro - main IDL code.
 2) adas - directory contains the ADAS format data files to be used by alcbeam.pro
-3) alcbeam_manual.pef - most recent manual in pdf format.
+3) alcbeam_manual.pdf - most recent manual in pdf format.
 4) DNBI_TEST.abi - sample input data file
 5) DNBI_TEST.abo - sample output data file
- 
+6) LICENSE.txt - code release agreement  
 
 >>>INITIALIZATION
 1) CD to the directory where alcbeam.pro is located 
