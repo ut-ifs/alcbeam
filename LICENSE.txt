@@ -1,13 +1,14 @@
 >>>PROGRAM TITLE
 ALCBEAM
 
+
 >>>>LICENSE AGREEMENT (9 Dec 2012)
-ALCBEAM development is funded by the US Department of Energy (DoE), and distribution is subject to DoE requirements and restrictions.
+ALCBEAM code development is funded by the US Department of Energy (DoE), and distribution is subject to DoE requirements and restrictions.
 
 In order to acquire access to the code sources, the recipient agrees:
 
-1) to use the ALCBEAM source code AS IS without modification; users however are welcome to request changes, or to contribute modifications subject to approval of the authors;
-2) if the copy of the ALCBEAM downloaded by the authorized user is made available to third parties, to ensure that the user agreement is followed by the third parties;
-3) to inform the first author of the code of planned research using that module;
-4) prior to publication, to communicate any significant results derived from a module to the main author;
-5) to include in any published results, talks or presentations the proper code name(s) and appropriate reference.
+1) to use the source code AS IS without modification; users however are welcome to request changes, or to contribute modifications subject to approval of the authors;
+2) if the copy of the code downloaded by the authorized user is made available to third parties, to ensure that the user agreement is followed by the third parties;
+3) to inform the first author of the code of planned research;
+4) prior to publication, to communicate any significant results derived from a code to the main author;
+5) to include in any published results, talks or presentations the code name and appropriate reference.
