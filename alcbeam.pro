@@ -1667,7 +1667,7 @@ stop_plasma_type_names,exc_plasma_type, exc_plasma_type_names,gas_arr_type,stop_
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation
 common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, $
-tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
+tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ; The following common block contains general parameters: which user,
 ; what beam, what shot and time interval
 common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
@@ -2493,7 +2493,7 @@ end
 pro show_beam_geometry_window, main_base
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains the parameters which describe the geometry
 ;and position of the tokamak  plasma
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
@@ -2504,7 +2504,6 @@ common beam_limiters, n_limiters, limiters_table,limiters_arr
 ;The following common block is used to transfer the pointer to the
 ;status window and availability states of each data set
 common status, status_wid,error_catch,st_err  
-
 ;Error handler---------------------------------------
 if error_catch then begin
    Catch,error_status
@@ -2522,14 +2521,14 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
 ;----------------------------------------------------- 
     geom=Widget_Info(Main_Base,/Geometry)
     IF XREGISTERED('Beam_Geometry_Widget') EQ 0 then begin
-      Beam_Geometry_Widget = WIDGET_BASE(/COLUMN, TITLE='Beam Geometry', Uname='Beam_Geometry_Widget',/ALIGN_CENTER,XOFFSET=geom.xoffset-3,YOFFSET=geom.yoffset+geom.ysize-716,xsize=990,ysize=673)
+      Beam_Geometry_Widget = WIDGET_BASE(/COLUMN, TITLE='Beam Geometry', Uname='Beam_Geometry_Widget',/ALIGN_CENTER,XOFFSET=geom.xoffset-3,YOFFSET=geom.yoffset+50,xsize=950,ysize=833)
       Beam_Geometry_Base = Widget_base(Beam_Geometry_Widget, UNAME='Beam_Geometry_Base'  $
       ,XOFFSET=5,YOFFSET=5,Frame=1$
-      ,XSIZE=980,YSIZE=670)
+      ,XSIZE=940,YSIZE=830)
     
       Beam_Geometry_label = Widget_Label(Beam_Geometry_Base, UNAME='Beam_Geometry_Label'  $
-      ,XOFFSET=3, YOFFSET=1, SCR_XSIZE=977 , SCR_YSIZE=31 $
-      ,VALUE= 'Parameters specifying the geometry and location of beam injector' ,XSIZE=5 ,YSIZE=23, /Align_Center,/sunken_frame)   
+      ,XOFFSET=3, YOFFSET=1, SCR_XSIZE=937 , SCR_YSIZE=31 $
+      ,VALUE= 'Parameters specifying the geometry and location of the beam injector' ,XSIZE=5 ,YSIZE=23, /Align_Center,/sunken_frame)   
   
       Beam_Port_Text = Widget_text(Beam_Geometry_Base, UNAME='Beam_Port_Text'  $
       ,XOFFSET=356, YOFFSET=35,SCR_XSIZE=28 ,SCR_YSIZE=30,/editable $
@@ -2586,108 +2585,142 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
       Tank_Size_Label = Widget_Label(Beam_Geometry_Base, UNAME='Tank_Size_Label'  $
       ,XOFFSET=8, YOFFSET=215, SCR_XSIZE=347 , SCR_YSIZE=33$
       ,VALUE= 'The length of the beam vacuum tank, m                     ', XSIZE=5 ,YSIZE=1)
- 
+
       Tank_Size_Text = Widget_text(Beam_Geometry_Base, UNAME='Tank_Size_Text'  $
       ,XOFFSET=356, YOFFSET=215,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(tank_size,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
+
+      Tank_Diam_Label = Widget_Label(Beam_Geometry_Base, UNAME='Tank_Diam_Label'  $
+      ,XOFFSET=8, YOFFSET=245, SCR_XSIZE=347 , SCR_YSIZE=33$
+      ,VALUE= 'Inner diameter of the beam vacuum tank, m                 ', XSIZE=5 ,YSIZE=1)
+
+      Tank_Diam_Text = Widget_text(Beam_Geometry_Base, UNAME='Tank_Diam_Text'  $
+      ,XOFFSET=356, YOFFSET=245,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
+      ,VALUE=strtrim(string(tank_diam,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
+
+      Neutr_Front_Label = Widget_Label(Beam_Geometry_Base, UNAME='Neutr_Front_Label'  $
+      ,XOFFSET=8, YOFFSET=275, SCR_XSIZE=347 , SCR_YSIZE=33$
+      ,VALUE= 'Distance from grids to the neutralizer front surface, m   ', XSIZE=5 ,YSIZE=1)
+ 
+      Neutr_Front_Text = Widget_text(Beam_Geometry_Base, UNAME='Neutr_Front_Text'  $
+      ,XOFFSET=356, YOFFSET=275,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
+      ,VALUE=strtrim(string(neutr_front_dist,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
      
       Neutr_Size_Label = Widget_Label(Beam_Geometry_Base, UNAME='Neutr_Size_Label'  $
-      ,XOFFSET=8, YOFFSET=245, SCR_XSIZE=347 , SCR_YSIZE=33$
+      ,XOFFSET=8, YOFFSET=305, SCR_XSIZE=347 , SCR_YSIZE=33$
       ,VALUE= 'The length of the beam neutralizer tube, m                ', XSIZE=5 ,YSIZE=1)
  
       Neutr_Size_Text = Widget_text(Beam_Geometry_Base, UNAME='Neutr_Size_Text'  $
-      ,XOFFSET=356, YOFFSET=245,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=356, YOFFSET=305,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(neutr_size,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)     
 
+      Neutr_Diam_Label = Widget_Label(Beam_Geometry_Base, UNAME='Neutr_Diam_Label'  $
+      ,XOFFSET=8, YOFFSET=335, SCR_XSIZE=347 , SCR_YSIZE=33$
+      ,VALUE= 'Inner diameter of the beam neutralizer tube, m            ', XSIZE=5 ,YSIZE=1)
+ 
+      Neutr_Diam_Text = Widget_text(Beam_Geometry_Base, UNAME='Neutr_Diam_Text'  $
+      ,XOFFSET=356, YOFFSET=335,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
+      ,VALUE=strtrim(string(neutr_diam,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)  
+
       Tank_Magnet_Label = Widget_Label(Beam_Geometry_Base, UNAME='Tank_Magnet_Label'  $
-      ,XOFFSET=8, YOFFSET=275, SCR_XSIZE=347 , SCR_YSIZE=33$
-      ,VALUE= 'Distance from tank front wall to the front of magnet, m  ', XSIZE=5 ,YSIZE=1)
+      ,XOFFSET=508, YOFFSET=35, SCR_XSIZE=347 , SCR_YSIZE=33$
+      ,VALUE= 'Distance from tank front wall to the front of magnet, m   ', XSIZE=5 ,YSIZE=1)
  
       Tank_Magnet_Text = Widget_text(Beam_Geometry_Base, UNAME='Tank_Magnet_Text'  $
-      ,XOFFSET=356, YOFFSET=275,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=856, YOFFSET=35,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(tank_magnet_dist,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
 
       Magnet_Size_Label = Widget_Label(Beam_Geometry_Base, UNAME='Magnet_Size_Label'  $
-      ,XOFFSET=508, YOFFSET=35, SCR_XSIZE=347 , SCR_YSIZE=33$
-      ,VALUE= 'The length of the ions deflection magnet, m               ', XSIZE=5 ,YSIZE=1)
+      ,XOFFSET=508, YOFFSET=65, SCR_XSIZE=347 , SCR_YSIZE=33$
+      ,VALUE= 'The length of the ion deflection magnet, m                ', XSIZE=5 ,YSIZE=1)
  
       Magnet_Size_Text = Widget_text(Beam_Geometry_Base, UNAME='Magnet_Size_Text'  $
-      ,XOFFSET=856, YOFFSET=35,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
-      ,VALUE=strtrim(string(magnet_size,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)          
-      
+      ,XOFFSET=856, YOFFSET=65,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
+      ,VALUE=strtrim(string(magnet_size,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
+
+      Magnet_Diam_Label = Widget_Label(Beam_Geometry_Base, UNAME='Magnet_Diam_Label'  $
+      ,XOFFSET=508, YOFFSET=95, SCR_XSIZE=347 , SCR_YSIZE=33$
+      ,VALUE= 'Inner diameter of the ions deflection magnet, m           ', XSIZE=5 ,YSIZE=1)
+ 
+      Magnet_Diam_Text = Widget_text(Beam_Geometry_Base, UNAME='Magnet_Diam_Text'  $
+      ,XOFFSET=856, YOFFSET=95,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
+      ,VALUE=strtrim(string(magnet_diam,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
+   
       Tank_Calorim_Label = Widget_Label(Beam_Geometry_Base, UNAME='Tank_Calorim_Label'  $
-      ,XOFFSET=508, YOFFSET=65, SCR_XSIZE=347 , SCR_YSIZE=33$
-      ,VALUE= 'Distance from tank end wall to center of calorimeter, m  ' , XSIZE=5 ,YSIZE=1)
+      ,XOFFSET=508, YOFFSET=125, SCR_XSIZE=347 , SCR_YSIZE=33$
+      ,VALUE= 'Distance from tank end wall to center of calorimeter, m   ' , XSIZE=5 ,YSIZE=1)
  
       Tank_Calorim_Text = Widget_text(Beam_Geometry_Base, UNAME='Tank_Calorim_Text'  $
-      ,XOFFSET=856, YOFFSET=65,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=856, YOFFSET=125,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(tank_cal_dist,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
+  
+  
 
       R_Grid_Label = Widget_Label(Beam_Geometry_Base, UNAME='R_Grid_Label'  $
-      ,XOFFSET=508, YOFFSET=125, SCR_XSIZE=347 , SCR_YSIZE=33$
+      ,XOFFSET=508, YOFFSET=185, SCR_XSIZE=347 , SCR_YSIZE=33$
       ,VALUE= 'Major radius of center of beam accelerating grid, m      ' , XSIZE=5 ,YSIZE=1)
  
       R_Grid_Text = Widget_text(Beam_Geometry_Base, UNAME='R_Grid_Text'  $
-      ,XOFFSET=856, YOFFSET=125,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=856, YOFFSET=185,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(R_grid,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
       
       Z_Grid_Label = Widget_Label(Beam_Geometry_Base, UNAME='Z_Grid_Label'  $
-      ,XOFFSET=508, YOFFSET=155, SCR_XSIZE=347 , SCR_YSIZE=33$
-      ,VALUE= 'Z coordinate of center of beam accelerating grid, m       ' , XSIZE=5 ,YSIZE=1)
+      ,XOFFSET=508, YOFFSET=215, SCR_XSIZE=347 , SCR_YSIZE=33$
+      ,VALUE= 'Z coordinate of center of beam accelerating grid, m      ' , XSIZE=5 ,YSIZE=1)
  
       Z_Grid_Text = Widget_text(Beam_Geometry_Base, UNAME='Z_Grid_Text'  $
-      ,XOFFSET=856, YOFFSET=155,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=856, YOFFSET=215,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(Z_Grid,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
   
       Phi_Grid_Label = Widget_Label(Beam_Geometry_Base, UNAME='Phi_Grid_Label'  $
-      ,XOFFSET=508, YOFFSET=185, SCR_XSIZE=347 , SCR_YSIZE=33$
+      ,XOFFSET=508, YOFFSET=245, SCR_XSIZE=347 , SCR_YSIZE=33$
       ,VALUE= 'Toroidal angle of center of beam accelerating grid, rad  ' , XSIZE=5 ,YSIZE=1)
  
       Phi_Grid_Text = Widget_text(Beam_Geometry_Base, UNAME='Phi_Grid_Text'  $
-      ,XOFFSET=856, YOFFSET=185,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=856, YOFFSET=245,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(Phi_Grid,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
 
       R_Wall_Label = Widget_Label(Beam_Geometry_Base, UNAME='R_Wall_Label'  $
-      ,XOFFSET=508, YOFFSET=215, SCR_XSIZE=347 , SCR_YSIZE=33$
+      ,XOFFSET=508, YOFFSET=275, SCR_XSIZE=347 , SCR_YSIZE=33$
       ,VALUE= 'Major radius of second point defining the beam, m        ' , XSIZE=5 ,YSIZE=1)
  
       R_Wall_Text = Widget_text(Beam_Geometry_Base, UNAME='R_Wall_Text'  $
-      ,XOFFSET=856, YOFFSET=215,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=856, YOFFSET=275,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(R_wall,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
       
       Z_Wall_Label = Widget_Label(Beam_Geometry_Base, UNAME='Z_Wall_Label'  $
-      ,XOFFSET=508, YOFFSET=245, SCR_XSIZE=347 , SCR_YSIZE=33$
+      ,XOFFSET=508, YOFFSET=305, SCR_XSIZE=347 , SCR_YSIZE=33$
       ,VALUE= 'Z coordinate of second point defining the beam, m        ' , XSIZE=5 ,YSIZE=1)
  
       Z_Wall_Text = Widget_text(Beam_Geometry_Base, UNAME='Z_Wall_Text'  $
-      ,XOFFSET=856, YOFFSET=245,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=856, YOFFSET=305,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(Z_Wall,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
   
       Phi_Wall_Label = Widget_Label(Beam_Geometry_Base, UNAME='Phi_Wall_Label'  $
-      ,XOFFSET=508, YOFFSET=275, SCR_XSIZE=347 , SCR_YSIZE=33$
+      ,XOFFSET=508, YOFFSET=335, SCR_XSIZE=347 , SCR_YSIZE=33$
       ,VALUE= 'Toroidal angle of second point defining the beam, rad    ' , XSIZE=5 ,YSIZE=1)
  
       Phi_Wall_Text = Widget_text(Beam_Geometry_Base, UNAME='Phi_Wall_Text'  $
-      ,XOFFSET=856, YOFFSET=275,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=856, YOFFSET=335,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(Phi_Wall,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
 
 
     
       Geometry_Plot = Widget_Draw(Beam_Geometry_Base, UNAME='Geometry_Plot'  $
-      ,XOFFSET=8,YOFFSET=320,Frame=5, Retain=2, /Button_events $
-      ,XSIZE=962,YSIZE=300$
+      ,XOFFSET=8,YOFFSET=380,Frame=5, Retain=2, /Button_events $
+      ,XSIZE=962,YSIZE=400$
       ,Graphics_Level=0)
       
       Beam_Geometry_Save_Button = Widget_Button(Beam_Geometry_Base, UNAME='Beam_Geometry_Save_Button'  $
-      ,XOFFSET=4, YOFFSET=640, SCR_XSIZE=80, SCR_YSIZE=25 $
+      ,XOFFSET=4, YOFFSET=800, SCR_XSIZE=80, SCR_YSIZE=25 $
       ,VALUE= 'Save' ,XSIZE=25 ,YSIZE=25, /Align_Center)
     
       Beam_Geometry_Close_Button = Widget_Button(Beam_Geometry_Base, UNAME='Beam_Geometry_Close_Button'  $
-      ,XOFFSET=108, YOFFSET=640, SCR_XSIZE=80, SCR_YSIZE=25 $
+      ,XOFFSET=108, YOFFSET=800, SCR_XSIZE=80, SCR_YSIZE=25 $
       ,VALUE= 'Close' ,XSIZE=25 ,YSIZE=25, /Align_Center)
 
-      Beam_Geometry_View = CW_BGROUP(Beam_Geometry_Base, ['TOP VIEW', 'SIDE VIEW'], UNAME='Beam_Geometry_View' ,XOFFSET=800$
-      ,YOFFSET=640 ,/EXCLUSIVE, Space=10, Ypad=0,column=2)
+      Beam_Geometry_View = CW_BGROUP(Beam_Geometry_Base, ['TOP VIEW', 'SIDE VIEW'], UNAME='Beam_Geometry_View' ,XOFFSET=760$
+      ,YOFFSET=800 ,/EXCLUSIVE, Space=10, Ypad=0,column=2)
       
       Widget_Control, Beam_Geometry_View, set_value=0  
  
@@ -2696,21 +2729,39 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
 
       if beam_port ne '?' then begin     
         Widget_Control,Geometry_Plot,get_value=drawID1
-        tank_width=1.0 ; m
-        magnet_width=0.3 ;m
-        cal_width=0.3 ; m
-        cal_size=0.05 ;m
-        x_marg=0.1
-        y_marg=0.25
+        cal_diam=neutr_diam*1.5 ; m
+        cal_size=0.2*tank_size ;m
+        x_marg=r_minor
+        y_marg=r_minor
         wset, drawID1
-        !X.Margin=[5,5]
-        !Y.Margin=[1.5,0.1]
-        
-        wx_size=r_grid*cos(phi_grid)+0.2+2.0*x_marg 
-        wy_size=tank_width*1.3+2.0*x_marg+abs(r_grid*sin(phi_grid)-r_wall*sin(phi_wall))   
-        wx0=-wx_size & wx1=x_marg
-        wy0=-tank_width/2.0-y_marg-max([r_grid*sin(phi_grid),r_wall*sin(phi_wall)])
-        wy1=wy0+wy_size
+        !X.Margin=[4,2]
+        !Y.Margin=[2,7]
+        ;geometrical factors
+        grid_cent_x=-r_grid*cos(phi_grid)
+        grid_cent_y=-r_grid*sin(phi_grid)
+        wall_cent_x=-r_wall*cos(phi_wall)
+        wall_cent_y=-r_wall*sin(phi_wall)
+        grid_cent_z=z_grid
+        wall_cent_z=z_wall
+       
+        dist_all_XY=sqrt((r_wall*cos(phi_wall)-r_grid*cos(phi_grid))^2.0+(r_wall*sin(phi_wall)-r_grid*sin(phi_grid))^2.0)
+        cos_pivot_XY=(wall_cent_x-grid_cent_x)/dist_all_XY
+        sin_pivot_XY=-(wall_cent_y-grid_cent_y)/dist_all_XY
+        ;dist_all_XYZ=sqrt((r_wall*cos(phi_wall)-r_grid*cos(phi_grid))^2.0+(r_wall*sin(phi_wall)-r_grid*sin(phi_grid))^2.0+(z_wall-z_grid)^2.0)
+        dist_all_XZ=sqrt((r_wall*cos(phi_wall)-r_grid*cos(phi_grid))^2.0+(z_wall-z_grid)^2.0)
+        sin_pivot_XZ=-(wall_cent_z-grid_cent_z)/dist_all_XZ
+        cos_pivot_XZ=(wall_cent_x-grid_cent_x)/dist_all_XZ
+     
+
+        tank_front_x=grid_cent_x+(tank_front_dist)*cos_pivot_XY*cos_pivot_XZ
+        tank_front_y=grid_cent_y-(tank_front_dist)*sin_pivot_XY*cos_pivot_XZ      
+   
+  
+        wx0=min([grid_cent_x-neutr_diam/2.0*sin_pivot_XY,-(r_major+r_minor*1.2),tank_front_x-tank_diam/2.0*sin_pivot_XY,tank_front_x-tank_diam/2.0*cos_pivot_XY])-x_marg
+        wx1=max([-r_wall*cos(phi_grid),-(r_major-r_minor*1.2),tank_front_x+tank_diam/2.0*sin_pivot_XY,tank_front_x+tank_diam/2.0*cos_pivot_XY])+x_marg
+        wy0=min([grid_cent_y-neutr_diam/2.0*cos_pivot_XY,-(r_minor*2.0),tank_front_y-tank_diam/2.0*cos_pivot_XY,tank_front_y-tank_diam/2.0*sin_pivot_XY])-y_marg
+        wy1=max([grid_cent_y+neutr_diam/2.0*cos_pivot_XY,(r_minor*2.0),tank_front_y+tank_diam/2.0*cos_pivot_XY,tank_front_y+tank_diam/2.0*sin_pivot_XY])+y_marg       
+         
         plot,[0,0],[1,1],color=0,background=-1,xrange=[wx0,wx1],yrange=[wy0,wy1],/nodata,ystyle=1,xstyle=1
         angl_arr=interpol([-!Pi,!Pi],200)
         oplot,[wx0,wx1],[0,0],color=0,linestyle=2
@@ -2719,107 +2770,152 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
         oplot,(r_major-r_minor)*cos(angl_arr),(r_major-r_minor)*sin(angl_arr),thick=1,color=120,linestyle=2
         oplot,r_major*cos(angl_arr),r_major*sin(angl_arr),thick=2,color=120              
         oplot,(r_major+r_minor*1.4)*cos(angl_arr),(r_major+r_minor*1.2)*sin(angl_arr),thick=3,color=0
-        xyouts, 630,280,'Tokamak torus',color=0,/device,charsize=1.5
-        xyouts, 630,260,'Plasma center, inner and outer SOL',color=120,/device,charsize=1.5
+        xyouts, 630,380,'Tokamak torus',color=0,/device,charsize=1.5
+        xyouts, 630,360,'Plasma center, inner and outer SOL',color=120,/device,charsize=1.5
         ;plot beam port
         xyouts,-r_minor*3.0-r_major,-0.2,beam_port+' port',color=0,charsize=1.5
 
         ;plot focal point
-        dist_all=sqrt((r_wall*cos(phi_wall)-r_grid*cos(phi_grid))^2.0+(r_wall*sin(phi_wall)-r_grid*sin(phi_grid))^2.0)
-        cos_b=(r_grid^2.0+dist_all^2.0-r_wall^2.0)/(2.0*r_grid*dist_all)
-        r_F_x=sqrt(r_grid^2.0+x_grid_focus^2.0-2.0*r_grid*x_grid_focus*cos_b)
-        phi_F_x=phi_grid+acos((r_F_x^2.0+r_grid^2.0-x_grid_focus^2.0)/(2.0*r_F_x*r_grid))*sign(phi_wall-phi_grid)
-        r_F_y=sqrt(r_grid^2.0+y_grid_focus^2.0-2.0*r_grid*y_grid_focus*cos_b)
-        phi_F_y=phi_grid+acos((r_F_y^2.0+r_grid^2.0-y_grid_focus^2.0)/(2.0*r_F_y*r_grid))*sign(phi_wall-phi_grid)
-    
-        oplot,-r_F_x*cos(phi_F_x)+0.01*cos(angl_arr),0.01*sin(angl_arr)-r_F_x*sin(phi_F_x),thick=2,color=112
-        oplot,-r_F_y*cos(phi_F_y)+0.01*cos(angl_arr),0.01*sin(angl_arr)-r_F_y*sin(phi_F_y),thick=2,color=112
-      
-        if r_F_x eq r_F_y then begin
-          xyouts,-r_F_X*cos(phi_F_X)+0.05,-r_F_X*sin(Phi_F_X),'F', color=112,charsize=2
-          xyouts, 400,240,'Grids focal radius (F)',color=112,/device,charsize=1.5
-        endif else begin
-          xyouts,-r_F_X*cos(phi_F_X)+0.05,-r_F_X*sin(Phi_F_X),'Fx', color=112,charsize=2
-          xyouts, 400,240,'Grids focal radii (Fx, Fy)',color=112,/device,charsize=1.5 
-          xyouts,-r_F_Y*cos(phi_F_Y)+0.05,-r_F_Y*sin(Phi_F_Y),'Fy', color=112,charsize=2   
-        endelse   
-        ;plot beam centerline and grids
-        grid_cent_x=-r_grid*cos(phi_grid)
-        grid_cent_y=-r_grid*sin(phi_grid)
-        wall_cent_x=-r_wall*cos(phi_wall)
-        wall_cent_y=-r_wall*sin(phi_wall)
-        sin_pivot=-(wall_cent_y-grid_cent_y)/dist_all
-        cos_pivot=(wall_cent_x-grid_cent_x)/dist_all
+        F_diam=(wx1-wx0)/500.0
+        F_shift=(wx1-wx0)/100.0
+        oplot,grid_cent_x+x_grid_focus*cos_pivot_XY*cos_pivot_XZ+F_diam*cos(angl_arr),$
+        grid_cent_y-x_grid_focus*sin_pivot_XY*cos_pivot_XZ+F_diam*sin(angl_arr),thick=2,color=112
+        oplot,grid_cent_x+y_grid_focus*cos_pivot_XY*cos_pivot_XZ+F_diam*cos(angl_arr),$
+        grid_cent_y-y_grid_focus*sin_pivot_XY*cos_pivot_XZ+F_diam*sin(angl_arr),thick=2,color=112       
 
-        oplot,[grid_cent_x,wall_cent_x],[grid_cent_y,wall_cent_y],color=0,linestyle=2
-        oplot,[grid_cent_x-max(x_bml)*sin_pivot,grid_cent_x+max(x_bml)*sin_pivot],$
-        [grid_cent_y-max(x_bml)*cos_pivot,grid_cent_y+max(x_bml)*cos_pivot],color=112,thick=6
+        if x_grid_focus eq y_grid_focus then begin
+          xyouts,grid_cent_x+x_grid_focus*cos_pivot_XY*cos_pivot_XZ+F_shift,$
+          grid_cent_y-x_grid_focus*sin_pivot_XY*cos_pivot_XZ,'F', color=112,charsize=2
+          xyouts, 400,380,'Grids focal radius (F)',color=112,/device,charsize=1.5
+        endif else begin
+          xyouts,grid_cent_x+x_grid_focus*cos_pivot_XY*cos_pivot_XZ+F_shift,$
+          grid_cent_y-x_grid_focus*sin_pivot_XY*cos_pivot_XZ,'Fx', color=112,charsize=2
+          xyouts, 400,380,'Grids focal radii (Fx, Fy)',color=112,/device,charsize=1.5 
+          xyouts,grid_cent_x+y_grid_focus*cos_pivot_XY*cos_pivot_XZ+F_shift,$
+          grid_cent_y-y_grid_focus*sin_pivot_XY*cos_pivot_XZ,'Fy', color=112,charsize=2    
+        endelse 
         
-        xyouts, 60,280,'Accelerating grids',color=112,/device,charsize=1.5
-        oplot,[grid_cent_x-max(x_bml)*sin_pivot,grid_cent_x-max(x_bml)*sin_pivot+neutr_size*cos_pivot],$
-        [grid_cent_y-max(x_bml)*cos_pivot,grid_cent_y-max(x_bml)*cos_pivot-neutr_size*sin_pivot],color=96,thick=2       
-        oplot,[grid_cent_x+max(x_bml)*sin_pivot,grid_cent_x+max(x_bml)*sin_pivot+neutr_size*cos_pivot],$
-        [grid_cent_y+max(x_bml)*cos_pivot,grid_cent_y+max(x_bml)*cos_pivot-neutr_size*sin_pivot],color=96,thick=2
-        oplot,[grid_cent_x-max(x_bml)*sin_pivot+neutr_size*cos_pivot,grid_cent_x+max(x_bml)*sin_pivot+neutr_size*cos_pivot],$
-        [grid_cent_y-max(x_bml)*cos_pivot-neutr_size*sin_pivot,grid_cent_y+max(x_bml)*cos_pivot-neutr_size*sin_pivot],color=96,thick=2
-        xyouts, 60,260,'Neutralizer tube',color=96,/device,charsize=1.5
+        ;plot beam centerline and grids
+      
+        oplot,[grid_cent_x,wall_cent_x],[grid_cent_y,wall_cent_y],color=0,linestyle=2
+
+       ; oplot,[grid_cent_x-max(x_bml)*sin_pivot_XY,grid_cent_x+max(x_bml)*sin_pivot_XY],$
+       ; [grid_cent_y-max(x_bml)*cos_pivot_XY,grid_cent_y+max(x_bml)*cos_pivot_XY],color=112,thick=6
+        oplot,grid_cent_x+x_bml*sin_pivot_XY-y_bml*cos_pivot_XY*sin_pivot_XZ,grid_cent_y+x_bml*cos_pivot_XY+y_bml*sin_pivot_XY*sin_pivot_XZ,color=112,psym=3
+        
+        xyouts, 60,380,'Accelerating grids',color=112,/device,charsize=1.5
+        x_c=neutr_diam/2.0*cos(angl_arr)
+        y_c=neutr_diam/2.0*sin(angl_arr)
+        neutr_front_x= grid_cent_x+neutr_front_dist*cos_pivot_XY*cos_pivot_XZ
+        neutr_front_y= grid_cent_y-neutr_front_dist*sin_pivot_XY*cos_pivot_XZ
+        oplot,neutr_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,neutr_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=96 ,thick=2
+        oplot,neutr_front_x+neutr_size*cos_pivot_XY*cos_pivot_XZ+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,$
+        neutr_front_y-neutr_size*sin_pivot_XY*cos_pivot_XZ+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=96,thick=2     
+        oplot,[neutr_front_x-neutr_diam/2.0*sin_pivot_XY,neutr_front_x-neutr_diam/2.0*sin_pivot_XY+neutr_size*cos_pivot_XY*cos_pivot_XZ],$
+        [neutr_front_y-neutr_diam/2.0*cos_pivot_XY,neutr_front_y-neutr_diam/2.0*cos_pivot_XY-neutr_size*sin_pivot_XY*cos_pivot_XZ],color=96,thick=2            
+        oplot,[neutr_front_x+neutr_diam/2.0*sin_pivot_XY,neutr_front_x+neutr_diam/2.0*sin_pivot_XY+neutr_size*cos_pivot_XY*cos_pivot_XZ],$
+        [neutr_front_y+neutr_diam/2.0*cos_pivot_XY,neutr_front_y+neutr_diam/2.0*cos_pivot_XY-neutr_size*sin_pivot_XY*cos_pivot_XZ],color=96,thick=2
+
+
+        xyouts, 60,360,'Neutralizer tube',color=96,/device,charsize=1.5
         ;plot tank
-        tank_front_x=grid_cent_x+(tank_front_dist)*cos_pivot
-        tank_front_y=grid_cent_y-(tank_front_dist)*sin_pivot      
-        oplot,[tank_front_x-tank_width/2.0*sin_pivot,tank_front_x+tank_width/2.0*sin_pivot],$
-        [tank_front_y-tank_width/2.0*cos_pivot,tank_front_y+tank_width/2.0*cos_pivot],color=0,thick=2
-        oplot,[tank_front_x-tank_width/2.0*sin_pivot,tank_front_x-tank_width/2.0*sin_pivot+tank_size*cos_pivot],$
-        [tank_front_y-tank_width/2.0*cos_pivot,tank_front_y-tank_width/2.0*cos_pivot-tank_size*sin_pivot],color=0,thick=2       
-        oplot,[tank_front_x+tank_width/2.0*sin_pivot,tank_front_x+tank_width/2.0*sin_pivot+tank_size*cos_pivot],$
-        [tank_front_y+tank_width/2.0*cos_pivot,tank_front_y+tank_width/2.0*cos_pivot-tank_size*sin_pivot],color=0,thick=2
-        oplot,[tank_front_x-tank_width/2.0*sin_pivot+tank_size*cos_pivot,tank_front_x+tank_width/2.0*sin_pivot+tank_size*cos_pivot],$
-        [tank_front_y-tank_width/2.0*cos_pivot-tank_size*sin_pivot,tank_front_y+tank_width/2.0*cos_pivot-tank_size*sin_pivot],color=0,thick=2
-        xyouts, 230,280,'Beam tank',color=0,/device,charsize=1.5
+        x_c=tank_diam/2.0*cos(angl_arr)
+        y_c=tank_diam/2.0*sin(angl_arr)
+        tank_front_x=grid_cent_x+(tank_front_dist)*cos_pivot_XY*cos_pivot_XZ
+        tank_front_y=grid_cent_y-(tank_front_dist)*sin_pivot_XY*cos_pivot_XZ     
+        oplot,tank_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,tank_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=0 ,thick=2
+        oplot,tank_front_x+tank_size*cos_pivot_XY*cos_pivot_XZ+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,$
+        tank_front_y-tank_size*sin_pivot_XY*cos_pivot_XZ+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=0,thick=2 
+        oplot,[tank_front_x-tank_diam/2.0*sin_pivot_XY,tank_front_x-tank_diam/2.0*sin_pivot_XY+tank_size*cos_pivot_XY*cos_pivot_XZ],$
+        [tank_front_y-tank_diam/2.0*cos_pivot_XY,tank_front_y-tank_diam/2.0*cos_pivot_XY-tank_size*sin_pivot_XY*cos_pivot_XZ],color=0,thick=2       
+        oplot,[tank_front_x+tank_diam/2.0*sin_pivot_XY,tank_front_x+tank_diam/2.0*sin_pivot_XY+tank_size*cos_pivot_XY*cos_pivot_XZ],$
+        [tank_front_y+tank_diam/2.0*cos_pivot_XY,tank_front_y+tank_diam/2.0*cos_pivot_XY-tank_size*sin_pivot_XY*cos_pivot_XZ],color=0,thick=2
+ 
+        xyouts, 230,380,'Beam tank',color=0,/device,charsize=1.5
        ;plot deflection magnet
-        magnet_front_x=grid_cent_x+(tank_front_dist+tank_magnet_dist)*cos_pivot
-        magnet_front_y=grid_cent_y-(tank_front_dist+tank_magnet_dist)*sin_pivot      
-        oplot,[magnet_front_x-magnet_width/2.0*sin_pivot,magnet_front_x+magnet_width/2.0*sin_pivot],$
-        [magnet_front_y-magnet_width/2.0*cos_pivot,magnet_front_y+magnet_width/2.0*cos_pivot],color=64,thick=2
-        oplot,[magnet_front_x-magnet_width/2.0*sin_pivot,magnet_front_x-magnet_width/2.0*sin_pivot+magnet_size*cos_pivot],$
-        [magnet_front_y-magnet_width/2.0*cos_pivot,magnet_front_y-magnet_width/2.0*cos_pivot-magnet_size*sin_pivot],color=64 ,thick=2      
-        oplot,[magnet_front_x+magnet_width/2.0*sin_pivot,magnet_front_x+magnet_width/2.0*sin_pivot+magnet_size*cos_pivot],$
-        [magnet_front_y+magnet_width/2.0*cos_pivot,magnet_front_y+magnet_width/2.0*cos_pivot-magnet_size*sin_pivot],color=64,thick=2
-        oplot,[magnet_front_x-magnet_width/2.0*sin_pivot+magnet_size*cos_pivot,magnet_front_x+magnet_width/2.0*sin_pivot+magnet_size*cos_pivot],$
-        [magnet_front_y-magnet_width/2.0*cos_pivot-magnet_size*sin_pivot,magnet_front_y+magnet_width/2.0*cos_pivot-magnet_size*sin_pivot],color=64,thick=2
-        xyouts, 230,260,'Deflection magnet',color=64,/device,charsize=1.5
+        if magnet_size ne 0.0 then begin
+          x_c=magnet_diam/2.0*cos(angl_arr)
+          y_c=magnet_diam/2.0*sin(angl_arr)    
+          magnet_front_x=grid_cent_x+(tank_front_dist+tank_magnet_dist)*cos_pivot_XY*cos_pivot_XZ
+          magnet_front_y=grid_cent_y-(tank_front_dist+tank_magnet_dist)*sin_pivot_XY*cos_pivot_XZ
+          oplot,magnet_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,magnet_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=64 ,thick=2
+          oplot,magnet_front_x+magnet_size*cos_pivot_XY*cos_pivot_XZ+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,$
+          magnet_front_y-magnet_size*sin_pivot_XY*cos_pivot_XZ+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=64,thick=2       
+          oplot,[magnet_front_x-magnet_diam/2.0*sin_pivot_XY,magnet_front_x-magnet_diam/2.0*sin_pivot_XY+magnet_size*cos_pivot_XY*cos_pivot_XZ],$
+          [magnet_front_y-magnet_diam/2.0*cos_pivot_XY,magnet_front_y-magnet_diam/2.0*cos_pivot_XY-magnet_size*sin_pivot_XY*cos_pivot_XZ],color=64 ,thick=2      
+          oplot,[magnet_front_x+magnet_diam/2.0*sin_pivot_XY,magnet_front_x+magnet_diam/2.0*sin_pivot_XY+magnet_size*cos_pivot_XY*cos_pivot_XZ],$
+          [magnet_front_y+magnet_diam/2.0*cos_pivot_XY,magnet_front_y+magnet_diam/2.0*cos_pivot_XY-magnet_size*sin_pivot_XY*cos_pivot_XZ],color=64,thick=2
+          xyouts, 230,360,'Deflection magnet',color=64,/device,charsize=1.5
+        endif
         ;plot calorimeter
-        cal_front_x=grid_cent_x+(tank_front_dist+tank_size+tank_cal_dist)*cos_pivot
-        cal_front_y=grid_cent_y-(tank_front_dist+tank_size+tank_cal_dist)*sin_pivot      
-        oplot,[cal_front_x-cal_width/2.0*sin_pivot,cal_front_x+cal_width/2.0*sin_pivot],$
-        [cal_front_y-cal_width/2.0*cos_pivot,cal_front_y+cal_width/2.0*cos_pivot],color=0,thick=1,linestyle=3
-        oplot,[cal_front_x-cal_width/2.0*sin_pivot,cal_front_x-cal_width/2.0*sin_pivot+cal_size*cos_pivot],$
-        [cal_front_y-cal_width/2.0*cos_pivot,cal_front_y-cal_width/2.0*cos_pivot-cal_size*sin_pivot],color=160 ,thick=8     
-        oplot,[cal_front_x+cal_width/2.0*sin_pivot,cal_front_x+cal_width/2.0*sin_pivot+cal_size*cos_pivot],$
-        [cal_front_y+cal_width/2.0*cos_pivot,cal_front_y+cal_width/2.0*cos_pivot-cal_size*sin_pivot],color=160,thick=8
-        oplot,[cal_front_x-cal_width/2.0*sin_pivot+cal_size*cos_pivot,cal_front_x+cal_width/2.0*sin_pivot+cal_size*cos_pivot],$
-        [cal_front_y-cal_width/2.0*cos_pivot-cal_size*sin_pivot,cal_front_y+cal_width/2.0*cos_pivot-cal_size*sin_pivot],color=0,thick=1,linestyle=3
-        xyouts, 400,280,'Calorimeter',color=160,/device,charsize=1.5                    
+        if tank_cal_dist ne 0.0 then begin
+          x_c=cal_diam/2.0*cos(angl_arr)
+          y_c=cal_diam/2.0*sin(angl_arr)    
+          cal_front_x=grid_cent_x+(tank_front_dist+tank_size+tank_cal_dist)*cos_pivot_XY*cos_pivot_XZ
+          cal_front_y=grid_cent_y-(tank_front_dist+tank_size+tank_cal_dist)*sin_pivot_XY*cos_pivot_XZ
+          oplot,cal_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,cal_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=160 ,thick=2
+          oplot,cal_front_x+cal_size*cos_pivot_XY*cos_pivot_XZ+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,$
+          cal_front_y-cal_size*sin_pivot_XY*cos_pivot_XZ+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=160,thick=2     
+          oplot,[cal_front_x-cal_diam/2.0*sin_pivot_XY,cal_front_x-cal_diam/2.0*sin_pivot_XY+cal_size*cos_pivot_XY*cos_pivot_XZ],$
+          [cal_front_y-cal_diam/2.0*cos_pivot_XY,cal_front_y-cal_diam/2.0*cos_pivot_XY-cal_size*sin_pivot_XY*cos_pivot_XZ],color=160 ,thick=2     
+          oplot,[cal_front_x+cal_diam/2.0*sin_pivot_XY,cal_front_x+cal_diam/2.0*sin_pivot_XY+cal_size*cos_pivot_XY*cos_pivot_XZ],$
+          [cal_front_y+cal_diam/2.0*cos_pivot_XY,cal_front_y+cal_diam/2.0*cos_pivot_XY-cal_size*sin_pivot_XY*cos_pivot_XZ],color=160,thick=2
+          xyouts, 400,340,'Calorimeter',color=160,/device,charsize=1.5                    
+        endif
         ;plot limiters
         for i=0,n_limiters-1 do begin
           z_pos=float(limiters_table(1,i))
-          z_size=float(limiters_table(2,i))
-          diam=float(limiters_table(3,i))
-          x_size=float(limiters_table(4,i))
-          y_size=float(limiters_table(5,i))
+          lim_size=float(limiters_table(2,i))
+          lim_diam=float(limiters_table(3,i))
+          x_size=float(limiters_table(4,i))/2.0
+          y_size=float(limiters_table(5,i))/2.0
           r_lim =float(limiters_table(6,i)) 
           if finite(r_lim) then begin
             oplot,r_lim*cos(angl_arr),r_lim*sin(angl_arr),color=48,thick=2
           endif else begin
-            lim_front_x=grid_cent_x+(z_pos)*cos_pivot
-            lim_front_y=grid_cent_y-(z_pos)*sin_pivot      
-            if finite(diam) then lim_width=diam else lim_width=x_size 
-            oplot,[lim_front_x+lim_width/2.0*sin_pivot,lim_front_x+lim_width/2.0*sin_pivot+z_size*cos_pivot],$
-            [lim_front_y+lim_width/2.0*cos_pivot,lim_front_y+lim_width/2.0*cos_pivot-z_size*sin_pivot],color=48,thick=2
-            oplot,[lim_front_x-lim_width/2.0*sin_pivot,lim_front_x-lim_width/2.0*sin_pivot+z_size*cos_pivot],$
-            [lim_front_y-lim_width/2.0*cos_pivot,lim_front_y-lim_width/2.0*cos_pivot-z_size*sin_pivot],color=48,thick=2
-          endelse
+            lim_front_x=grid_cent_x+(z_pos)*cos_pivot_XY*cos_pivot_XZ
+            lim_front_y=grid_cent_y-(z_pos)*sin_pivot_XY*cos_pivot_XZ
+            lim_back_x=lim_front_x+lim_size*cos_pivot_XY*cos_pivot_XZ
+            lim_back_y=lim_front_y-lim_size*sin_pivot_XY*cos_pivot_XZ     
+            if finite(lim_diam) then begin
+              x_c=lim_diam/2.0*cos(angl_arr)
+              y_c=lim_diam/2.0*sin(angl_arr)
+              oplot,lim_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,lim_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=48 ,thick=2
+              oplot,lim_front_x+lim_size*cos_pivot_XY*cos_pivot_XZ+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,$
+              lim_front_y-lim_size*sin_pivot_XY*cos_pivot_XZ+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=48,thick=2 
+              oplot,[lim_front_x+lim_diam/2.0*sin_pivot_XY,lim_back_x+lim_diam/2.0*sin_pivot_XY],$
+              [lim_front_y+lim_diam/2.0*cos_pivot_XY,lim_back_y+lim_diam/2.0*cos_pivot_XY],color=48,thick=2
+              oplot,[lim_front_x-lim_diam/2.0*sin_pivot_XY,lim_back_x-lim_diam/2.0*sin_pivot_XY],$
+              [lim_front_y-lim_diam/2.0*cos_pivot_XY,lim_back_y-lim_diam/2.0*cos_pivot_XY],color=48,thick=2
+            endif else begin 
+              oplot,[lim_front_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ],$
+              [lim_front_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
+              oplot,[lim_front_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ],$
+              [lim_front_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
+              oplot,[lim_front_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ],$
+              [lim_front_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
+              oplot,[lim_front_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ],$
+              [lim_front_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
+              oplot,[lim_front_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ,lim_front_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ],$
+              [lim_front_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ,lim_front_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
+              oplot,[lim_front_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ,lim_front_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ],$
+              [lim_front_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ,lim_front_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
+              oplot,[lim_front_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ,lim_front_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ],$
+              [lim_front_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ,lim_front_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
+              oplot,[lim_front_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ,lim_front_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ],$
+              [lim_front_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ,lim_front_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
+              oplot,[lim_back_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ],$
+              [lim_back_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
+              oplot,[lim_back_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ],$
+              [lim_back_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
+              oplot,[lim_back_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ],$
+              [lim_back_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
+              oplot,[lim_back_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ],$
+              [lim_back_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
+            endelse
+         endelse
        endfor
-       xyouts, 400,260,'Beam limiters (beam duct)',color=48,/device,charsize=1.5
+       xyouts, 400,360,'Beam limiters (beam duct)',color=48,/device,charsize=1.5       
     endif
   endif
 end
@@ -4794,7 +4890,7 @@ exc_plasma_type_names,gas_arr_type,stop_gas_type,lim_arr_type,grid_aper_names,gr
 ;and position of the beam tank and all components needed for
 ;calculation. These parameters are needed here to map the plasma
 ;surfaces defined in tokamak coordinates to the beam coordinates
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains the parameters which describe the geometry
 ;and position of the tokamak plasma. These parameters are used here to
 ;construct rho array based on the equillibrium formula.
@@ -5442,7 +5538,7 @@ end
 Pro make_gas_arr
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains X,Y,Z coordinate arrays used for the beam
 ;calculation grid and output 3D arrays of the beam density and excitation fracitons
 common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
@@ -5500,7 +5596,7 @@ if gas_arr_type eq 0 then begin
   torus_dens=0.133/1.38e-23/300.0*torus_pressure*1e-6 ;cm-3
   duct_dens=0.133/1.38e-23/300.0*duct_pressure*1e-6 ;cm-3
   
-  ind_0=locate(z_beam,neutr_size)
+  ind_0=locate(z_beam,neutr_front_dist+neutr_size)
   ind_1=locate(z_beam,tank_front_dist+tank_size)
   ind_2 =locate(z_beam,tank_front_dist+tank_size+duct_pressure_loc)
   max_dist=tank_front_dist+tank_size
@@ -5562,7 +5658,7 @@ common beam_limiters, n_limiters, limiters_table,limiters_arr
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lowe
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains X,Y,Z coordinate arrays used for the beam
 ;calculation grid and output 3D arrays of the beam density and excitation fracitons
 common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
@@ -5818,7 +5914,7 @@ Pro load_beam_grid
 common grid_arr, code_grid_arr
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains the parameters which describe the geometry
 ;and position of the tokamak plasma
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
@@ -6300,7 +6396,7 @@ common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_
 common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
 ; The following common block contains general parameters: which user,
 ; what beam, what shot and time interval
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block is used to transfer the pointer to the
 ;status window and availability states of each data set
 common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
@@ -6477,7 +6573,7 @@ pro save_output_to_file
 common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains the parameters which describe the non-geometrical
 ;parameters of the beam (particle and energy distribution)
 common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
@@ -6587,7 +6683,7 @@ printf,1,exc_plasma_type_names(exc_plasma_type)
 printf,1,''
 printf,1,'----------------------------------'
 ;Saving beam geometry to file
-;x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
+;x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 printf,1,''
 printf,1,';X positions of the apertures in the accelerating grid, m'
 printf,1,'x_bml:'
@@ -6624,9 +6720,21 @@ printf,1,';The size of the beam vacuum tank, m'
 printf,1,'tank_size:'
 printf,1,strtrim(string(tank_size,format='(F10.3)'),1)
 printf,1,''
+printf,1,';Inner diameter of the beam vacuum tank, m'
+printf,1,'tank_diam:'
+printf,1,strtrim(string(tank_diam,format='(F10.3)'),1)
+printf,1,''
+printf,1,';Distance from grids to the neutralizer front surface, m'
+printf,1,'neutr_front_dist:'
+printf,1,strtrim(string(neutr_front_dist,format='(F10.3)'),1)
+printf,1,''
 printf,1,';The size of the beam neutralizer tube, m'
 printf,1,'neutr_size:'
 printf,1,strtrim(string(neutr_size,format='(F10.3)'),1)
+printf,1,''
+printf,1,';Inner diameter of the beam neutralizer tube, m'
+printf,1,'neutr_diam:'
+printf,1,strtrim(string(neutr_diam,format='(F10.3)'),1)
 printf,1,''
 printf,1,';Distance from tank end wall to the front of magnet, m'
 printf,1,'tank_magnet_dist:'
@@ -6635,6 +6743,10 @@ printf,1,''
 printf,1,';The size of the beam deflection magnet, m'
 printf,1,'magnet_size:'
 printf,1,strtrim(string(magnet_size,format='(F10.3)'),1)
+printf,1,''
+printf,1,';Inner diameter of the beam deflection magnet, m'
+printf,1,'magnet_diam:'
+printf,1,strtrim(string(magnet_diam,format='(F10.3)'),1)
 printf,1,''
 printf,1,';Distance from tank end wall to front of calorimeter, m'
 printf,1,'tank_cal_dist:'
@@ -7054,7 +7166,7 @@ common save_param, save_param_file
 common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains the parameters which describe the non-geometrical
 ;parameters of the beam (particle and energy distribution)
 common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
@@ -7118,7 +7230,7 @@ printf,1,';File is created by:'
 printf,1, 'ALCBEAM (ver. '+alcbeam_ver+')'
 
 ;Saving beam geometry to file
-;x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_di
+;x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 printf,1,''
 printf,1,';Beam label'
 printf,1,'beam:'
@@ -7173,17 +7285,33 @@ printf,1,';The size of the beam vacuum tank, m'
 printf,1,'tank_size:'
 printf,1,strtrim(string(tank_size,format='(F10.3)'),1)
 printf,1,''
+printf,1,';Inner diameter of the beam vacuum tank, m'
+printf,1,'tank_diam:'
+printf,1,strtrim(string(tank_diam,format='(F10.3)'),1)
+printf,1,''
+printf,1,';Distance from grids to the neutralizer front surface, m'
+printf,1,'neutr_front_dist:'
+printf,1,strtrim(string(neutr_front_dist,format='(F10.3)'),1)
+printf,1,''
 printf,1,';The size of the beam neutralizer tube, m'
 printf,1,'neutr_size:'
 printf,1,strtrim(string(neutr_size,format='(F10.3)'),1)
 printf,1,''
-printf,1,';Distance from tank front wall to the front of magnet, m'
+printf,1,';Inner diameter of the beam neutralizer tube, m'
+printf,1,'neutr_diam:'
+printf,1,strtrim(string(neutr_diam,format='(F10.3)'),1)
+printf,1,''
+printf,1,';Distance from tank end wall to the front of magnet, m'
 printf,1,'tank_magnet_dist:'
 printf,1,strtrim(string(tank_magnet_dist,format='(F10.3)'),1)
 printf,1,''
 printf,1,';The size of the beam deflection magnet, m'
 printf,1,'magnet_size:'
 printf,1,strtrim(string(magnet_size,format='(F10.3)'),1)
+printf,1,''
+printf,1,';Inner diameter of the beam deflection magnet, m'
+printf,1,'magnet_diam:'
+printf,1,strtrim(string(magnet_diam,format='(F10.3)'),1)
 printf,1,''
 printf,1,';Distance from tank end wall to front of calorimeter, m'
 printf,1,'tank_cal_dist:'
@@ -8465,7 +8593,7 @@ Pro load_output_data_file,file_name
 common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains the parameters which describe the non-geometrical
 ;parameters of the beam (particle and energy distribution)
 common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
@@ -8529,9 +8657,14 @@ val='template'
 close,1
 openr,1,file_name
 st=0
-;put o for duct pressure
+;put 0 for duct pressure
 duct_pressure=0.0
 duct_pressure_loc=0.0
+;put default for tank_diam,neutr_diam and magnet_diam for older files
+tank_diam=1.0
+magnet_diam=0.2
+neutr_diam=0.2
+
 vel_dis_type=1 ;default
 vel_vec_coef=0
 vel_vec_x=0
@@ -8637,10 +8770,22 @@ if val eq 'tank_size:' then begin
   tank_size=float(val)
   if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
 endif
+if val eq 'tank_diam:' then begin 
+  readf,1,val
+  tank_diam=float(val)
+endif
+if val eq 'neutr_front_dist:' then begin 
+  readf,1,val
+  neutr_front_dist=float(val)
+endif
 if val eq 'neutr_size:' then begin 
   readf,1,val
   neutr_size=float(val)
   if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
+endif
+if val eq 'neutr_diam:' then begin 
+  readf,1,val
+  neutr_diam=float(val)
 endif
 if val eq 'tank_magnet_dist:' then begin 
   readf,1,val
@@ -8651,6 +8796,10 @@ if val eq 'magnet_size:' then begin
   readf,1,val
   magnet_size=float(val)
   if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
+endif
+if val eq 'magnet_diam:' then begin 
+  readf,1,val
+  magnet_diam=float(val)
 endif
 if val eq 'tank_cal_dist:' then begin 
   readf,1,val
@@ -9054,7 +9203,7 @@ end
 Pro load_beam_geometry_file
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains some of the settings for loading of
 ;the input data used for the beam attenuation and penetration
 ;calculation. ;The following common block contains the name of the input file from which the input
@@ -9096,6 +9245,10 @@ if file(0) eq "" then begin
   return
 endif
 openr,1,beam_geom_file
+;put default for tank_diam,neutr_diam and magnet_diam for older files
+tank_diam=1.0
+magnet_diam=0.2
+neutr_diam=0.2
 
 while ~EOF(1) do begin
 
@@ -9146,10 +9299,22 @@ if val eq 'tank_size:' then begin
   tank_size=float(val)
   if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
 endif
+if val eq 'tank_diam:' then begin 
+  readf,1,val
+  tank_diam=float(val)
+endif
+if val eq 'neutr_front_dist:' then begin 
+  readf,1,val
+  neutr_front_dist=float(val)
+endif
 if val eq 'neutr_size:' then begin 
   readf,1,val
   neutr_size=float(val)
   if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
+endif
+if val eq 'neutr_diam:' then begin 
+  readf,1,val
+  neutr_diam=float(val)
 endif
 if val eq 'tank_magnet_dist:' then begin 
   readf,1,val
@@ -9160,6 +9325,10 @@ if val eq 'magnet_size:' then begin
   readf,1,val
   magnet_size=float(val)
   if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
+endif
+if val eq 'magnet_diam:' then begin 
+  readf,1,val
+  magnet_diam=float(val)
 endif
 if val eq 'tank_cal_dist:' then begin 
   readf,1,val
@@ -9247,7 +9416,7 @@ end
 Pro load_beam_lim
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains the parameters which describe the
 ;positions and sizes of the beam limiters.
 common beam_limiters, n_limiters, limiters_table,limiters_arr
@@ -9297,7 +9466,7 @@ end
 Pro load_beam_geometry
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block is used to transfer the pointer to the
 ;status window and availability states of each data set
 common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
@@ -9338,6 +9507,12 @@ if error_catch then begin
    tank_cal_dist=MDSVALUE('\DNB::TOP.DNB_GEOM.tank_cal', status=st14,/quiet);distance from tank end to calorimeter
    beam_apertur=MDSVALUE('\DNB::TOP.DNB_GEOM.beam_apertur', status=st15,/quiet) ;positions of the elemental apertures in the extraction grid
    grid_ap_diam=MDSVALUE('\DNB::TOP.DNB_GEOM.grid_ap_diam', status=st16,/quiet);diameter of the elemental apertures in the extraction grid
+   ;put default C-Mod for tank_diam,neutr_diam and magnet_diam for older files
+   tank_diam=1.0
+   magnet_diam=0.2
+   neutr_diam=0.2
+   neutr_front_dist=0.0
+
    if st1 and st2 and st3 and st4 and st5 and st6 and st7 and st8 and st9 and st10 and st11 and st12 and st13 and st14 and st15 and st16 then begin
      x_bml=beam_apertur(*,0)
      y_bml=beam_apertur(*,1) 
@@ -9353,11 +9528,11 @@ if error_catch then begin
      tank_front_dist=round(tank_front_dist*1000.0)/1000.0
      tank_size=round(tank_size*1000.0)/1000.0
      neutr_size=round(neutr_size*1000.0)/1000.0
+     neutr_front_dist=round(neutr_front_dist*1000.0)/1000.0
      tank_magnet_dist=round(tank_magnet_dist*1000.0)/1000.0
      magnet_size=round(magnet_size*1000.0)/1000.0
      tank_cal_dist=round(tank_cal_dist*1000.0)/1000.0
    endif else begin
-     stop
      Widget_control, status_wid, Get_Value=status_tx
      Widget_Control, status_wid,$
      Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : The Beam Geometry data set is not available in MDSPLUS']], Set_text_top_line=n_elements(status_tx)-4
@@ -9444,7 +9619,7 @@ common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_
 common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist 
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist 
 ;The following common block is used to transfer the pointer to the status window and availability states of each data set
 common status, status_wid,error_catch,st_err
 
@@ -9527,8 +9702,11 @@ strtrim(string(rem_hours,format='(I2)'),2)+' hours, '+strtrim(string(rem_min,for
    n_beam(k,*,*,*)=n_beam(k,*,*,*)*neutr_dens_ns_tot*neutr_dens_frac(k) ;cm-3
  endfor
  ;added on Jan 21, 2010 to account for neutralizer.
- for i_z=0,locate(z_beam,neutr_size) do begin
-   n_beam(*,i_z,*,*)=n_beam(*,i_z,*,*)*z_beam(i_z)/neutr_size
+ for i_z=0,locate(z_beam,neutr_front_dist) do begin
+   n_beam(*,i_z,*,*)=0.0
+ endfor
+ for i_z=locate(z_beam,neutr_front_dist),locate(z_beam,neutr_front_dist+neutr_size) do begin
+   if i_z ne -1 then n_beam(*,i_z,*,*)=n_beam(*,i_z,*,*)*(z_beam(i_z)-neutr_front_dist)/neutr_size
  endfor
   vel_vec_x=0
   vel_vec_y=0
@@ -9557,7 +9735,7 @@ common run_settings,div_type,div_type_names,atten_type, atten_type_names, vel_di
 common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains the parameters which describe the non-geometrical
 ;parameters of the beam (particle and energy distribution) 
 common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
@@ -9850,8 +10028,11 @@ if driver_val eq 'Back to NORMAL mode' then driver_on=1
       endfor
     endif
     ;added on Jan 21, 2010 to account for neutralizer.
-    for i_z=0,locate(z_beam,neutr_size) do begin
-      n_beam(*,i_z,*,*)=n_beam(*,i_z,*,*)*z_beam(i_z)/neutr_size
+    for i_z=0,locate(z_beam,neutr_front_dist) do begin
+      n_beam(*,i_z,*,*)=0.0
+    endfor
+    for i_z=locate(z_beam,neutr_front_dist),locate(z_beam,neutr_front_dist+neutr_size) do begin
+      if i_z ne -1 then n_beam(*,i_z,*,*)=n_beam(*,i_z,*,*)*(z_beam(i_z)-neutr_front_dist)/neutr_size
      ; n_dep(*,i_z,*,*)=n_dep(*,i_z,*,*)*z_beam(i_z)/neutr_size
     endfor
 
@@ -9887,7 +10068,7 @@ common run_settings,div_type,div_type_names,atten_type, atten_type_names, vel_di
 common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains the parameters which describe the non-geometrical
 ;parameters of the beam (particle and energy distribution) 
 common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
@@ -10267,8 +10448,11 @@ if driver_val eq 'Back to NORMAL mode' then driver_on=1
       endfor
     endif
     ;added on Jan 21, 2010 to account for neutralizer.
-    for i_z=0,locate(z_beam,neutr_size) do begin
-      n_beam(*,i_z,*,*)=n_beam(*,i_z,*,*)*z_beam(i_z)/neutr_size
+    for i_z=0,locate(z_beam,neutr_front_dist) do begin
+      n_beam(*,i_z,*,*)=0.0
+    endfor
+    for i_z=locate(z_beam,neutr_front_dist),locate(z_beam,neutr_front_dist+neutr_size) do begin
+      if i_z ne -1 then n_beam(*,i_z,*,*)=n_beam(*,i_z,*,*)*(z_beam(i_z)-neutr_front_dist)/neutr_size
     endfor
    
     if vel_dis_type eq 0 then begin
@@ -10640,7 +10824,7 @@ common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_
 common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block is used to transfer the pointer to the
 ;status window and availability states of each data set
 common status, status_wid,error_catch,st_err 
@@ -11403,14 +11587,18 @@ if plot_val eq 2 then begin
    for i=0,n_energy_sel-1 do begin
     for j=0,n_z-1 do begin
       prof=n_beam_val(e_b_val(i),j,*,n_y/2)
-      n_int=2000
-      x_beam_int=interpol([x_beam(0),x_beam(n_x-1)],n_int)
-      prof_int=interpol(prof,x_beam,x_beam_int,/spline)
-      prof_int_max=max(prof_int)
-      ind=where(prof_int-prof_int_max/2.0 gt 0)
-      ind1=ind(0)
-      ind2=ind(n_elements(ind)-1)
-      x_fwhm(i,j)=(x_beam_int(ind2)-x_beam_int(ind1))*100.0 ;cm
+      if mean(prof) ne 0.0 then begin
+        n_int=2000
+        x_beam_int=interpol([x_beam(0),x_beam(n_x-1)],n_int)
+        prof_int=interpol(prof,x_beam,x_beam_int,/spline)
+        prof_int_max=max(prof_int)
+        ind=where(prof_int-prof_int_max/2.0 gt 0)
+        ind1=ind(0)
+        ind2=ind(n_elements(ind)-1)
+        x_fwhm(i,j)=(x_beam_int(ind2)-x_beam_int(ind1))*100.0 ;cm
+     endif else begin
+        x_fwhm(i,j)=!Values.F_NAN
+     endelse
     endfor
    endfor
    x_fwhm1=z_beam*2.0*sqrt(alog(2.0))*x_div_bml_opt*!PI/180.0*100.0 ;cm
@@ -11419,7 +11607,7 @@ if plot_val eq 2 then begin
    ;stop,grid_size, grid_focus
    !X.Margin=[7,3]
    !Y.Margin=[3,2]
-   max_val=max(x_fwhm)
+   max_val=max(x_fwhm,/NAN)
    color_ind=[0,48,64,112,160]
    titl='Beam X_FWHM, cm'+exc_titl
    xtitl='Distance from accelerating grids, m'
@@ -11522,14 +11710,18 @@ if plot_val eq 2 then begin
    for i=0,n_energy_sel-1 do begin
     for j=0,n_z-1 do begin
       prof=n_beam_val(e_b_val(i),j,n_x/2,*)
-      n_int=2000
-      y_beam_int=interpol([y_beam(0),y_beam(n_y-1)],n_int)
-      prof_int=interpol(prof,y_beam,y_beam_int,/spline)
-      prof_int_max=max(prof_int)
-      ind=where(prof_int-prof_int_max/2.0 gt 0)
-      ind1=ind(0)
-      ind2=ind(n_elements(ind)-1)
-      y_fwhm(i,j)=(y_beam_int(ind2)-y_beam_int(ind1))*100.0 ;cm
+      if mean(prof) ne 0 then begin 
+        n_int=2000
+        y_beam_int=interpol([y_beam(0),y_beam(n_y-1)],n_int)
+        prof_int=interpol(prof,y_beam,y_beam_int,/spline)
+        prof_int_max=max(prof_int)
+        ind=where(prof_int-prof_int_max/2.0 gt 0)
+        ind1=ind(0)
+        ind2=ind(n_elements(ind)-1)
+        y_fwhm(i,j)=(y_beam_int(ind2)-y_beam_int(ind1))*100.0 ;cm
+      endif else begin
+        y_fwhm(i,j)=!Values.F_NAN
+      endelse
     endfor
    endfor
    y_fwhm1=z_beam*2.0*sqrt(alog(2.0))*y_div_bml_opt*!PI/180.0*100.0 ;cm
@@ -11537,7 +11729,7 @@ if plot_val eq 2 then begin
    y_fwhm2=-z_beam*grid_size/y_grid_focus+grid_size;)*100.0 ;cm
    !X.Margin=[7,3]
    !Y.Margin=[3,2]
-   max_val=max(y_fwhm)
+   max_val=max(y_fwhm,/NAN)
    color_ind=[0,48,64,112,160]
    titl='Beam Y_FWHM, cm'+exc_titl
    xtitl='Distance from accelerating grids, m'
@@ -12399,7 +12591,7 @@ common temp_electrons,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_
 common effective_charge, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_eff_r,z_eff_arr,z_eff_err_arr
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains the parameter which data is
 ;curently plotted
 common draw_request,draw_req
@@ -12873,7 +13065,7 @@ common export_file, export_file,export_sel,export_flag
  common effective_charge, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_eff_r,z_eff_arr,z_eff_err_arr
  ;The following common block contains the parameters which describe the geometry
  ;and position of the beam tank and all components needed for calculation.
- common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
+ common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains the parameters which describe the geometry
 ;and position of the tokamak plasma
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
@@ -16581,7 +16773,7 @@ end
 Pro Beam_Geometry_Widget_event, ev
  ;The following common block contains the parameters which describe the geometry
  ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains the parameters which describe the geometry
 ;and position of the tokamak plasma
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
@@ -16593,7 +16785,6 @@ common beam_limiters, n_limiters, limiters_table,limiters_arr
 common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
 ;The following common block is used to transfer the pointer to the status window and availability states of each data set
 common status, status_wid,error_catch,st_err
-
 ;Error handler---------------------------------------
 if error_catch then begin
    Catch,error_status
@@ -16638,12 +16829,20 @@ case ev.id of
       tank_front_dist=float(tank_front_dist_txt(0))
       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Tank_Size_Text'),Get_value=tank_size_txt
       tank_size=float(tank_size_txt(0))
+      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Tank_Diam_Text'),Get_value=tank_diam_txt
+      tank_diam=float(tank_diam_txt(0))
+      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Neutr_Front_Text'),Get_value=neutr_front_dist_txt
+      neutr_front_dist=float(neutr_front_dist_txt(0))
       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Neutr_Size_Text'),Get_value=neutr_size_txt
       neutr_size=float(neutr_size_txt(0))
+      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Neutr_Diam_Text'),Get_value=neutr_diam_txt
+      neutr_diam=float(neutr_diam_txt(0))
       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Tank_Magnet_Text'),Get_value=tank_magnet_dist_txt
       tank_magnet_dist=float(tank_magnet_dist_txt(0))
       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Magnet_Size_Text'),Get_value=magnet_size_txt
       magnet_size=float(magnet_size_txt(0))
+      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Magnet_Diam_Text'),Get_value=magnet_diam_txt
+      magnet_diam=float(magnet_diam_txt(0))
       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Tank_Calorim_Text'),Get_value=tank_cal_dist_txt
       tank_cal_dist=float(tank_cal_dist_txt(0)) 
       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='R_Wall_Text'),Get_value=r_wall_txt
@@ -16669,21 +16868,39 @@ case ev.id of
       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Beam_Geometry_View'),Get_value=beam_view
       if beam_port ne '?' then begin
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Geometry_Plot'),get_value=drawID1
-        tank_width=1.0 ; m
-        magnet_width=0.3 ;m
-        cal_width=0.3 ; m
-        cal_size=0.05 ;m
-        x_marg=0.1
-        y_marg=0.25
+        cal_diam=neutr_diam*1.5 ; m
+        cal_size=0.2*tank_size ;m
+        x_marg=r_minor
+        y_marg=r_minor
         wset, drawID1
-        !X.Margin=[5,5]
-        !Y.Margin=[1.5,0.1]
+        !X.Margin=[4,2]
+        !Y.Margin=[2,7]
+        ;geometrical factors
+        grid_cent_x=-r_grid*cos(phi_grid)
+        grid_cent_y=-r_grid*sin(phi_grid)
+        wall_cent_x=-r_wall*cos(phi_wall)
+        wall_cent_y=-r_wall*sin(phi_wall)
+        grid_cent_z=z_grid
+        wall_cent_z=z_wall
+       
+        dist_all_XY=sqrt((r_wall*cos(phi_wall)-r_grid*cos(phi_grid))^2.0+(r_wall*sin(phi_wall)-r_grid*sin(phi_grid))^2.0)
+        cos_pivot_XY=(wall_cent_x-grid_cent_x)/dist_all_XY
+        sin_pivot_XY=-(wall_cent_y-grid_cent_y)/dist_all_XY
+        ;dist_all_XYZ=sqrt((r_wall*cos(phi_wall)-r_grid*cos(phi_grid))^2.0+(r_wall*sin(phi_wall)-r_grid*sin(phi_grid))^2.0+(z_wall-z_grid)^2.0)
+        dist_all_XZ=sqrt((r_wall*cos(phi_wall)-r_grid*cos(phi_grid))^2.0+(z_wall-z_grid)^2.0)
+        sin_pivot_XZ=-(wall_cent_z-grid_cent_z)/dist_all_XZ
+        cos_pivot_XZ=(wall_cent_x-grid_cent_x)/dist_all_XZ
+
         if beam_view eq 0 then begin
-        wx_size=r_grid*cos(phi_grid)+0.2+2.0*x_marg 
-        wy_size=tank_width*1.3+2.0*y_marg+abs(r_grid*sin(phi_grid)-r_wall*sin(phi_wall))   
-        wx0=-wx_size & wx1=x_marg
-        wy0=-tank_width/2.0-y_marg-max([r_grid*sin(phi_grid),r_wall*sin(phi_wall)])
-        wy1=wy0+wy_size
+        tank_front_x=grid_cent_x+(tank_front_dist)*cos_pivot_XY*cos_pivot_XZ
+        tank_front_y=grid_cent_y-(tank_front_dist)*sin_pivot_XY*cos_pivot_XZ      
+   
+  
+        wx0=min([grid_cent_x-neutr_diam/2.0*sin_pivot_XY,-(r_major+r_minor*1.2),tank_front_x-tank_diam/2.0*sin_pivot_XY,tank_front_x-tank_diam/2.0*cos_pivot_XY])-x_marg
+        wx1=max([-r_wall*cos(phi_grid),-(r_major-r_minor*1.2),tank_front_x+tank_diam/2.0*sin_pivot_XY,tank_front_x+tank_diam/2.0*cos_pivot_XY])+x_marg
+        wy0=min([grid_cent_y-neutr_diam/2.0*cos_pivot_XY,-(r_minor*2.0),tank_front_y-tank_diam/2.0*cos_pivot_XY,tank_front_y-tank_diam/2.0*sin_pivot_XY])-y_marg
+        wy1=max([grid_cent_y+neutr_diam/2.0*cos_pivot_XY,(r_minor*2.0),tank_front_y+tank_diam/2.0*cos_pivot_XY,tank_front_y+tank_diam/2.0*sin_pivot_XY])+y_marg        
+                
         plot,[0,0],[1,1],color=0,background=-1,xrange=[wx0,wx1],yrange=[wy0,wy1],/nodata,ystyle=1,xstyle=1
         angl_arr=interpol([-!Pi,!Pi],200)
         oplot,[wx0,wx1],[0,0],color=0,linestyle=2
@@ -16692,235 +16909,344 @@ case ev.id of
         oplot,(r_major-r_minor)*cos(angl_arr),(r_major-r_minor)*sin(angl_arr),thick=1,color=120,linestyle=2
         oplot,r_major*cos(angl_arr),r_major*sin(angl_arr),thick=2,color=120              
         oplot,(r_major+r_minor*1.4)*cos(angl_arr),(r_major+r_minor*1.2)*sin(angl_arr),thick=3,color=0
-        xyouts, 630,280,'Tokamak torus',color=0,/device,charsize=1.5
-        xyouts, 630,260,'Plasma center, inner and outer SOL',color=120,/device,charsize=1.5
+        xyouts, 630,380,'Tokamak torus',color=0,/device,charsize=1.5
+        xyouts, 630,360,'Plasma center, inner and outer SOL',color=120,/device,charsize=1.5
         ;plot beam port
         xyouts,-r_minor*3.0-r_major,-0.2,beam_port+' port',color=0,charsize=1.5
 
         ;plot focal point
-        dist_all=sqrt((r_wall*cos(phi_wall)-r_grid*cos(phi_grid))^2.0+(r_wall*sin(phi_wall)-r_grid*sin(phi_grid))^2.0)
-        cos_b=(r_grid^2.0+dist_all^2.0-r_wall^2.0)/(2.0*r_grid*dist_all)
-        r_F_x=sqrt(r_grid^2.0+x_grid_focus^2.0-2.0*r_grid*x_grid_focus*cos_b)
-        phi_F_x=phi_grid+acos((r_F_x^2.0+r_grid^2.0-x_grid_focus^2.0)/(2.0*r_F_x*r_grid))*sign(phi_wall-phi_grid)
-        r_F_y=sqrt(r_grid^2.0+y_grid_focus^2.0-2.0*r_grid*y_grid_focus*cos_b)
-        phi_F_y=phi_grid+acos((r_F_y^2.0+r_grid^2.0-y_grid_focus^2.0)/(2.0*r_F_y*r_grid))*sign(phi_wall-phi_grid)
-    
-        oplot,-r_F_x*cos(phi_F_x)+0.01*cos(angl_arr),0.01*sin(angl_arr)-r_F_x*sin(phi_F_x),thick=2,color=112
-        oplot,-r_F_y*cos(phi_F_y)+0.01*cos(angl_arr),0.01*sin(angl_arr)-r_F_y*sin(phi_F_y),thick=2,color=112
-      
-        if r_F_x eq r_F_y then begin
-          xyouts,-r_F_X*cos(phi_F_X)+0.05,-r_F_X*sin(Phi_F_X),'F', color=112,charsize=2
-          xyouts, 400,240,'Grids focal radius (F)',color=112,/device,charsize=1.5
-        endif else begin 
-          xyouts,-r_F_X*cos(phi_F_X)+0.05,-r_F_X*sin(Phi_F_X),'Fx', color=112,charsize=2
-          xyouts, 400,240,'Grids focal radii (Fx, Fy)',color=112,/device,charsize=1.5 
-          xyouts,-r_F_Y*cos(phi_F_Y)+0.05,-r_F_Y*sin(Phi_F_Y),'Fy', color=112,charsize=2   
-        endelse   
+        F_diam=(wx1-wx0)/500.0
+        F_shift=(wx1-wx0)/100.0
+        oplot,grid_cent_x+x_grid_focus*cos_pivot_XY*cos_pivot_XZ+F_diam*cos(angl_arr),$
+        grid_cent_y-x_grid_focus*sin_pivot_XY*cos_pivot_XZ+F_diam*sin(angl_arr),thick=2,color=112
+        oplot,grid_cent_x+y_grid_focus*cos_pivot_XY*cos_pivot_XZ+F_diam*cos(angl_arr),$
+        grid_cent_y-y_grid_focus*sin_pivot_XY*cos_pivot_XZ+F_diam*sin(angl_arr),thick=2,color=112       
+
+        if x_grid_focus eq y_grid_focus then begin
+          xyouts,grid_cent_x+x_grid_focus*cos_pivot_XY*cos_pivot_XZ+F_shift,$
+          grid_cent_y-x_grid_focus*sin_pivot_XY*cos_pivot_XZ,'F', color=112,charsize=2
+          xyouts, 400,380,'Grids focal radius (F)',color=112,/device,charsize=1.5
+        endif else begin
+          xyouts,grid_cent_x+x_grid_focus*cos_pivot_XY*cos_pivot_XZ+F_shift,$
+          grid_cent_y-x_grid_focus*sin_pivot_XY*cos_pivot_XZ,'Fx', color=112,charsize=2
+          xyouts, 400,380,'Grids focal radii (Fx, Fy)',color=112,/device,charsize=1.5 
+          xyouts,grid_cent_x+y_grid_focus*cos_pivot_XY*cos_pivot_XZ+F_shift,$
+          grid_cent_y-y_grid_focus*sin_pivot_XY*cos_pivot_XZ,'Fy', color=112,charsize=2    
+        endelse 
         
         ;plot beam centerline and grids
-        grid_cent_x=-r_grid*cos(phi_grid)
-        grid_cent_y=-r_grid*sin(phi_grid)
-        wall_cent_x=-r_wall*cos(phi_wall)
-        wall_cent_y=-r_wall*sin(phi_wall)
-        sin_pivot=-(wall_cent_y-grid_cent_y)/dist_all
-        cos_pivot=(wall_cent_x-grid_cent_x)/dist_all
-
+      
         oplot,[grid_cent_x,wall_cent_x],[grid_cent_y,wall_cent_y],color=0,linestyle=2
-        oplot,[grid_cent_x-max(x_bml)*sin_pivot,grid_cent_x+max(x_bml)*sin_pivot],$
-        [grid_cent_y-max(x_bml)*cos_pivot,grid_cent_y+max(x_bml)*cos_pivot],color=112,thick=6
+
+       ; oplot,[grid_cent_x-max(x_bml)*sin_pivot_XY,grid_cent_x+max(x_bml)*sin_pivot_XY],$
+       ; [grid_cent_y-max(x_bml)*cos_pivot_XY,grid_cent_y+max(x_bml)*cos_pivot_XY],color=112,thick=6
+        oplot,grid_cent_x+x_bml*sin_pivot_XY-y_bml*cos_pivot_XY*sin_pivot_XZ,grid_cent_y+x_bml*cos_pivot_XY+y_bml*sin_pivot_XY*sin_pivot_XZ,color=112,psym=3
         
-        xyouts, 60,280,'Accelerating grids',color=112,/device,charsize=1.5
-        oplot,[grid_cent_x-max(x_bml)*sin_pivot,grid_cent_x-max(x_bml)*sin_pivot+neutr_size*cos_pivot],$
-        [grid_cent_y-max(x_bml)*cos_pivot,grid_cent_y-max(x_bml)*cos_pivot-neutr_size*sin_pivot],color=96,thick=2       
-        oplot,[grid_cent_x+max(x_bml)*sin_pivot,grid_cent_x+max(x_bml)*sin_pivot+neutr_size*cos_pivot],$
-        [grid_cent_y+max(x_bml)*cos_pivot,grid_cent_y+max(x_bml)*cos_pivot-neutr_size*sin_pivot],color=96,thick=2
-        oplot,[grid_cent_x-max(x_bml)*sin_pivot+neutr_size*cos_pivot,grid_cent_x+max(x_bml)*sin_pivot+neutr_size*cos_pivot],$
-        [grid_cent_y-max(x_bml)*cos_pivot-neutr_size*sin_pivot,grid_cent_y+max(x_bml)*cos_pivot-neutr_size*sin_pivot],color=96,thick=2
-        xyouts, 60,260,'Neutralizer tube',color=96,/device,charsize=1.5
+        xyouts, 60,380,'Accelerating grids',color=112,/device,charsize=1.5
+        x_c=neutr_diam/2.0*cos(angl_arr)
+        y_c=neutr_diam/2.0*sin(angl_arr)
+        neutr_front_x= grid_cent_x+neutr_front_dist*cos_pivot_XY*cos_pivot_XZ
+        neutr_front_y= grid_cent_y-neutr_front_dist*sin_pivot_XY*cos_pivot_XZ
+        oplot,neutr_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,neutr_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=96 ,thick=2
+        oplot,neutr_front_x+neutr_size*cos_pivot_XY*cos_pivot_XZ+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,$
+        neutr_front_y-neutr_size*sin_pivot_XY*cos_pivot_XZ+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=96,thick=2     
+        oplot,[neutr_front_x-neutr_diam/2.0*sin_pivot_XY,neutr_front_x-neutr_diam/2.0*sin_pivot_XY+neutr_size*cos_pivot_XY*cos_pivot_XZ],$
+        [neutr_front_y-neutr_diam/2.0*cos_pivot_XY,neutr_front_y-neutr_diam/2.0*cos_pivot_XY-neutr_size*sin_pivot_XY*cos_pivot_XZ],color=96,thick=2            
+        oplot,[neutr_front_x+neutr_diam/2.0*sin_pivot_XY,neutr_front_x+neutr_diam/2.0*sin_pivot_XY+neutr_size*cos_pivot_XY*cos_pivot_XZ],$
+        [neutr_front_y+neutr_diam/2.0*cos_pivot_XY,neutr_front_y+neutr_diam/2.0*cos_pivot_XY-neutr_size*sin_pivot_XY*cos_pivot_XZ],color=96,thick=2
+   
+        xyouts, 60,360,'Neutralizer tube',color=96,/device,charsize=1.5
         ;plot tank
-        tank_front_x=grid_cent_x+(tank_front_dist)*cos_pivot
-        tank_front_y=grid_cent_y-(tank_front_dist)*sin_pivot      
-        oplot,[tank_front_x-tank_width/2.0*sin_pivot,tank_front_x+tank_width/2.0*sin_pivot],$
-        [tank_front_y-tank_width/2.0*cos_pivot,tank_front_y+tank_width/2.0*cos_pivot],color=0,thick=2
-        oplot,[tank_front_x-tank_width/2.0*sin_pivot,tank_front_x-tank_width/2.0*sin_pivot+tank_size*cos_pivot],$
-        [tank_front_y-tank_width/2.0*cos_pivot,tank_front_y-tank_width/2.0*cos_pivot-tank_size*sin_pivot],color=0,thick=2       
-        oplot,[tank_front_x+tank_width/2.0*sin_pivot,tank_front_x+tank_width/2.0*sin_pivot+tank_size*cos_pivot],$
-        [tank_front_y+tank_width/2.0*cos_pivot,tank_front_y+tank_width/2.0*cos_pivot-tank_size*sin_pivot],color=0,thick=2
-        oplot,[tank_front_x-tank_width/2.0*sin_pivot+tank_size*cos_pivot,tank_front_x+tank_width/2.0*sin_pivot+tank_size*cos_pivot],$
-        [tank_front_y-tank_width/2.0*cos_pivot-tank_size*sin_pivot,tank_front_y+tank_width/2.0*cos_pivot-tank_size*sin_pivot],color=0,thick=2
-        xyouts, 230,280,'Beam tank',color=0,/device,charsize=1.5
+        x_c=tank_diam/2.0*cos(angl_arr)
+        y_c=tank_diam/2.0*sin(angl_arr)      
+        tank_front_x=grid_cent_x+(tank_front_dist)*cos_pivot_XY*cos_pivot_XZ
+        tank_front_y=grid_cent_y-(tank_front_dist)*sin_pivot_XY*cos_pivot_XZ     
+        oplot,tank_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,tank_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=0 ,thick=2
+        oplot,tank_front_x+tank_size*cos_pivot_XY*cos_pivot_XZ+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,$
+        tank_front_y-tank_size*sin_pivot_XY*cos_pivot_XZ+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=0,thick=2 
+        oplot,[tank_front_x-tank_diam/2.0*sin_pivot_XY,tank_front_x-tank_diam/2.0*sin_pivot_XY+tank_size*cos_pivot_XY*cos_pivot_XZ],$
+        [tank_front_y-tank_diam/2.0*cos_pivot_XY,tank_front_y-tank_diam/2.0*cos_pivot_XY-tank_size*sin_pivot_XY*cos_pivot_XZ],color=0,thick=2       
+        oplot,[tank_front_x+tank_diam/2.0*sin_pivot_XY,tank_front_x+tank_diam/2.0*sin_pivot_XY+tank_size*cos_pivot_XY*cos_pivot_XZ],$
+        [tank_front_y+tank_diam/2.0*cos_pivot_XY,tank_front_y+tank_diam/2.0*cos_pivot_XY-tank_size*sin_pivot_XY*cos_pivot_XZ],color=0,thick=2
+ 
+        xyouts, 230,380,'Beam tank',color=0,/device,charsize=1.5
        ;plot deflection magnet
-        magnet_front_x=grid_cent_x+(tank_front_dist+tank_magnet_dist)*cos_pivot
-        magnet_front_y=grid_cent_y-(tank_front_dist+tank_magnet_dist)*sin_pivot      
-        oplot,[magnet_front_x-magnet_width/2.0*sin_pivot,magnet_front_x+magnet_width/2.0*sin_pivot],$
-        [magnet_front_y-magnet_width/2.0*cos_pivot,magnet_front_y+magnet_width/2.0*cos_pivot],color=64,thick=2
-        oplot,[magnet_front_x-magnet_width/2.0*sin_pivot,magnet_front_x-magnet_width/2.0*sin_pivot+magnet_size*cos_pivot],$
-        [magnet_front_y-magnet_width/2.0*cos_pivot,magnet_front_y-magnet_width/2.0*cos_pivot-magnet_size*sin_pivot],color=64 ,thick=2      
-        oplot,[magnet_front_x+magnet_width/2.0*sin_pivot,magnet_front_x+magnet_width/2.0*sin_pivot+magnet_size*cos_pivot],$
-        [magnet_front_y+magnet_width/2.0*cos_pivot,magnet_front_y+magnet_width/2.0*cos_pivot-magnet_size*sin_pivot],color=64,thick=2
-        oplot,[magnet_front_x-magnet_width/2.0*sin_pivot+magnet_size*cos_pivot,magnet_front_x+magnet_width/2.0*sin_pivot+magnet_size*cos_pivot],$
-        [magnet_front_y-magnet_width/2.0*cos_pivot-magnet_size*sin_pivot,magnet_front_y+magnet_width/2.0*cos_pivot-magnet_size*sin_pivot],color=64,thick=2
-        xyouts, 230,260,'Deflection magnet',color=64,/device,charsize=1.5
+        if magnet_size ne 0.0 then begin
+          x_c=magnet_diam/2.0*cos(angl_arr)
+          y_c=magnet_diam/2.0*sin(angl_arr)    
+          magnet_front_x=grid_cent_x+(tank_front_dist+tank_magnet_dist)*cos_pivot_XY*cos_pivot_XZ
+          magnet_front_y=grid_cent_y-(tank_front_dist+tank_magnet_dist)*sin_pivot_XY*cos_pivot_XZ
+          oplot,magnet_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,magnet_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=64 ,thick=2
+          oplot,magnet_front_x+magnet_size*cos_pivot_XY*cos_pivot_XZ+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,$
+          magnet_front_y-magnet_size*sin_pivot_XY*cos_pivot_XZ+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=64,thick=2       
+          oplot,[magnet_front_x-magnet_diam/2.0*sin_pivot_XY,magnet_front_x-magnet_diam/2.0*sin_pivot_XY+magnet_size*cos_pivot_XY*cos_pivot_XZ],$
+          [magnet_front_y-magnet_diam/2.0*cos_pivot_XY,magnet_front_y-magnet_diam/2.0*cos_pivot_XY-magnet_size*sin_pivot_XY*cos_pivot_XZ],color=64 ,thick=2      
+          oplot,[magnet_front_x+magnet_diam/2.0*sin_pivot_XY,magnet_front_x+magnet_diam/2.0*sin_pivot_XY+magnet_size*cos_pivot_XY*cos_pivot_XZ],$
+          [magnet_front_y+magnet_diam/2.0*cos_pivot_XY,magnet_front_y+magnet_diam/2.0*cos_pivot_XY-magnet_size*sin_pivot_XY*cos_pivot_XZ],color=64,thick=2
+          xyouts, 230,360,'Deflection magnet',color=64,/device,charsize=1.5
+        endif
         ;plot calorimeter
-        cal_front_x=grid_cent_x+(tank_front_dist+tank_size+tank_cal_dist)*cos_pivot
-        cal_front_y=grid_cent_y-(tank_front_dist+tank_size+tank_cal_dist)*sin_pivot      
-        oplot,[cal_front_x-cal_width/2.0*sin_pivot,cal_front_x+cal_width/2.0*sin_pivot],$
-        [cal_front_y-cal_width/2.0*cos_pivot,cal_front_y+cal_width/2.0*cos_pivot],color=0,thick=1,linestyle=3
-        oplot,[cal_front_x-cal_width/2.0*sin_pivot,cal_front_x-cal_width/2.0*sin_pivot+cal_size*cos_pivot],$
-        [cal_front_y-cal_width/2.0*cos_pivot,cal_front_y-cal_width/2.0*cos_pivot-cal_size*sin_pivot],color=160 ,thick=8     
-        oplot,[cal_front_x+cal_width/2.0*sin_pivot,cal_front_x+cal_width/2.0*sin_pivot+cal_size*cos_pivot],$
-        [cal_front_y+cal_width/2.0*cos_pivot,cal_front_y+cal_width/2.0*cos_pivot-cal_size*sin_pivot],color=160,thick=8
-        oplot,[cal_front_x-cal_width/2.0*sin_pivot+cal_size*cos_pivot,cal_front_x+cal_width/2.0*sin_pivot+cal_size*cos_pivot],$
-        [cal_front_y-cal_width/2.0*cos_pivot-cal_size*sin_pivot,cal_front_y+cal_width/2.0*cos_pivot-cal_size*sin_pivot],color=0,thick=1,linestyle=3
-        xyouts, 400,280,'Calorimeter',color=160,/device,charsize=1.5                    
+        if tank_cal_dist ne 0.0 then begin
+          x_c=cal_diam/2.0*cos(angl_arr)
+          y_c=cal_diam/2.0*sin(angl_arr)    
+          cal_front_x=grid_cent_x+(tank_front_dist+tank_size+tank_cal_dist)*cos_pivot_XY*cos_pivot_XZ
+          cal_front_y=grid_cent_y-(tank_front_dist+tank_size+tank_cal_dist)*sin_pivot_XY*cos_pivot_XZ
+          oplot,cal_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,cal_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=160 ,thick=2
+          oplot,cal_front_x+cal_size*cos_pivot_XY*cos_pivot_XZ+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,$
+          cal_front_y-cal_size*sin_pivot_XY*cos_pivot_XZ+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=160,thick=2     
+          oplot,[cal_front_x-cal_diam/2.0*sin_pivot_XY,cal_front_x-cal_diam/2.0*sin_pivot_XY+cal_size*cos_pivot_XY*cos_pivot_XZ],$
+          [cal_front_y-cal_diam/2.0*cos_pivot_XY,cal_front_y-cal_diam/2.0*cos_pivot_XY-cal_size*sin_pivot_XY*cos_pivot_XZ],color=160 ,thick=2     
+          oplot,[cal_front_x+cal_diam/2.0*sin_pivot_XY,cal_front_x+cal_diam/2.0*sin_pivot_XY+cal_size*cos_pivot_XY*cos_pivot_XZ],$
+          [cal_front_y+cal_diam/2.0*cos_pivot_XY,cal_front_y+cal_diam/2.0*cos_pivot_XY-cal_size*sin_pivot_XY*cos_pivot_XZ],color=160,thick=2
+          xyouts, 400,340,'Calorimeter',color=160,/device,charsize=1.5                    
+        endif
         ;plot limiters
         for i=0,n_limiters-1 do begin
           z_pos=float(limiters_table(1,i))
-          z_size=float(limiters_table(2,i))
-          diam=float(limiters_table(3,i))
-          x_size=float(limiters_table(4,i))
-          y_size=float(limiters_table(5,i))
+          lim_size=float(limiters_table(2,i))
+          lim_diam=float(limiters_table(3,i))
+          x_size=float(limiters_table(4,i))/2.0
+          y_size=float(limiters_table(5,i))/2.0
           r_lim =float(limiters_table(6,i)) 
           if finite(r_lim) then begin
             oplot,r_lim*cos(angl_arr),r_lim*sin(angl_arr),color=48,thick=2
           endif else begin
-            lim_front_x=grid_cent_x+(z_pos)*cos_pivot
-            lim_front_y=grid_cent_y-(z_pos)*sin_pivot      
-            if finite(diam) then lim_width=diam else lim_width=x_size 
-            oplot,[lim_front_x+lim_width/2.0*sin_pivot,lim_front_x+lim_width/2.0*sin_pivot+z_size*cos_pivot],$
-            [lim_front_y+lim_width/2.0*cos_pivot,lim_front_y+lim_width/2.0*cos_pivot-z_size*sin_pivot],color=48,thick=2
-            oplot,[lim_front_x-lim_width/2.0*sin_pivot,lim_front_x-lim_width/2.0*sin_pivot+z_size*cos_pivot],$
-            [lim_front_y-lim_width/2.0*cos_pivot,lim_front_y-lim_width/2.0*cos_pivot-z_size*sin_pivot],color=48,thick=2
-          endelse
+            lim_front_x=grid_cent_x+(z_pos)*cos_pivot_XY*cos_pivot_XZ
+            lim_front_y=grid_cent_y-(z_pos)*sin_pivot_XY*cos_pivot_XZ
+            lim_back_x=lim_front_x+lim_size*cos_pivot_XY*cos_pivot_XZ
+            lim_back_y=lim_front_y-lim_size*sin_pivot_XY*cos_pivot_XZ     
+            if finite(lim_diam) then begin
+              x_c=lim_diam/2.0*cos(angl_arr)
+              y_c=lim_diam/2.0*sin(angl_arr)
+              oplot,lim_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,lim_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=48 ,thick=2
+              oplot,lim_front_x+lim_size*cos_pivot_XY*cos_pivot_XZ+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,$
+              lim_front_y-lim_size*sin_pivot_XY*cos_pivot_XZ+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=48,thick=2 
+              oplot,[lim_front_x+lim_diam/2.0*sin_pivot_XY,lim_back_x+lim_diam/2.0*sin_pivot_XY],$
+              [lim_front_y+lim_diam/2.0*cos_pivot_XY,lim_back_y+lim_diam/2.0*cos_pivot_XY],color=48,thick=2
+              oplot,[lim_front_x-lim_diam/2.0*sin_pivot_XY,lim_back_x-lim_diam/2.0*sin_pivot_XY],$
+              [lim_front_y-lim_diam/2.0*cos_pivot_XY,lim_back_y-lim_diam/2.0*cos_pivot_XY],color=48,thick=2
+            endif else begin 
+              oplot,[lim_front_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ],$
+              [lim_front_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
+              oplot,[lim_front_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ],$
+              [lim_front_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
+              oplot,[lim_front_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ],$
+              [lim_front_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
+              oplot,[lim_front_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ],$
+              [lim_front_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
+              oplot,[lim_front_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ,lim_front_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ],$
+              [lim_front_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ,lim_front_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
+              oplot,[lim_front_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ,lim_front_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ],$
+              [lim_front_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ,lim_front_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
+              oplot,[lim_front_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ,lim_front_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ],$
+              [lim_front_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ,lim_front_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
+              oplot,[lim_front_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ,lim_front_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ],$
+              [lim_front_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ,lim_front_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
+              oplot,[lim_back_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ],$
+              [lim_back_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
+              oplot,[lim_back_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ],$
+              [lim_back_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
+              oplot,[lim_back_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ],$
+              [lim_back_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
+              oplot,[lim_back_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ],$
+              [lim_back_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
+            endelse
+         endelse
        endfor
-       xyouts, 400,260,'Beam limiters (beam duct)',color=48,/device,charsize=1.5
+       xyouts, 400,360,'Beam limiters (beam duct)',color=48,/device,charsize=1.5       
        endif
        if beam_view eq 1 then begin
-        
-        wx_size=r_grid*cos(phi_grid)+0.2+2.0*x_marg 
-        wy_size=tank_width*1.3+2.0*y_marg+abs(z_grid-z_wall)   
-        wx0=-wx_size & wx1=x_marg
-        wy0=-tank_width/2.0-y_marg+min([z_grid,z_wall])
-        wy1=wy0+wy_size
+
+        tank_front_x=grid_cent_x+(tank_front_dist)*cos_pivot_XY*cos_pivot_XZ
+        tank_front_z=grid_cent_z-(tank_front_dist)*sin_pivot_XY*cos_pivot_XZ      
+   
+        wx0=min([grid_cent_x-neutr_diam/2.0*sin_pivot_XZ,-(r_major+r_minor*1.2),tank_front_x-tank_diam/2.0*sin_pivot_XZ,tank_front_x-tank_diam/2.0*cos_pivot_XZ])-x_marg
+        wx1=max([-r_wall*cos(phi_grid),-(r_major-r_minor*1.2),tank_front_x+tank_diam/2.0*sin_pivot_XZ,tank_front_x+tank_diam/2.0*cos_pivot_XZ])+x_marg
+        wy0=min([grid_cent_z-neutr_diam/2.0*cos_pivot_XZ,-(r_minor*elong*1.4),tank_front_z-tank_diam/2.0*cos_pivot_XZ,tank_front_z-tank_diam/2.0*sin_pivot_XZ])-y_marg
+        wy1=max([grid_cent_z+neutr_diam/2.0*cos_pivot_XZ,(r_minor*elong*1.4),tank_front_z+tank_diam/2.0*cos_pivot_XZ,tank_front_z+tank_diam/2.0*sin_pivot_XZ])+y_marg        
+            
         plot,[0,0],[1,1],color=0,background=-1,xrange=[wx0,wx1],yrange=[wy0,wy1],/nodata,ystyle=1,xstyle=1
         angl_arr=interpol([-!Pi,!Pi],200)
         oplot,[wx0,wx1],[0,0],color=0,linestyle=2
         ;plot plasma and tokamak
-        oplot,-r_major+r_minor*cos(angl_arr),r_minor*sin(angl_arr),thick=2,color=120,linestyle=0      
-        oplot,-r_major+r_minor*0.6*cos(angl_arr),r_minor*0.6*sin(angl_arr),thick=2,color=120,linestyle=0        
-        oplot,-r_major+r_minor*0.2*cos(angl_arr),r_minor*0.2*sin(angl_arr),thick=2,color=120,linestyle=0
+        n_z_int=200
+        n_r_int=1000
+        rgrid1=r_major-r_minor*1.1
+        rgrid2=r_major+r_minor*1.1
+        zgrid1=-r_minor*elong*1.1+z_major
+        zgrid2=r_minor*elong*1.1+z_major    
+        rgrid_arr = interpol([rgrid1,rgrid2],n_r_int)
+        zgrid_arr = interpol([zgrid1,zgrid2],n_z_int)
+        rgrid_arr_1 = make_array(n_r_int,/index)
+        zgrid_arr_1 = make_array(n_z_int,/index)       
+        rho_grid=fltarr(n_r_int,n_z_int)
+        rho_grid(*,*)=1.1
+        n_r_minor=5
+        r_minor_arr=interpol([0.0,r_minor],n_r_minor)
+        n_theta=500
+        theta_arr=interpol([-!Pi,!Pi],n_theta)    
+        triang=fltarr(n_theta)
+        triang(where(theta_arr gt 0))=triang_upper
+        triang(where(theta_arr le 0))=triang_lower
+        for i=0,n_r_minor-1 do begin 
+          r_new=r_major+r_minor_arr(i)*cos(theta_arr+sin(theta_arr)*asin(triang))
+          z_new=elong*r_minor_arr(i)*sin(theta_arr)+z_major
+          rho_grid(locate(rgrid_arr,r_new),locate(zgrid_arr,z_new))=r_minor_arr(i)/r_minor
+          oplot,-r_new,z_new,thick=1,color=0,linestyle=2
+          if i eq 0 then oplot,-r_new,z_new,thick=2,color=120,linestyle=1
+          if i eq n_r_minor-1 then oplot,-r_new,z_new,thick=2,color=120,linestyle=0      
+        endfor
                    
         oplot,[-r_major-r_minor*1.4,-r_major-r_minor*1.4,-r_major+r_minor*1.2,-r_major+r_minor*1.2,-r_major-r_minor*1.4],$
-        [-r_minor*2.6,r_minor*2.6,r_minor*2.6,-r_minor*2.6,-r_minor*2.6],thick=3,color=0
-        oplot,[-r_major,0.0,0.0,-r_major            ],$
-        [-r_minor,-r_minor,r_minor,r_minor],thick=2,color=120,linestyle=2  
-        oplot,[-r_major+r_minor*1.2,0.0,0.0,-r_major-r_minor*1.4],$
-        [-r_minor*2.6,-r_minor*2.6,r_minor*2.6,r_minor*2.6],thick=2,color=0,linestyle=2
+        [-r_minor*elong*1.4,r_minor*elong*1.4,r_minor*elong*1.4,-r_minor*elong*1.4,-r_minor*elong*1.4],thick=3,color=0
+         oplot,[-r_major+r_minor*1.2,0.0,0.0,-r_major-r_minor*1.4],$
+        [-r_minor*elong*1.4,-r_minor*elong*1.4,r_minor*elong*1.4,r_minor*elong*1.4],thick=2,color=0,linestyle=2
               
 
-        xyouts, 630,280,'Tokamak torus',color=0,/device,charsize=1.5
-        xyouts, 630,260,'Plasma center, inner and outer SOL',color=120,/device,charsize=1.5
+        xyouts, 630,380,'Tokamak torus',color=0,/device,charsize=1.5
+        xyouts, 630,360,'Plasma center, inner and outer SOL',color=120,/device,charsize=1.5
         ;plot beam port
         xyouts,-r_minor*3.0-r_major,-0.2,beam_port+' port',color=0,charsize=1.5
+ 
+        F_diam=(wx1-wx0)/500.0
+        F_shift=(wx1-wx0)/100.0
+        oplot,grid_cent_x+x_grid_focus*cos_pivot_XZ*cos_pivot_XY+F_diam*cos(angl_arr),$
+        grid_cent_z-x_grid_focus*sin_pivot_XZ*cos_pivot_XY+F_diam*sin(angl_arr),thick=2,color=112
+        oplot,grid_cent_x+y_grid_focus*cos_pivot_XZ*cos_pivot_XY+F_diam*cos(angl_arr),$
+        grid_cent_z-y_grid_focus*sin_pivot_XZ*cos_pivot_XY+F_diam*sin(angl_arr),thick=2,color=112       
 
-        ;plot focal point
-        dist_all_XY=sqrt((r_wall*cos(phi_wall)-r_grid*cos(phi_grid))^2.0+(r_wall*sin(phi_wall)-r_grid*sin(phi_grid))^2.0)
-        cos_b=(r_grid^2.0+dist_all_XY^2.0-r_wall^2.0)/(2.0*r_grid*dist_all_XY)
-        r_F_x=sqrt(r_grid^2.0+x_grid_focus^2.0-2.0*r_grid*x_grid_focus*cos_b)
-        phi_F_x=phi_grid+acos((r_F_x^2.0+r_grid^2.0-x_grid_focus^2.0)/(2.0*r_F_x*r_grid))*sign(phi_wall-phi_grid)
-        r_F_y=sqrt(r_grid^2.0+y_grid_focus^2.0-2.0*r_grid*y_grid_focus*cos_b)
-        phi_F_y=phi_grid+acos((r_F_y^2.0+r_grid^2.0-y_grid_focus^2.0)/(2.0*r_F_y*r_grid))*sign(phi_wall-phi_grid)
-    
-        oplot,-r_F_x*cos(phi_F_x)+0.01*cos(angl_arr),0.01*sin(angl_arr)-r_F_x*sin(phi_F_x),thick=2,color=112
-        oplot,-r_F_y*cos(phi_F_y)+0.01*cos(angl_arr),0.01*sin(angl_arr)-r_F_y*sin(phi_F_y),thick=2,color=112
-      
-        if r_F_x eq r_F_y then begin
-          xyouts,-r_F_X*cos(phi_F_X)+0.05,-r_F_X*sin(Phi_F_X),'F', color=112,charsize=2
-          xyouts, 400,240,'Grids focal radius (F)',color=112,/device,charsize=1.5
+        if x_grid_focus eq y_grid_focus then begin
+          xyouts,grid_cent_x+x_grid_focus*cos_pivot_XZ*cos_pivot_XY+F_shift,$
+          grid_cent_z-x_grid_focus*sin_pivot_XZ*cos_pivot_XY,'F', color=112,charsize=2
+          xyouts, 400,380,'Grids focal radius (F)',color=112,/device,charsize=1.5
         endif else begin
-          xyouts,-r_F_X*cos(phi_F_X)+0.05,-r_F_X*sin(Phi_F_X),'Fx', color=112,charsize=2
-          xyouts, 400,240,'Grids focal radii (Fx, Fy)',color=112,/device,charsize=1.5 
-          xyouts,-r_F_Y*cos(phi_F_Y)+0.05,-r_F_Y*sin(Phi_F_Y),'Fy', color=112,charsize=2    
+          xyouts,grid_cent_x+x_grid_focus*cos_pivot_XZ*cos_pivot_XY+F_shift,$
+          grid_cent_z-x_grid_focus*sin_pivot_XZ*cos_pivot_XY,'Fx', color=112,charsize=2
+          xyouts, 400,380,'Grids focal radii (Fx, Fy)',color=112,/device,charsize=1.5 
+          xyouts,grid_cent_x+y_grid_focus*cos_pivot_XZ*cos_pivot_XY+F_shift,$
+          grid_cent_z-y_grid_focus*sin_pivot_XZ*cos_pivot_XY,'Fy', color=112,charsize=2    
         endelse 
-        
+      
         ;plot beam centerline and grids
-        grid_cent_x=-r_grid*cos(phi_grid)
-        grid_cent_y=z_grid
-        wall_cent_x=-r_wall*cos(phi_wall)
-        wall_cent_y=z_wall
-        dist_all_XZ=sqrt((wall_cent_x-grid_cent_x)^2.0+(wall_cent_y-grid_cent_y)^2.0)
-        sin_pivot=-(wall_cent_y-grid_cent_y)/dist_all_XZ
-        cos_pivot=(wall_cent_x-grid_cent_x)/dist_all_XZ
+     
+        oplot,[grid_cent_x,wall_cent_x],[grid_cent_z,wall_cent_z],color=0,linestyle=2
 
-        oplot,[grid_cent_x,wall_cent_x],[grid_cent_y,wall_cent_y],color=0,linestyle=2
-        oplot,[grid_cent_x-max(x_bml)*sin_pivot,grid_cent_x+max(x_bml)*sin_pivot],$
-        [grid_cent_y-max(x_bml)*cos_pivot,grid_cent_y+max(x_bml)*cos_pivot],color=112,thick=6
+       ; oplot,[grid_cent_x-max(x_bml)*sin_pivot_XZ,grid_cent_x+max(x_bml)*sin_pivot_XZ],$
+       ; [grid_cent_z-max(x_bml)*cos_pivot_XZ,grid_cent_z+max(x_bml)*cos_pivot_XZ],color=112,thick=6
+        oplot,grid_cent_x+x_bml*sin_pivot_XZ-y_bml*cos_pivot_XZ*sin_pivot_XY,grid_cent_z+x_bml*cos_pivot_XZ+y_bml*sin_pivot_XZ*sin_pivot_XY,color=112,psym=3
         
-        xyouts, 60,280,'Accelerating grids',color=112,/device,charsize=1.5
-        oplot,[grid_cent_x-max(x_bml)*sin_pivot,grid_cent_x-max(x_bml)*sin_pivot+neutr_size*cos_pivot],$
-        [grid_cent_y-max(x_bml)*cos_pivot,grid_cent_y-max(x_bml)*cos_pivot-neutr_size*sin_pivot],color=96,thick=2       
-        oplot,[grid_cent_x+max(x_bml)*sin_pivot,grid_cent_x+max(x_bml)*sin_pivot+neutr_size*cos_pivot],$
-        [grid_cent_y+max(x_bml)*cos_pivot,grid_cent_y+max(x_bml)*cos_pivot-neutr_size*sin_pivot],color=96,thick=2
-        oplot,[grid_cent_x-max(x_bml)*sin_pivot+neutr_size*cos_pivot,grid_cent_x+max(x_bml)*sin_pivot+neutr_size*cos_pivot],$
-        [grid_cent_y-max(x_bml)*cos_pivot-neutr_size*sin_pivot,grid_cent_y+max(x_bml)*cos_pivot-neutr_size*sin_pivot],color=96,thick=2
-        xyouts, 60,260,'Neutralizer tube',color=96,/device,charsize=1.5
+        xyouts, 60,380,'Accelerating grids',color=112,/device,charsize=1.5
+        x_c=neutr_diam/2.0*cos(angl_arr)
+        y_c=neutr_diam/2.0*sin(angl_arr)
+        neutr_front_x= grid_cent_x+neutr_front_dist*cos_pivot_XZ*cos_pivot_XY
+        neutr_front_z= grid_cent_z-neutr_front_dist*sin_pivot_XZ*cos_pivot_XY
+        oplot,neutr_front_x+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_XY,neutr_front_z+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_XY,color=96 ,thick=2
+        oplot,neutr_front_x+neutr_size*cos_pivot_XZ*cos_pivot_XY+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_XY,$
+        neutr_front_z-neutr_size*sin_pivot_XZ*cos_pivot_XY+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_XY,color=96,thick=2     
+        oplot,[neutr_front_x-neutr_diam/2.0*sin_pivot_XZ,neutr_front_x-neutr_diam/2.0*sin_pivot_XZ+neutr_size*cos_pivot_XZ*cos_pivot_XY],$
+        [neutr_front_z-neutr_diam/2.0*cos_pivot_XZ,neutr_front_z-neutr_diam/2.0*cos_pivot_XZ-neutr_size*sin_pivot_XZ*cos_pivot_XY],color=96,thick=2            
+        oplot,[neutr_front_x+neutr_diam/2.0*sin_pivot_XZ,neutr_front_x+neutr_diam/2.0*sin_pivot_XZ+neutr_size*cos_pivot_XZ*cos_pivot_XY],$
+        [neutr_front_z+neutr_diam/2.0*cos_pivot_XZ,neutr_front_z+neutr_diam/2.0*cos_pivot_XZ-neutr_size*sin_pivot_XZ*cos_pivot_XY],color=96,thick=2
+       
+        xyouts, 60,360,'Neutralizer tube',color=96,/device,charsize=1.5
         ;plot tank
-        tank_front_x=grid_cent_x+(tank_front_dist)*cos_pivot
-        tank_front_y=grid_cent_y-(tank_front_dist)*sin_pivot      
-        oplot,[tank_front_x-tank_width/2.0*sin_pivot,tank_front_x+tank_width/2.0*sin_pivot],$
-        [tank_front_y-tank_width/2.0*cos_pivot,tank_front_y+tank_width/2.0*cos_pivot],color=0,thick=2
-        oplot,[tank_front_x-tank_width/2.0*sin_pivot,tank_front_x-tank_width/2.0*sin_pivot+tank_size*cos_pivot],$
-        [tank_front_y-tank_width/2.0*cos_pivot,tank_front_y-tank_width/2.0*cos_pivot-tank_size*sin_pivot],color=0,thick=2       
-        oplot,[tank_front_x+tank_width/2.0*sin_pivot,tank_front_x+tank_width/2.0*sin_pivot+tank_size*cos_pivot],$
-        [tank_front_y+tank_width/2.0*cos_pivot,tank_front_y+tank_width/2.0*cos_pivot-tank_size*sin_pivot],color=0,thick=2
-        oplot,[tank_front_x-tank_width/2.0*sin_pivot+tank_size*cos_pivot,tank_front_x+tank_width/2.0*sin_pivot+tank_size*cos_pivot],$
-        [tank_front_y-tank_width/2.0*cos_pivot-tank_size*sin_pivot,tank_front_y+tank_width/2.0*cos_pivot-tank_size*sin_pivot],color=0,thick=2
-        xyouts, 230,280,'Beam tank',color=0,/device,charsize=1.5
+        x_c=tank_diam/2.0*cos(angl_arr)
+        y_c=tank_diam/2.0*sin(angl_arr)     
+        tank_front_x=grid_cent_x+(tank_front_dist)*cos_pivot_XZ*cos_pivot_XY
+        tank_front_z=grid_cent_z-(tank_front_dist)*sin_pivot_XZ*cos_pivot_XY     
+        oplot,tank_front_x+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_XY,tank_front_z+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_XY,color=0 ,thick=2
+        oplot,tank_front_x+tank_size*cos_pivot_XZ*cos_pivot_XY+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_XY,$
+        tank_front_z-tank_size*sin_pivot_XZ*cos_pivot_XY+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_XY,color=0,thick=2 
+        oplot,[tank_front_x-tank_diam/2.0*sin_pivot_XZ,tank_front_x-tank_diam/2.0*sin_pivot_XZ+tank_size*cos_pivot_XZ*cos_pivot_XY],$
+        [tank_front_z-tank_diam/2.0*cos_pivot_XZ,tank_front_z-tank_diam/2.0*cos_pivot_XZ-tank_size*sin_pivot_XZ*cos_pivot_XY],color=0,thick=2       
+        oplot,[tank_front_x+tank_diam/2.0*sin_pivot_XZ,tank_front_x+tank_diam/2.0*sin_pivot_XZ+tank_size*cos_pivot_XZ*cos_pivot_XY],$
+        [tank_front_z+tank_diam/2.0*cos_pivot_XZ,tank_front_z+tank_diam/2.0*cos_pivot_XZ-tank_size*sin_pivot_XZ*cos_pivot_XY],color=0,thick=2
+ 
+        xyouts, 230,380,'Beam tank',color=0,/device,charsize=1.5
        ;plot deflection magnet
-        magnet_front_x=grid_cent_x+(tank_front_dist+tank_magnet_dist)*cos_pivot
-        magnet_front_y=grid_cent_y-(tank_front_dist+tank_magnet_dist)*sin_pivot      
-        oplot,[magnet_front_x-magnet_width/2.0*sin_pivot,magnet_front_x+magnet_width/2.0*sin_pivot],$
-        [magnet_front_y-magnet_width/2.0*cos_pivot,magnet_front_y+magnet_width/2.0*cos_pivot],color=64,thick=2
-        oplot,[magnet_front_x-magnet_width/2.0*sin_pivot,magnet_front_x-magnet_width/2.0*sin_pivot+magnet_size*cos_pivot],$
-        [magnet_front_y-magnet_width/2.0*cos_pivot,magnet_front_y-magnet_width/2.0*cos_pivot-magnet_size*sin_pivot],color=64 ,thick=2      
-        oplot,[magnet_front_x+magnet_width/2.0*sin_pivot,magnet_front_x+magnet_width/2.0*sin_pivot+magnet_size*cos_pivot],$
-        [magnet_front_y+magnet_width/2.0*cos_pivot,magnet_front_y+magnet_width/2.0*cos_pivot-magnet_size*sin_pivot],color=64,thick=2
-        oplot,[magnet_front_x-magnet_width/2.0*sin_pivot+magnet_size*cos_pivot,magnet_front_x+magnet_width/2.0*sin_pivot+magnet_size*cos_pivot],$
-        [magnet_front_y-magnet_width/2.0*cos_pivot-magnet_size*sin_pivot,magnet_front_y+magnet_width/2.0*cos_pivot-magnet_size*sin_pivot],color=64,thick=2
-        xyouts, 230,260,'Deflection magnet',color=64,/device,charsize=1.5
+        if magnet_size ne 0.0 then begin
+          x_c=magnet_diam/2.0*cos(angl_arr)
+          y_c=magnet_diam/2.0*sin(angl_arr)    
+          magnet_front_x=grid_cent_x+(tank_front_dist+tank_magnet_dist)*cos_pivot_XZ*cos_pivot_XY
+          magnet_front_z=grid_cent_z-(tank_front_dist+tank_magnet_dist)*sin_pivot_XZ*cos_pivot_XY
+          oplot,magnet_front_x+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_XY,magnet_front_z+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_XY,color=64 ,thick=2
+          oplot,magnet_front_x+magnet_size*cos_pivot_XZ*cos_pivot_XY+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_XY,$
+          magnet_front_z-magnet_size*sin_pivot_XZ*cos_pivot_XY+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_XY,color=64,thick=2       
+          oplot,[magnet_front_x-magnet_diam/2.0*sin_pivot_XZ,magnet_front_x-magnet_diam/2.0*sin_pivot_XZ+magnet_size*cos_pivot_XZ*cos_pivot_XY],$
+          [magnet_front_z-magnet_diam/2.0*cos_pivot_XZ,magnet_front_z-magnet_diam/2.0*cos_pivot_XZ-magnet_size*sin_pivot_XZ*cos_pivot_XY],color=64 ,thick=2      
+          oplot,[magnet_front_x+magnet_diam/2.0*sin_pivot_XZ,magnet_front_x+magnet_diam/2.0*sin_pivot_XZ+magnet_size*cos_pivot_XZ*cos_pivot_XY],$
+          [magnet_front_z+magnet_diam/2.0*cos_pivot_XZ,magnet_front_z+magnet_diam/2.0*cos_pivot_XZ-magnet_size*sin_pivot_XZ*cos_pivot_XY],color=64,thick=2
+          xyouts, 230,360,'Deflection magnet',color=64,/device,charsize=1.5
+        endif
         ;plot calorimeter
-        cal_front_x=grid_cent_x+(tank_front_dist+tank_size+tank_cal_dist)*cos_pivot
-        cal_front_y=grid_cent_y-(tank_front_dist+tank_size+tank_cal_dist)*sin_pivot      
-        oplot,[cal_front_x-cal_width/2.0*sin_pivot,cal_front_x+cal_width/2.0*sin_pivot],$
-        [cal_front_y-cal_width/2.0*cos_pivot,cal_front_y+cal_width/2.0*cos_pivot],color=0,thick=1,linestyle=3
-        oplot,[cal_front_x-cal_width/2.0*sin_pivot,cal_front_x-cal_width/2.0*sin_pivot+cal_size*cos_pivot],$
-        [cal_front_y-cal_width/2.0*cos_pivot,cal_front_y-cal_width/2.0*cos_pivot-cal_size*sin_pivot],color=160 ,thick=8     
-        oplot,[cal_front_x+cal_width/2.0*sin_pivot,cal_front_x+cal_width/2.0*sin_pivot+cal_size*cos_pivot],$
-        [cal_front_y+cal_width/2.0*cos_pivot,cal_front_y+cal_width/2.0*cos_pivot-cal_size*sin_pivot],color=160,thick=8
-        oplot,[cal_front_x-cal_width/2.0*sin_pivot+cal_size*cos_pivot,cal_front_x+cal_width/2.0*sin_pivot+cal_size*cos_pivot],$
-        [cal_front_y-cal_width/2.0*cos_pivot-cal_size*sin_pivot,cal_front_y+cal_width/2.0*cos_pivot-cal_size*sin_pivot],color=0,thick=1,linestyle=3
-        xyouts, 400,280,'Calorimeter',color=160,/device,charsize=1.5                    
+        if tank_cal_dist ne 0.0 then begin
+          x_c=cal_diam/2.0*cos(angl_arr)
+          y_c=cal_diam/2.0*sin(angl_arr)    
+          cal_front_x=grid_cent_x+(tank_front_dist+tank_size+tank_cal_dist)*cos_pivot_XZ*cos_pivot_XY
+          cal_front_z=grid_cent_z-(tank_front_dist+tank_size+tank_cal_dist)*sin_pivot_XZ*cos_pivot_XY
+          oplot,cal_front_x+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_XY,cal_front_z+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_XY,color=160 ,thick=2
+          oplot,cal_front_x+cal_size*cos_pivot_XZ*cos_pivot_XY+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_XY,$
+          cal_front_z-cal_size*sin_pivot_XZ*cos_pivot_XY+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_XY,color=160,thick=2     
+          oplot,[cal_front_x-cal_diam/2.0*sin_pivot_XZ,cal_front_x-cal_diam/2.0*sin_pivot_XZ+cal_size*cos_pivot_XZ*cos_pivot_XY],$
+          [cal_front_z-cal_diam/2.0*cos_pivot_XZ,cal_front_z-cal_diam/2.0*cos_pivot_XZ-cal_size*sin_pivot_XZ*cos_pivot_XY],color=160 ,thick=2     
+          oplot,[cal_front_x+cal_diam/2.0*sin_pivot_XZ,cal_front_x+cal_diam/2.0*sin_pivot_XZ+cal_size*cos_pivot_XZ*cos_pivot_XY],$
+          [cal_front_z+cal_diam/2.0*cos_pivot_XZ,cal_front_z+cal_diam/2.0*cos_pivot_XZ-cal_size*sin_pivot_XZ*cos_pivot_XY],color=160,thick=2
+          xyouts, 400,340,'Calorimeter',color=160,/device,charsize=1.5                    
+        endif
         ;plot limiters
         for i=0,n_limiters-1 do begin
           z_pos=float(limiters_table(1,i))
-          z_size=float(limiters_table(2,i))
-          diam=float(limiters_table(3,i))
-          x_size=float(limiters_table(4,i))
-          y_size=float(limiters_table(5,i))
+          lim_size=float(limiters_table(2,i))
+          lim_diam=float(limiters_table(3,i))
+          x_size=float(limiters_table(4,i))/2.0
+          y_size=float(limiters_table(5,i))/2.0
           r_lim =float(limiters_table(6,i)) 
           if finite(r_lim) then begin
             oplot,r_lim*cos(angl_arr),r_lim*sin(angl_arr),color=48,thick=2
           endif else begin
-            lim_front_x=grid_cent_x+(z_pos)*cos_pivot
-            lim_front_y=grid_cent_y-(z_pos)*sin_pivot      
-            if finite(diam) then lim_width=diam else lim_width=x_size 
-            oplot,[lim_front_x+lim_width/2.0*sin_pivot,lim_front_x+lim_width/2.0*sin_pivot+z_size*cos_pivot],$
-            [lim_front_y+lim_width/2.0*cos_pivot,lim_front_y+lim_width/2.0*cos_pivot-z_size*sin_pivot],color=48,thick=2
-            oplot,[lim_front_x-lim_width/2.0*sin_pivot,lim_front_x-lim_width/2.0*sin_pivot+z_size*cos_pivot],$
-            [lim_front_y-lim_width/2.0*cos_pivot,lim_front_y-lim_width/2.0*cos_pivot-z_size*sin_pivot],color=48,thick=2
-          endelse  
+            lim_front_x=grid_cent_x+(z_pos)*cos_pivot_XZ*cos_pivot_XY
+            lim_front_z=grid_cent_z-(z_pos)*sin_pivot_XZ*cos_pivot_XY
+            lim_back_x=lim_front_x+lim_size*cos_pivot_XZ*cos_pivot_XY
+            lim_back_z=lim_front_z-lim_size*sin_pivot_XZ*cos_pivot_XY     
+            if finite(lim_diam) then begin
+              x_c=lim_diam/2.0*cos(angl_arr)
+              y_c=lim_diam/2.0*sin(angl_arr)
+              oplot,lim_front_x+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_XY,lim_front_z+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_XY,color=48 ,thick=2
+              oplot,lim_front_x+lim_size*cos_pivot_XZ*cos_pivot_XY+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_XY,$
+              lim_front_z-lim_size*sin_pivot_XZ*cos_pivot_XY+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_XY,color=48,thick=2 
+              oplot,[lim_front_x+lim_diam/2.0*sin_pivot_XZ,lim_back_x+lim_diam/2.0*sin_pivot_XZ],$
+              [lim_front_z+lim_diam/2.0*cos_pivot_XZ,lim_back_z+lim_diam/2.0*cos_pivot_XZ],color=48,thick=2
+              oplot,[lim_front_x-lim_diam/2.0*sin_pivot_XZ,lim_back_x-lim_diam/2.0*sin_pivot_XZ],$
+              [lim_front_z-lim_diam/2.0*cos_pivot_XZ,lim_back_z-lim_diam/2.0*cos_pivot_XZ],color=48,thick=2
+            endif else begin 
+              oplot,[lim_front_x-y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_XY,lim_back_x-y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_XY],$
+              [lim_front_z-y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_XY,lim_back_z-y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_XY],color=48,thick=2
+              oplot,[lim_front_x-y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_XY,lim_back_x-y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_XY],$
+              [lim_front_z-y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_XY,lim_back_z-y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_XY],color=48,thick=2
+              oplot,[lim_front_x+y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_XY,lim_back_x+y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_XY],$
+              [lim_front_z+y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_XY,lim_back_z+y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_XY],color=48,thick=2
+              oplot,[lim_front_x+y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_XY,lim_back_x+y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_XY],$
+              [lim_front_z+y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_XY,lim_back_z+y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_XY],color=48,thick=2
+              oplot,[lim_front_x-y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_XY,lim_front_x-y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_XY],$
+              [lim_front_z-y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_XY,lim_front_z-y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_XY],color=48,thick=2
+              oplot,[lim_front_x-y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_XY,lim_front_x+y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_XY],$
+              [lim_front_z-y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_XY,lim_front_z+y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_XY],color=48,thick=2
+              oplot,[lim_front_x+y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_XY,lim_front_x+y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_XY],$
+              [lim_front_z+y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_XY,lim_front_z+y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_XY],color=48,thick=2
+              oplot,[lim_front_x+y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_XY,lim_front_x-y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_XY],$
+              [lim_front_z+y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_XY,lim_front_z-y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_XY],color=48,thick=2
+              oplot,[lim_back_x-y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_XY,lim_back_x-y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_XY],$
+              [lim_back_z-y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_XY,lim_back_z-y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_XY],color=48,thick=2
+              oplot,[lim_back_x-y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_XY,lim_back_x+y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_XY],$
+              [lim_back_z-y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_XY,lim_back_z+y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_XY],color=48,thick=2
+              oplot,[lim_back_x+y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_XY,lim_back_x+y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_XY],$
+              [lim_back_z+y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_XY,lim_back_z+y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_XY],color=48,thick=2
+              oplot,[lim_back_x+y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_XY,lim_back_x-y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_XY],$
+              [lim_back_z+y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_XY,lim_back_z-y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_XY],color=48,thick=2
+            endelse
+         endelse
        endfor
-       xyouts, 400,260,'Beam limiters (beam duct)',color=48,/device,charsize=1.5
+       xyouts, 400,360,'Beam limiters (beam duct)',color=48,/device,charsize=1.5  
        endif
      endif   
     end
@@ -17615,7 +17941,7 @@ common effective_charge, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_e
 common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains some of the settings for loading of
 ;the input data used for the beam attenuation and penetration
 ;calculation 
@@ -17943,9 +18269,17 @@ case ev.id of
        Phi_wall=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:PHI_wall', status=st27,/quiet) 
        tank_front_dist=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:TANK_FRONT', status=st28,/quiet)
        tank_size=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:TANK_SIZE', status=st29,/quiet)
+       tank_diam=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:TANK_DIAM', status=st291,/quiet)
+       if (not(st291)) then tank_diam = 1.0
+       neutr_front_dist=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:NEUTR_FRONT', status=st302,/quiet)
+       if (not(st302)) then neutr_front_dist = 0.0
        neutr_size=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:NEUTR_SIZE', status=st30,/quiet)
+       neutr_diam=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:NEUTR_DIAM', status=st301,/quiet)
+       if (not(st301)) then neutr_diam = 0.2
        tank_magnet_dist=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:TANK_MAGNET', status=st31,/quiet)
        magnet_size=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:MAGNET_SIZE', status=st32,/quiet)
+       magnet_diam=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:MAGNET_DIAM', status=st321,/quiet)
+       if (not(st321)) then magnet_diam = 0.2
        tank_cal_dist=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:TANK_CAL', status=st33,/quiet)
        beam_apertures=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:BEAM_APERTUR', status=st34,/quiet)
        grid_ap_diam=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:GRID_AP_DIAM', status=st35,/quiet)     
@@ -18652,9 +18986,13 @@ case ev.id of
          MDSTCL,'ADD NODE PHI_WALL/USAGE=NUMERIC'   ;add PHI_wall node
          MDSTCL,'ADD NODE TANK_FRONT/USAGE=NUMERIC'   ;add tank_front node
          MDSTCL,'ADD NODE TANK_SIZE/USAGE=NUMERIC'   ;add tank_size node
+         MDSTCL,'ADD NODE TANK_DIAM/USAGE=NUMERIC'   ;add tank_diam node
+         MDSTCL,'ADD NODE NEUTR_FRONT/USAGE=NUMERIC'   ;add neutr_front_dist node
          MDSTCL,'ADD NODE NEUTR_SIZE/USAGE=NUMERIC'   ;add neutr_size node
+         MDSTCL,'ADD NODE NEUTR_DIAM/USAGE=NUMERIC'   ;add neutr_diam node
          MDSTCL,'ADD NODE TANK_MAGNET/USAGE=NUMERIC'   ;add tank_magnet node
          MDSTCL,'ADD NODE MAGNET_SIZE/USAGE=NUMERIC'   ;add magnet_size node
+         MDSTCL,'ADD NODE MAGNET_DIAM/USAGE=NUMERIC'   ;add magnet_diam node
          MDSTCL,'ADD NODE TANK_CAL/USAGE=NUMERIC'   ;add tank_cal node
         
          MDSTCL,'SET DEFAULT \DNB::TOP.ALCBEAM.'+user_up+'.'+run_number+'.INPUT'
@@ -18795,9 +19133,13 @@ case ev.id of
          MDSTCL,'ADD NODE PHI_WALL/USAGE=NUMERIC'   ;add PHI_wall node
          MDSTCL,'ADD NODE TANK_FRONT/USAGE=NUMERIC'   ;add tank_front node
          MDSTCL,'ADD NODE TANK_SIZE/USAGE=NUMERIC'   ;add tank_size node
+         MDSTCL,'ADD NODE TANK_DIAM/USAGE=NUMERIC'   ;add tank_diam node
+         MDSTCL,'ADD NODE NEUTR_FRONT/USAGE=NUMERIC'   ;add neutr_front_dist node
          MDSTCL,'ADD NODE NEUTR_SIZE/USAGE=NUMERIC'   ;add neutr_size node
+         MDSTCL,'ADD NODE NEUTR_DIAM/USAGE=NUMERIC'   ;add neutr_diam node
          MDSTCL,'ADD NODE TANK_MAGNET/USAGE=NUMERIC'   ;add tank_magnet node
          MDSTCL,'ADD NODE MAGNET_SIZE/USAGE=NUMERIC'   ;add magnet_size node
+         MDSTCL,'ADD NODE MAGNET_DIAM/USAGE=NUMERIC'   ;add magnet_diam node
          MDSTCL,'ADD NODE TANK_CAL/USAGE=NUMERIC'   ;add tank_cal node
 
            
@@ -18920,9 +19262,13 @@ case ev.id of
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.Phi_wall',"$",phi_wall
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.tank_front',"$",tank_front_dist
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.tank_size',"$",tank_size
+       MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.tank_diam',"$",tank_diam
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.neutr_size',"$",neutr_size
+       MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.neutr_front',"$",neutr_front_dist
+       MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.neutr_diam',"$",neutr_diam
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.tank_magnet',"$",tank_magnet_dist
-       MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.magnet_size',"$",magnet_size        
+       MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.magnet_size',"$",magnet_size
+       MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.magnet_diam',"$",magnet_diam,neutr_front_dist       
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.tank_cal',"$",tank_cal_dist
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.beam_apertur',"$",[[x_bml],[y_bml]]
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.grid_ap_diam',"$",grid_ap_diam
@@ -20023,7 +20369,7 @@ common draw_request,draw_req
 common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains some of the settings for loading of
 ;the input data used for the beam attenuation and penetration
 ;calculation 
@@ -20069,7 +20415,7 @@ common settings_file, save_set_file
 ;graph to the file"
 common export_file, export_file,export_sel,export_flag
 
-  alcbeam_ver='4.6'
+  alcbeam_ver='4.7'
   ;debuging parameter (default=1:catch errors, debug=0:pass errors)  
   error_catch=1
   st_err=0;initial error status 0
@@ -20148,7 +20494,7 @@ common export_file, export_file,export_sel,export_flag
   ;grid_arr
   code_grid_arr={z:[0.0,0.0,0.0,0.0,0.0],x:[0.0,0.0,0.0],y:[0.0,0.0,0.0]}
   ;beam_geometry
-  x_bml=0.0 & y_bml=0.0 & grid_ap_diam=0.0 & x_grid_focus=0.0 & y_grid_focus=0.0 & beam_port='?' & r_grid=0.0 & z_grid=0.0 & phi_grid=0.0 & r_wall=0.0 & z_wall=0.0 & phi_wall=0.0 & tank_front_dist=0.0 & tank_size=0.0 & neutr_size=0.0
+  x_bml=0.0 & y_bml=0.0 & grid_ap_diam=0.0 & x_grid_focus=0.0 & y_grid_focus=0.0 & beam_port='?' & r_grid=0.0 & z_grid=0.0 & phi_grid=0.0 & r_wall=0.0 & z_wall=0.0 & phi_wall=0.0 & tank_front_dist=0.0 & tank_size=0.0 & neutr_size=0.0 & tank_diam=0.0 & neutr_diam=0.0 & magnet_diam=0.0 & neutr_front_dist=0.0
   tank_magnet_dist=0.0 & magnet_size=0.0 & tank_cal_dist=0.0
   ;beam_param
   beam_atom='H' & e_full=0.0 & E_frac=[1.0,1.0,1.0,1.0] & I_beam=0.0 & I_frac=[0.0,0.0,0.0,0.0] & I_opt=0.0 & I_dens_par=0.0 & neutr_dens_ns_tot=0.0 & neutr_dens_frac=[0.0,0.0,0.0,0.0] & x_div_bml_opt=0.0 & y_div_bml_opt=0.0 & div_dist_par=0.0
