@@ -4,7 +4,14 @@ ALCBEAM
 >>>>LICENSE AGREEMENT (9 Dec 2012)
 ALCBEAM code development is funded by the US Department of Energy
 (DoE), and distribution is subject to DoE requirements and
-restrictions.
+restrictions:
+
+This material was prepared as an account of work sponsored by an agency of the United States Government. Neither the United States Government nor the United States Department of Energy, nor any of their employees, makes any warranty, express or implied, or assumes any legal liability or responsibility for the accuracy, completeness, or usefulness of any information, apparatus, product, or process disclosed, or represents that its use would not infringe privately owned rights.
+
+Development of the ALCBEAM code was done under U.S. Department of Energy Grant
+Number DE-FG-96ER54373. Acknowledgement should be made for data published from
+this code.
+
 
 In order to acquire access to the ALCBEAM code source, the recipient agrees:
 
