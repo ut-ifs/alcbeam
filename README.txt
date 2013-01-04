@@ -7,11 +7,17 @@ ALCBEAM code development is funded by the US Department of Energy
 (DoE), and distribution is subject to DoE requirements and
 restrictions:
 
-This material was prepared as an account of work sponsored by an agency of the United States Government. Neither the United States Government nor the United States Department of Energy, nor any of their employees, makes any warranty, express or implied, or assumes any legal liability or responsibility for the accuracy, completeness, or usefulness of any information, apparatus, product, or process disclosed, or represents that its use would not infringe privately owned rights.
+This material was prepared as an account of work sponsored by an agency of the 
+United States Government. Neither the United States Government nor the United States 
+Department of Energy, nor any of their employees, makes any warranty, express or implied, 
+or assumes any legal liability or responsibility for the accuracy, completeness, 
+or usefulness of any information, apparatus, product, or process disclosed, or represents 
+that its use would not infringe privately owned rights.
 
 Development of the ALCBEAM code was done under U.S. Department of Energy Grant
 Number DE-FG-96ER54373. Acknowledgement should be made for data published from
-this code. 
+this code.
+
 
 In order to acquire access to the ALCBEAM code source, the recipient agrees:
 
@@ -30,11 +36,16 @@ Rowan and K.T. Liao, Comput. Phys. Comm. 2012 v183 i3 669-676)
 
 
 >>>INTRODUCTION
-ALCBEAM is a three-dimensional neutral beam formation and propagation code. It is developed as a supplemental tool for beam-based plasma diagnostics at Alcator C-Mod tokamak.
-It can be used for simulation of the neutral beams used on other tokamaks, stellarators or other magnetic fusion devices.
-The code effectively unifies the beam formation and extraction processes with beam attenuation and excitation in plasma and residual gas in the beam duct. 
-The goal of the code is to provide reliable estimates of the local beam equilibrium parameters: such as beam energy fractions, density profiles and excitation populations.
-The extraction model uses the semi-empirical description to simulate the processes in the beam ion source which effect the beam formation.
+ALCBEAM is a three-dimensional neutral beam formation and propagation code. 
+It is developed as a supplemental tool for beam-based plasma diagnostics at Alcator C-Mod tokamak.
+It can be used for simulation of the neutral beams used on other tokamaks, stellarators or other 
+magnetic fusion devices.
+The code effectively unifies the beam formation and extraction processes with beam attenuation 
+and excitation in plasma and residual gas in the beam duct. 
+The goal of the code is to provide reliable estimates of the local beam equilibrium parameters: 
+such as beam energy fractions, density profiles and excitation populations.
+The extraction model uses the semi-empirical description to simulate the processes in the beam ion 
+source which effect the beam formation.
 
 
 >>>OPERATING SYSTEM
@@ -67,7 +78,8 @@ IDL> alcbeam
 
 
 >>>TO READ AND PREVIEW TEST OUTPUT DATA
-1) Chage the path in the test box (under the 'Read/View Results from Previous Runs") to the directory, where DNBI_TEST.abo file is located.
+1) Chage the path in the test box (under the 'Read/View Results from Previous Runs") to the directory, 
+where DNBI_TEST.abo file is located.
 2) Hit the "Search Available Runs" button.
 3) Select DNBI_TEST.abo in the box to the right.
 4) Hit "Read Results" button. Output data is extracted from the file and is ready for preview.
