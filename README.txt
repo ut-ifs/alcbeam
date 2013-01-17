@@ -109,14 +109,3 @@ where DNBI_TEST.abo file is located.
 19) Once the calculation is finished the output data is saved into the *.abo file.
 20) Use the 'Plot" button to plot the output data.
 21) All the plots can be exported into png image or ascii-text files.
-
-
-
-
-
-
-
-
-
-
-
