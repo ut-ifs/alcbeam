@@ -20433,13 +20433,14 @@ common export_file, export_file,export_sel,export_flag
   run=1
   spawn,'echo $USER',user
   spawn,'echo $HOSTNAME',hostname
+  spawn,'echo $HOME',file_dir
   hostname=hostname(0)
   user=user(0)
+  file_dir=file_dir(0)
   cd, current=cur_dir
-  file_dir='/home/'+user
   cd, file_dir
   dir1=file_search('alcbeam',count=count,/test_directory)
-  if count eq 1 then file_dir='/home/'+user+'/alcbeam'
+  if count eq 1 then file_dir=file_dir+'/alcbeam'
   cd, cur_dir
   adas_dir='/usr/local/cmod/codes/dnb/alcbeam/adas'
   ;load settings
