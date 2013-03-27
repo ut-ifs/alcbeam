@@ -1799,7 +1799,7 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
       ,XOFFSET=3, YOFFSET=392, SCR_XSIZE=220 , SCR_YSIZE=33 $
       ,VALUE= 'Decrease number of grid apertures:' ,XSIZE=5 ,YSIZE=23,/Align_left)     
      
-      grid_aper_names=transpose((' Every '+string(make_array((n_elements(x_bml)/60),/index)*2,format='(I3)')+' aperture '))     
+      grid_aper_names=transpose((' Every '+string([0,2,5,10],format='(I3)')+' aperture '))     
       grid_aper_names(0)=' All apertures'
       Grid_Aper_Type_Droplist=Widget_Droplist(Construct_Settings_Base, UNAME='Grid_Aper_Type_Droplist'$
       ,XOFFSET=220,YOFFSET=391,XSIZE=100,YSIZE=15,value=Grid_Aper_names)
@@ -3916,7 +3916,7 @@ endif
 if n_elements(n_e) le 1 and n_elements(n_e_r) le 1 and n_elements(n_e_err) le 1 and n_elements(n_e_raw) gt 1 and n_elements(n_e_raw_r) gt 1 and n_elements(n_e_raw_err) gt 1 then begin
   n_e=n_e_raw
   n_e_r=n_e_raw_r
-  n_e_err=n_e_r_err
+  n_e_err=n_e_raw_err
   st=st+3
   Widget_control, status_wid, Get_Value=status_tx
   Widget_Control, status_wid,$
@@ -4307,7 +4307,7 @@ endif
 if n_elements(t_e) le 1 and n_elements(t_e_r) le 1 and n_elements(t_e_err) le 1 and n_elements(t_e_raw) gt 1 and n_elements(t_e_raw_r) gt 1 and n_elements(t_e_raw_err) gt 1 then begin
   t_e=t_e_raw
   t_e_r=t_e_raw_r
-  t_e_err=t_e_r_err
+  t_e_err=t_e_raw_err
   st=st+3
   Widget_control, status_wid, Get_Value=status_tx
   Widget_Control, status_wid,$
@@ -20415,7 +20415,7 @@ common settings_file, save_set_file
 ;graph to the file"
 common export_file, export_file,export_sel,export_flag
 
-  alcbeam_ver='4.7'
+  alcbeam_ver='4.8'
   ;debuging parameter (default=1:catch errors, debug=0:pass errors)  
   error_catch=1
   st_err=0;initial error status 0
