@@ -2971,7 +2971,6 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
       ,row_labels=['x_beam, m','y_beam, m']$
       ,/editable,Frame=1,column_width=35,row_heights=20,value=[[string(code_grid_arr.x,format='(F6.3)')],[string(code_grid_arr.y,format='(F6.3)')]],FORMAT = '(F6.3)')
 
-      print,code_grid_arr.x
        Code_Save_Grid_Button = Widget_Button(Code_Grid_Base, UNAME='Code_Save_Grid_Button'  $
       ,XOFFSET=1, YOFFSET=225, SCR_XSIZE=80, SCR_YSIZE=25 $
       ,VALUE= 'Save' ,XSIZE=25 ,YSIZE=25, /Align_Center)
@@ -8665,6 +8664,7 @@ duct_pressure_loc=0.0
 tank_diam=1.0
 magnet_diam=0.2
 neutr_diam=0.2
+neutr_front_dist=0.0
 
 vel_dis_type=1 ;default
 vel_vec_coef=0
@@ -9185,7 +9185,7 @@ if vel_dis_type eq 1 and st lt 72 then begin
   Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Full set of output data is missing in the file']], Set_text_top_line=n_elements(status_tx)-4
   st_err=1
 endif
-if vel_dis_type eq 0 and st ne 76 then begin
+if vel_dis_type eq 0 and st lt 76 then begin
   Widget_control, status_wid, Get_Value=status_tx
   Widget_Control, status_wid,$
   Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Full set of output data is missing in the file']], Set_text_top_line=n_elements(status_tx)-4
@@ -16174,7 +16174,7 @@ case ev.id of
    Widget_Info(ev.id, FIND_BY_UNAME='Code_Save_Grid_Button'): begin
     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Code_Grid_Table1'),Get_value=code_grid_arr1
     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Code_Grid_Table2'),Get_value=code_grid_arr2
-    code_grid_arr={z:code_grid_arr1,x:code_grid_arr2(*,0),y:code_grid_arr2(*,1)}
+    code_grid_arr={z:float(code_grid_arr1),x:float(code_grid_arr2(*,0)),y:float(code_grid_arr2(*,1))}
     Widget_control, status_wid, Get_Value=status_tx
     Widget_Control, status_wid,$
     Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Code Grid/Mesh were saved']], Set_text_top_line=n_elements(status_tx)-4
