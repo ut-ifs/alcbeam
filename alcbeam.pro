@@ -3,9 +3,6 @@
 function mdsvalue,a
   return,a
 end
-function efit_rz2rho,a
-  return,a
-end
 
 pro mdsopen,a
 end
@@ -620,7 +617,7 @@ ENDIF ELSE BEGIN
 
 
 ;-------------------------------------------------------------------------------------------------------------------------
-;Fuction is used to average the 2D array over the second dimention, NANs
+;Fuction is used to average the 2D array over the second dimension, NANs
 ;are not included in the averading 
 ;------------------------------------------------------------------------------------------------------------------------- 
 function mean2d, arr
@@ -2045,7 +2042,7 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
       ,VALUE= 'Plasma Geometry from :' ,XSIZE=5 ,YSIZE=23,/Align_left)
  
       Plasma_Geom_Type_Droplist=Widget_Droplist(Load_Settings_Base, UNAME='Plasma_Geom_Type_Droplist'$
-      ,XOFFSET=190,YOFFSET=227,XSIZE=100,YSIZE=15,value=[['EFIT (MDSPLUS) '],['*.abi input file   '],['skip']])
+      ,XOFFSET=190,YOFFSET=227,XSIZE=100,YSIZE=15,value=[['EFIT (MDSPLUS) '],['EFIT(EQDSK files)'],['*.abi input file  '],['skip']])
 
       Widget_Control, Plasma_Geom_Type_Droplist,Set_droplist_select=plasma_geom_type     
       
@@ -4874,8 +4871,100 @@ end
 
 
 ;-------------------------------------------------------------------------------------------------------------------------
-;Procedure which constructs 3D plasma rho surfaces either from output data of
-;the efit_rz2rho.pro code or from Equllibrium formula using calculated
+;Procedure which loads plasma geometry parameters from the EFIT file
+;-------------------------------------------------------------------------------------------------------------------------
+Pro load_plasma_geom_efit_file
+;The following common block contains the parameters which describe the geometry
+;and position of the tokamak  plasma.
+common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
+
+;The following common block contains some of the settings for loading of
+;the input data used for the beam attenuation and penetration
+;calculation. ;The following common block contains the name of the input file from which the input
+;data is extracted 
+common load_settings, load_set_def,load_choice,general_type, general_file, beam_geom_type,beam_geom_file,beam_lim_type,beam_lim_file,beam_param_type,beam_param_file,$
+ne_type,ne_file,te_type,te_file,z_eff_type,z_eff_file,plasma_geom_type,plasma_geom_file,gas_type,gas_file,grid_type,grid_file,plasma_param_type,plasma_param_file
+; The following common block contains general parameters: which user,
+; what beam, what shot and time interval
+common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
+;The following common block is used to transfer the pointer to the
+;status window and availability states of each data set
+common status, status_wid,error_catch,st_err  
+
+;Error handler---------------------------------------
+if error_catch then begin
+   Catch,error_status
+   if error_status ne 0 then begin
+     err_msg=strjoin(strsplit(!Error_State.MSG,string(10B),/extract))
+     Widget_control, status_wid, Get_Value=status_tx
+     Widget_Control, status_wid,$
+     Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+$
+' : IDL Error. Error Status: '+strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line=n_elements(status_tx)-4
+     catch,/cancel
+     st_err=1
+     return
+   endif
+ endif
+;----------------------------------------------------- 
+afiles = strsplit(plasma_geom_file,'*',/extract)
+afiles = afiles(0)+'a'+shot+'.*'
+afiles_all=file_search(afiles)
+if n_elements(afiles_all) le 1 then begin
+    Widget_control, status_wid, Get_Value=status_tx
+    Widget_Control, status_wid,$
+    Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+$
+' : There are no EFIT files available for selected time interval']], Set_text_top_line=n_elements(status_tx)-4
+    st_err=1
+    return
+endif
+afiles = ""
+;only consider times within time interval
+for i=0, n_elements(afiles_all)-1 do begin
+   tfile = float((strsplit(afiles_all(i),'.',/extract))(1))/1000.0
+   if  tfile ge t1 and tfile le t2 then afiles = [afiles,afiles_all(i)]
+endfor
+afiles=afiles[1:n_elements(afiles)-1]
+; Establish formats for formatted reads
+form1040 = '(1x,4e16.9)'
+rout = fltarr(n_elements(afiles))
+zout = fltarr(n_elements(afiles))
+aout = fltarr(n_elements(afiles))
+eout = fltarr(n_elements(afiles))
+doutu = fltarr(n_elements(afiles))
+doutl = fltarr(n_elements(afiles))
+temp="line"
+for i=0, n_elements(afiles)-1 do begin
+  ;reading afile
+   close,1
+   openr,1,afiles(i)
+   readf,1,temp
+   readf,1,temp
+   readf,1,temp
+   readf,1,temp
+   readf,1,temp
+   readf,1,form=form1040,a,b,c,d
+   rout(i) = float(b)
+   zout(i) = float(c)
+   aout(i) = float(d)
+   readf,1,form=form1040,a,b,c,d
+   eout(i) = float(a)
+   doutu(i) = float(b)
+   doutl(i) = float(c)
+   close,1
+endfor
+r_major= mean(rout)/100.0
+z_major=mean(zout)/100.0
+r_minor=mean(aout)/100.0
+elong=mean(eout)
+triang_upper=mean(doutu)
+triang_lower=mean(doutl)
+end
+;-------------------------------------------------------------------------------------------------------------------------
+
+
+;-------------------------------------------------------------------------------------------------------------------------
+;Procedure which constructs 3D plasma rho surfaces either from input data or
+;from EFIT parameters and 
 ;"plasma geometry" parameters.
 ;-------------------------------------------------------------------------------------------------------------------------
 
@@ -4886,6 +4975,12 @@ Pro make_flux_surf
 ;construct 3D rho array.
 common construct_settings, flux_surf_names, flux_surf_arr_type,ne_arr_type,te_arr_type,z_eff_arr_type,stop_plasma_type, stop_plasma_type_names,exc_plasma_type, $
 exc_plasma_type_names,gas_arr_type,stop_gas_type,lim_arr_type,grid_aper_names,grid_aper_type
+;The following common block contains some of the settings for loading of
+;the input data used for the beam attenuation and penetration
+;calculation. ;The following common block contains the name of the input file from which the input
+;data is extracted 
+common load_settings, load_set_def,load_choice,general_type, general_file, beam_geom_type,beam_geom_file,beam_lim_type,beam_lim_file,beam_param_type,beam_param_file,$
+ne_type,ne_file,te_type,te_file,z_eff_type,z_eff_file,plasma_geom_type,plasma_geom_file,gas_type,gas_file,grid_type,grid_file,plasma_param_type,plasma_param_file
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for
 ;calculation. These parameters are needed here to map the plasma
@@ -4948,36 +5043,138 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
 ; do this if EFIT(MDSPLUS) setting is choosen
  if strtrim(flux_surf_names(flux_surf_arr_type)) eq 'EFIT (MDSPLUS)' then begin
     sel=0 
-   ;-----------get EFIT grid
+    ;-----------get EFIT grid
     mdsopen,'analysis',shot
       mdsset_def,'\efit_geqdsk'
+      psirz= mdsvalue('psirz')
       zgrid= mdsvalue('zgrid')
-      rgrid= mdsvalue('rgrid')    
+      rgrid= mdsvalue('rgrid')
+      sibry= mdsvalue('ssibry')
+      simag= mdsvalue('ssimag')
+      t_efit = mdsvalue('dim_of(ssibry)') 
     mdsclose
+ 
+    t1_ind=(locate(t_efit,t1))(0)
+    t2_ind=(locate(t_efit,t2))(0)
+
+    psirz = total(psirz(*,*,t1_ind:t2_ind),3)/(t2_ind-t1_ind+1)
+    simag = mean(simag(t1_ind:t2_ind))
+    sibry = mean(sibry(t1_ind:t2_ind))
     n_z_int=200
     n_r_int=1000
     rgrid_arr = interpol([rgrid(0),rgrid(n_elements(rgrid)-1)],n_r_int)
-    zgrid_arr = interpol([zgrid(0),zgrid(n_elements(rgrid)-1)],n_z_int)
+    zgrid_arr = interpol([zgrid(0),zgrid(n_elements(zgrid)-1)],n_z_int)
+    rgrid_arr_2 = interpol([0,n_elements(rgrid)-1],n_r_int)
+    zgrid_arr_2 = interpol([0,n_elements(zgrid)-1],n_z_int)
     rgrid_arr_1 = make_array(n_r_int,/index)
-    zgrid_arr_1 = make_array(n_z_int,/index)       
+    zgrid_arr_1 = make_array(n_z_int,/index)  
+       
 
-    rho_grid=fltarr(n_r_int,n_z_int)
+   psi_grid = interpolate(psirz,rgrid_arr_2,zgrid_arr_2,cubic = -0.5, /grid)
+   rho_grid = sqrt((psi_grid-simag)/(sibry-simag))
+   ind_bound=where(rho_grid gt 1.0)
+   ;patch to remove the no-plasma filedline islands
+   rho_grid(ind_bound)=1.1
+   z_bound = where(zgrid_arr gt z_major + r_minor*elong*1.1 or zgrid_arr lt z_major - r_minor*elong*1.1)
+   rho_grid (*,z_bound) = 1.1     
+  endif
+ ; do this if EFIT(EQDSK files) setting is choosen
+ if strtrim(flux_surf_names(flux_surf_arr_type)) eq 'EFIT (EQDSK files)' then begin
+    gfiles = strsplit(plasma_geom_file,'*',/extract)
+    gfiles = gfiles(0)+'g'+shot+'.*'
+    gfiles_all=file_search(gfiles)
+    ; Establish formats for formatted reads
+        BOM = ['EF'x,'BB'x,'BF'x]      ; UTF-8 "BOM" marker code
+	form2000 = '(6a8,3i4)'
+        form2000U = '(3x,6a8,3i4)'
+	form2020 = '(5e16.9)'
+    if n_elements(gfiles_all) le 1 then begin
+        Widget_control, status_wid, Get_Value=status_tx
+        Widget_Control, status_wid,$
+        Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+$
+    ' : There are no EFIT files available for selected time interval']], Set_text_top_line=n_elements(status_tx)-4
+        st_err=1
+        return
+    endif
+    sel=1
+    gfiles = ""
+    ;only consider times within time interval
+    for i=0, n_elements(gfiles_all)-1 do begin
+       tfile = float((strsplit(gfiles_all(i),'.',/extract))(1))/1000.0
+       if  tfile ge t1 and tfile le t2 then gfiles = [gfiles,gfiles_all(i)]
+    endfor
+    gfiles=gfiles[1:n_elements(gfiles)-1]
 
     
-    z_grid_arr2D=zgrid_arr ## make_array(n_r_int,value=1.0)
-    r_grid_arr2D=make_array(n_z_int,value=1) ## rgrid_arr
-    z_grid_arr1D=reform(z_grid_arr2D,long(n_z_int)*n_r_int)
-    r_grid_arr1D=reform(r_grid_arr2D,long(n_z_int)*n_r_int) 
-    rho_grid=reform(efit_rz2rho(r_grid_arr1D,z_grid_arr1D,(t1+t2)/2.0,shot=shot,/phinorm,/sqrt),n_r_int,n_z_int)
-    rho_grid_psi=reform(efit_rz2rho(r_grid_arr1D,z_grid_arr1D,(t1+t2)/2.0,shot=shot,/sqrt),n_r_int,n_z_int) 
-    ind_bound=where(rho_grid_psi gt 1.0)
-    rho_grid(ind_bound)=1.1
-endif 
+    doutl = fltarr(n_elements(gfiles))
+    temp="line"
+    for i=0, n_elements(gfiles)-1 do begin
+      ;reading afile
+      close,1
+      openr,1,gfiles(i)
+      ; Test first three bytes for UTF-8 BOM code. This encoding is used in Eqdsk
+      ; files from EAST, and possibly elsewhere
+      casee= strarr(6)
+      first_line = ''
+      readf,1,form='(a)',first_line
+      test_UTF = array_equal((byte(first_line))[0:2],BOM) 
+      reads,first_line,form=(test_UTF ? form2000U : form2000),casee,idum,mw,mh
+      aa = fltarr(mw)
+      aaa = fltarr(mw,mh)
+      if i eq 0 then begin
+         psirz = fltarr(mw,mh,n_elements(gfiles))
+         zgrid = fltarr(mh,n_elements(gfiles))
+         rgrid = fltarr(mw,n_elements(gfiles))
+         simag = fltarr(n_elements(gfiles))
+         sibry = fltarr(n_elements(gfiles)) 
+      endif
+      readf,1,form=form2020,a,b,c,d,e
+      zgrid(*,i)= interpol([float(e)-float(b)/2.0,float(e)+float(b)/2.0],mh)
+      rgrid(*,i)= interpol([float(d),float(d)+float(a)],mw)
+      readf,1,form=form2020,a,b,c,d,e
+      simag(i) = c
+      sibry(i) = d
+      readf,1,temp
+      readf,1,temp
+      readf,1,form=form2020,aa
+      readf,1,form=form2020,aa
+      readf,1,form=form2020,aa
+      readf,1,form=form2020,aa 
+      readf,1,form=form2020,aaa
+      psirz(*,*,i)=aaa
+      close,1   
+    endfor
+   ;interpolation
+   psirz = total(psirz,3)/n_elements(gfiles)
+   rgrid = mean2d(rgrid)
+   zgrid = mean2d(zgrid)
+   simag = mean(simag)
+   sibry = mean(sibry)
+
+   n_z_int=200
+   n_r_int=1000
+   rgrid_arr = interpol([rgrid(0),rgrid(n_elements(rgrid)-1)],n_r_int)
+   zgrid_arr = interpol([zgrid(0),zgrid(n_elements(zgrid)-1)],n_z_int)
+   rgrid_arr_2 = interpol([0,n_elements(rgrid)-1],n_r_int)
+   zgrid_arr_2 = interpol([0,n_elements(zgrid)-1],n_z_int)
+   rgrid_arr_1 = make_array(n_r_int,/index)
+   zgrid_arr_1 = make_array(n_z_int,/index)  
+       
+
+   psi_grid = interpolate(psirz,rgrid_arr_2,zgrid_arr_2,cubic = -0.5, /grid)
+   rho_grid = sqrt((psi_grid-simag)/(sibry-simag))
+   ind_bound=where(rho_grid gt 1.0)
+   ;patch to remove the no-plasma filedline islands
+   rho_grid(ind_bound)=1.1
+   z_bound = where(zgrid_arr gt z_major + r_minor*elong*1.1 or zgrid_arr lt z_major - r_minor*elong*1.1)
+   rho_grid (*,z_bound) = 1.1 
+ 
+ endif
  ; do this if Miller or Hakkarainen setting are choosen
  if strpos(flux_surf_names(flux_surf_arr_type), 'Miller') ne -1 or strpos(flux_surf_names(flux_surf_arr_type), 'Hakkarainen') ne -1 then begin
  ;Miller Physics of Plasmas,5,5,1998 (Miller equillibrium)
  ;SP Hakkarainen, phys_fluids B 2(7) 1990
-   if strpos(flux_surf_names(flux_surf_arr_type), 'Miller') ne -1 then sel=1 else sel=2  
+   if strpos(flux_surf_names(flux_surf_arr_type), 'Miller') ne -1 then sel=2 else sel=3  
     n_z_int=200
     n_r_int=1000
     rgrid1=r_major-r_minor*1.1
@@ -5032,17 +5229,17 @@ endif
    ; rho_arr_beam_coord=rho_arr_beam_coord<1.1
     ;help,rho_arr_beam_coord
    
-    if sel eq 0 then begin 
+    if sel eq 0 or sel eq 1 then begin 
       Widget_control, status_wid, Get_Value=status_tx
       Widget_Control, status_wid, $
       Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Flux Surfaces Array was constructed successfully from EFIT equillibrium']], Set_text_top_line=n_elements(status_tx)-4 
     endif
-    if sel eq 1 then begin 
+    if sel eq 2 then begin 
       Widget_control, status_wid, Get_Value=status_tx
       Widget_Control, status_wid, $
       Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Flux Surfaces Array was constructed successfully from plasma parameters and Miller equillibrium']], Set_text_top_line=n_elements(status_tx)-4 
     endif
-    if sel eq 2 then begin
+    if sel eq 3 then begin
       Widget_control, status_wid, Get_Value=status_tx
       Widget_Control, status_wid, $
       Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Flux Surfaces Array was constructed successfully from plasma parameters and Hakkaraien equllibrium']], Set_text_top_line=n_elements(status_tx)-4 
@@ -16708,12 +16905,17 @@ case ev.id of
       if plasma_geom_type_1 eq 0 then begin
         Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_File_Text'),Sensitive=0
       endif
-      if plasma_geom_type_1 eq 1 then begin
+      if plasma_geom_type_1 eq 2 then begin
         Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_File_Text'),Sensitive=1
         plasma_geom_file_1=file_dir+'/'+beam+'.abi'
         Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_File_Text'),Set_value=plasma_geom_file_1
-      endif      
-      if plasma_geom_type_1 eq 2 then begin
+      endif
+      if plasma_geom_type_1 eq 1 then begin
+        Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_File_Text'),Sensitive=1
+        plasma_geom_file_1=file_dir+'/efit/*.*'
+        Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_File_Text'),Set_value=plasma_geom_file_1
+      endif
+      if plasma_geom_type_1 eq 3 then begin
          Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_File_Text'),Sensitive=0
       endif     
     end
@@ -18079,11 +18281,14 @@ case ev.id of
      output_files=file_search('*.abo')
      cd,cur_dir
      run_files=output_files
+     for i=0,n_elements(run_files)-1 do begin
+        if strlen(run_files(i)) gt 26 then run_files(i) = strmid(run_files(i),0,14)+'...'+strmid(run_files(i),strlen(run_files(i))-6,8)
+     end
      if output_files(0) ne "" then begin
         if all_runs(0) eq ' ' then  begin
           Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='User_Droplist'), Set_Value=run_files
         endif else begin
-          Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='User_Droplist'), Set_Value=[all_runs,output_files]
+          Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='User_Droplist'), Set_Value=[all_runs,run_files]
         endelse
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Read_Results_Button'),Sensitive=1
         Widget_control, status_wid, Get_Value=status_tx
@@ -19627,6 +19832,21 @@ case ev.id of
        endelse
      endif
      if plasma_geom_type eq 1 then begin
+       load_plasma_geom_efit_file
+       if st_err eq 0 then begin
+         flux_surf_names=[['Miller equilib'],['Hakkarainen eq'],['EFIT (EQDSK files)  '],['skip']]
+         flux_surf_arr_type=2
+         Widget_control, status_wid, Get_Value=status_tx
+         Widget_Control, status_wid,$
+         Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Plasma Geometry data was loaded successfully.']], Set_text_top_line=n_elements(status_tx)-4
+       endif else begin
+         Widget_control, status_wid, Get_Value=status_tx
+         Widget_Control, status_wid,$
+         Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Error during LOAD Plasma Geometry procedure. Please review previous message.']], Set_text_top_line=n_elements(status_tx)-4
+         return    
+       endelse
+     endif
+     if plasma_geom_type eq 2 then begin
        load_plasma_geom_file
        if st_err eq 0 then begin       
          flux_surf_arr_type=0
@@ -20342,8 +20562,6 @@ end
 ;Some external functions (only for C-Mod)
 @/usr/local/rsi/idl_6.3/lib/mean.pro
 @/home/bespam/quickfit/quick_fit.pro
-@/usr/local/cmod/codes/efit/idl/efit_rz2psi.pro
-@/usr/local/cmod/codes/efit/idl/efit_rz2rho.pro
 @/usr/local/mdsplus/idl/mdsvalue.pro
 @/usr/local/mdsplus/idl/mdsput.pro
 @/usr/local/mdsplus/idl/mdsopen.pro
@@ -20416,7 +20634,7 @@ common settings_file, save_set_file
 ;graph to the file"
 common export_file, export_file,export_sel,export_flag
 
-  alcbeam_ver='4.9'
+  alcbeam_ver='4.10'
   ;debuging parameter (default=1:catch errors, debug=0:pass errors)  
   error_catch=1
   st_err=0;initial error status 0
@@ -20444,6 +20662,7 @@ common export_file, export_file,export_sel,export_flag
   if count eq 1 then file_dir=file_dir+'/alcbeam'
   cd, cur_dir
   adas_dir='/usr/local/cmod/codes/dnb/alcbeam/adas'
+  
   ;load settings
   load_set_def=[0,0,0,0,0,0,0,0,1,0,0]
   load_choice=0
