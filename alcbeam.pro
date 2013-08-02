@@ -16725,7 +16725,7 @@ case ev.id of
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Beam_Lim_Type_Droplist'),Timer=0.01  
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Beam_Param_Type_Droplist'), Set_Droplist_Select=1
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Beam_Param_Type_Droplist'),Timer=0.01
-        Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_Type_Droplist'), Set_Droplist_Select=1
+        Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_Type_Droplist'), Set_Droplist_Select=2
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_Type_Droplist'),Timer=0.01
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Param_Type_Droplist'), Set_Droplist_Select=1
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Param_Type_Droplist'),Timer=0.01          
@@ -16749,7 +16749,7 @@ case ev.id of
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Beam_Lim_Type_Droplist'),Timer=0.01  
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Beam_Param_Type_Droplist'), Set_Droplist_Select=2
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Beam_Param_Type_Droplist'),Timer=0.01
-        Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_Type_Droplist'), Set_Droplist_Select=2
+        Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_Type_Droplist'), Set_Droplist_Select=3
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_Type_Droplist'),Timer=0.01
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Param_Type_Droplist'), Set_Droplist_Select=2
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Param_Type_Droplist'),Timer=0.01         
