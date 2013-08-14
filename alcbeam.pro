@@ -3,6 +3,9 @@
 function mdsvalue,a
   return,a
 end
+function efit_rz2rho,a
+  return,a
+end
 
 pro mdsopen,a
 end
@@ -617,7 +620,7 @@ ENDIF ELSE BEGIN
 
 
 ;-------------------------------------------------------------------------------------------------------------------------
-;Fuction is used to average the 2D array over the second dimension, NANs
+;Fuction is used to average the 2D array over the second dimention, NANs
 ;are not included in the averading 
 ;------------------------------------------------------------------------------------------------------------------------- 
 function mean2d, arr
@@ -653,9 +656,6 @@ end
 ;beam traveling through plasma defined by local parameters of ne,te,z_eff
 ;------------------------------------------------------------------------------------------------------------------------- 
 function exc_adas,E,n_e,t_e,z_eff
-;The following common block contains the parameters which describe the non-geometrical
-;parameters of the beam (particle and energy distribution)
-common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
 ;The following block contains structures of ADAS data
 common adas_data, adas_stop,adas_exc2,adas_exc3
 ;The following common block contains the parameters which describe
@@ -682,14 +682,9 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
 ;----------------------------------------------------- 
 main_ion_table=['D','H','He']
 main_ion_z=[1.0,1.0,2.0]
-ion_z=[main_ion_z(where(main_ion_table eq main_ion)),float(impur_table(*,1))]
+ion_z=[main_ion_z(locate(main_ion_table,main_ion)),float(impur_table(*,1))]
 imp_fr=float(impur_table(*,2))
 
-;beam atom
-beam_atom_table=['H','D','T']
-beam_atom_mass=[1.0,2.0,3.0]
-m_atom=(beam_atom_mass(where(beam_atom_table eq beam_atom)))(0)
-E=E/m_atom
 
 ;firts set of data
 
@@ -704,19 +699,13 @@ T_e=(T_e>0.1)<3.0 ; 3keV is the limit for this set of the excitation cross secti
 ;n_e=3.3e14
 ;E=48.8
 ;t_e=1.7
-if (where(z_eff lt ion_z(0)))(0) ne -1 then begin
-   Widget_control, status_wid, Get_Value=status_tx
-   Widget_Control, status_wid,$
-   Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Z_eff is lower than main ion charge']], Set_text_top_line=n_elements(status_tx)-4
-  st_err=1
-endif
 
 data_fr={fr:z_eff<1.0}
 ion_fr=replicate(data_fr,n_impur+1)
-ion_fr(0).fr(where(z_eff ne 0.0))=1/ion_z(0)
+ion_fr(1).fr=0.0
 for i=1,n_impur do begin
-  if max(z_eff) ne 0.0 then ion_fr(i).fr(where(z_eff ne 0.0))=imp_fr(i-1)*(z_eff(where(z_eff ne 0.0))-ion_z(0))/(total(imp_fr*ion_z(1:*)^2.0)-ion_z(0)*total(imp_fr*ion_z(1:*)))
-  ion_fr(0).fr(where(z_eff ne 0.0))=ion_fr(0).fr(where(z_eff ne 0.0))-1.0/ion_z(0)*ion_fr(i).fr(where(z_eff ne 0.0))*ion_z(i)
+  if max(z_eff) ne 1.0 then ion_fr(i).fr(where(z_eff ne 1.0))=imp_fr(i-1)/((total(imp_fr*ion_z(1:*)^2.0)-z_eff(where(z_eff ne 1.0))*total(imp_fr*ion_z(1:*)))/(ion_z(0)*(z_eff(where(z_eff ne 1.0))-ion_z(0)))+1.0)
+  ion_fr(0).fr=ion_fr(0).fr-ion_fr(i).fr
 endfor
 ;calculation of the used sums
 sum1=ion_z(0)*ion_fr(0).fr
@@ -752,9 +741,6 @@ end
 ;beam traveling through plasma defined by local parameters of ne,te,z_eff
 ;------------------------------------------------------------------------------------------------------------------------- 
 function exc_hutch,E,n_e,t_e,z_eff
-;The following common block contains the parameters which describe the non-geometrical
-;parameters of the beam (particle and energy distribution)
-common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
 ;The following common block contains the parameters which describe
 ;some relative non-geometrical global parameters of the plasma
 common plasma_param, main_ion,n_impur,impur_table
@@ -786,12 +772,6 @@ if (main_ion ne 'H' and main_ion ne 'D') or impur_table(0) ne 'B' or n_elements(
      st_err=1
      ;return,[n_e<0,n_e<0]
 endif
-;beam atom
-beam_atom_table=['H','D','T']
-beam_atom_mass=[1.0,2.0,3.0]
-m_atom=(beam_atom_mass(where(beam_atom_table eq beam_atom)))(0)
-E=E/m_atom
-
 ;Input beam excitation data in hydrogen and boron plasmas
 Z_H=1.0
 Z_B=5.0
@@ -1041,9 +1021,6 @@ end
 ;ne,te Suzuki, Plasma Physics and Controlled Fusion, 40(1988)
 ;------------------------------------------------------------------------------------------------------------------------- 
 function S_Suzuki_full,E,n_e,t_e,Z_eff
-;The following common block contains the parameters which describe the non-geometrical
-;parameters of the beam (particle and energy distribution)
-common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
 ;The following common block contains the parameters which describe
 ;some relative non-geometrical global parameters of the plasma
 common plasma_param, main_ion,n_impur,impur_table
@@ -1066,12 +1043,6 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
    endif
  endif
 ;----------------------------------------------------- 
-;beam atom
-beam_atom_table=['H','D','T']
-beam_atom_mass=[1.0,2.0,3.0]
-m_atom=(beam_atom_mass(where(beam_atom_table eq beam_atom)))(0)
-E=E/m_atom 
-
   n0=1e13
   t_e=reform(t_e>0.1)
   t_e=t_e>E/100.0
@@ -1120,9 +1091,6 @@ end
 ;ne,te,z_eff (ADAS data)
 ;------------------------------------------------------------------------------------------------------------------------- 
 function s_adas_full,E,n_e,t_e,z_eff
-;The following common block contains the parameters which describe the non-geometrical
-;parameters of the beam (particle and energy distribution)
-common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
 ;The following block contains structures of ADAS data
 common adas_data, adas_stop,adas_exc2,adas_exc3
 ;The following common block contains the parameters which describe
@@ -1149,14 +1117,10 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
 ;----------------------------------------------------- 
 main_ion_table=['D','H','He']
 main_ion_z=[1.0,1.0,2.0]
-ion_z=[main_ion_z(where(main_ion_table eq main_ion)),float(impur_table(*,1))]
+ion_z=[main_ion_z(locate(main_ion_table,main_ion)),float(impur_table(*,1))]
 imp_fr=float(impur_table(*,2))
 
-;beam atom
-beam_atom_table=['H','D','T']
-beam_atom_mass=[1.0,2.0,3.0]
-m_atom=(beam_atom_mass(where(beam_atom_table eq beam_atom)))(0)
-E=E/m_atom
+
 
 ;firts set of data
 
@@ -1170,18 +1134,13 @@ E=E/m_atom
 ;n_e=8e14
 ;E=1.2e5
 ;t_e=0.5
-if (where(z_eff lt ion_z(0)))(0) ne -1 then begin
-   Widget_control, status_wid, Get_Value=status_tx
-   Widget_Control, status_wid,$
-   Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Z_eff is lower than main ion charge']], Set_text_top_line=n_elements(status_tx)-4
-  st_err=1
-endif
-data_fr={fr:z_eff<0.0}
+
+data_fr={fr:z_eff<1.0}
 ion_fr=replicate(data_fr,n_impur+1)
-ion_fr(0).fr(where(z_eff ne 0.0))=1/ion_z(0)
+ion_fr(1).fr=0.0
 for i=1,n_impur do begin
-  if max(z_eff) ne 0.0 then ion_fr(i).fr(where(z_eff ne 0.0))=imp_fr(i-1)*(z_eff(where(z_eff ne 0.0))-ion_z(0))/(total(imp_fr*ion_z(1:*)^2.0)-ion_z(0)*total(imp_fr*ion_z(1:*)))
-  ion_fr(0).fr(where(z_eff ne 0.0))=ion_fr(0).fr(where(z_eff ne 0.0))-1.0/ion_z(0)*ion_fr(i).fr(where(z_eff ne 0.0))*ion_z(i)
+  if max(z_eff) ne 1.0 then ion_fr(i).fr(where(z_eff ne 1.0))=imp_fr(i-1)/((total(imp_fr*ion_z(1:*)^2.0)-z_eff(where(z_eff ne 1.0))*total(imp_fr*ion_z(1:*)))/(ion_z(0)*(z_eff(where(z_eff ne 1.0))-ion_z(0)))+1.0)
+  ion_fr(0).fr=ion_fr(0).fr-ion_fr(i).fr
 endfor
 ;calculation of the used sums
 sum1=ion_z(0)*ion_fr(0).fr
@@ -1192,6 +1151,7 @@ for i=1,n_impur do begin
 endfor
 ;calculation of the euqivavent electron densities
 stop_total=n_e*0.0 ;new array
+
 for i=0,n_impur do begin
   n_e_equiv=n_e/sum1*sum2/ion_z(i)
   st_c=interpolate(adas_stop(i).fract_arr,interpol(indgen(n_elements(adas_stop(i).E_arr)),adas_stop(i).E_arr,E),interpol(indgen(n_elements(adas_stop(i).n_arr)),adas_stop(i).n_arr,n_e_equiv),/Grid)*$
@@ -1206,6 +1166,7 @@ vel=SQRT(2.0*1.602E-19*E*1000.0/1.673E-27)*100.0 ; cm/sec
 
 Stop_cross_sect=stop_total/vel
 return,stop_cross_sect
+
 end
 ;-------------------------------------------------------------------------------------------------------------------------
 
@@ -1550,7 +1511,7 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
       geom=Widget_Info(Driver_Base,/Geometry)
       Driver_Status_wid = Widget_Text(Driver_Base, UNAME='Driver_Status_Text'  $
       ,YOFFSET=geom.ysize-35-73, XOFFSET=6, SCR_YSIZE=33+70 ,SCR_XSIZE=geom.xsize-13$
-      ,VALUE=[[''],[''],[''],['0:>>> Driver is ready']] ,XSIZE=20 ,YSIZE=1,/SCROLL)
+      ,VALUE=[[''],[''],[''],[':->>> Driver is ready']] ,XSIZE=20 ,YSIZE=1,/SCROLL)
 
 
       WIDGET_CONTROL, Driver_Base, /REALIZE
@@ -1567,7 +1528,7 @@ end
 pro show_neutral_gas_window, main_base
 ;The following common block contains neutral gas parameters used in
 ;calculation of the beam attenuation in the gas
-common neutral_gas,tank_pressure,torus_pressure,duct_pressure,duct_pressure_loc,n0_arr,n0_stop_cross_section
+common neutral_gas,tank_pressure,torus_pressure,n0_arr,n0_stop_cross_section
 ;The following common block is used to transfer the pointer to the
 ;status window and availability states of each data set
 common status, status_wid,error_catch,st_err  
@@ -1589,10 +1550,10 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
 ;----------------------------------------------------- 
     geom=Widget_Info(Main_Base,/Geometry)
     IF XREGISTERED('Neutral_Gas_Widget') EQ 0 then begin
-      Neutral_Gas_Widget = WIDGET_BASE(/COLUMN, TITLE='Neutral Gas', Uname='Neutral_Gas_Widget',/ALIGN_CENTER,XOFFSET=geom.xoffset+300,YOFFSET=geom.yoffset+geom.ysize-626,xsize=423,ysize=263)
+      Neutral_Gas_Widget = WIDGET_BASE(/COLUMN, TITLE='Neutral Gas', Uname='Neutral_Gas_Widget',/ALIGN_CENTER,XOFFSET=geom.xoffset+300,YOFFSET=geom.yoffset+geom.ysize-626,xsize=423,ysize=163)
       Neutral_Gas_Base = Widget_base(Neutral_Gas_Widget, UNAME='Neutral_Gas_Base'  $
       ,XOFFSET=5,YOFFSET=5,Frame=1$
-      ,XSIZE=410,YSIZE=258)
+      ,XSIZE=410,YSIZE=158)
       
         
       Neutral_Gas_label = Widget_Label(Neutral_Gas_Base, UNAME='Neutral_Gas_Label'  $
@@ -1600,49 +1561,29 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
       ,VALUE= 'Parameters specifying neutral gas distribution' ,XSIZE=5 ,YSIZE=23, /Align_Center,/sunken_frame)    
  
       P_Tank_Text = Widget_text(Neutral_Gas_Base, UNAME='P_Tank_Text'  $
-      ,XOFFSET=366, YOFFSET=40,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=236, YOFFSET=40,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(tank_pressure,format='(F10.3)'),1),XSIZE=20 ,YSIZE=1)
 
       P_Tank_Label = Widget_Label(Neutral_Gas_Base, UNAME='P_Tank_Label'  $
-      ,XOFFSET=8, YOFFSET=40, SCR_XSIZE=350 , SCR_YSIZE=33, /Align_left $
-      ,VALUE= 'Pressure in the beam tank (uniform in the tank), mtorr' ,XSIZE=5 ,YSIZE=1)     
+      ,XOFFSET=8, YOFFSET=40, SCR_XSIZE=225 , SCR_YSIZE=33 $
+      ,VALUE= 'Pressure in the beam tank, mtorr    ' ,XSIZE=5 ,YSIZE=1)     
 
       
       P_Torus_Text = Widget_Text(Neutral_Gas_Base, UNAME='P_Torus_Text'  $
-      ,XOFFSET=366, YOFFSET=70,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=236, YOFFSET=70,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(torus_pressure,format='(F10.3)'),1),XSIZE=20 ,YSIZE=1)
 
       
       P_Torus_Label = Widget_Label(Neutral_Gas_Base, UNAME='P_Torus_Label'  $
-      ,XOFFSET=8, YOFFSET=70, SCR_XSIZE=350 , SCR_YSIZE=33, /Align_left $
-      ,VALUE= 'Pressure in the torus (uniform in the torus), mtorr' ,XSIZE=5 ,YSIZE=1)
-
-       
-      Z_Duct_Text = Widget_Text(Neutral_Gas_Base, UNAME='Z_Duct_Text'  $
-      ,XOFFSET=366, YOFFSET=130,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
-      ,VALUE=strtrim(string(duct_pressure_loc,format='(F10.3)'),1),XSIZE=20 ,YSIZE=1)
-      
-      Z_Duct_Label = Widget_Label(Neutral_Gas_Base, UNAME='Z_Duct_Label'  $
-      ,XOFFSET=8, YOFFSET=130, SCR_XSIZE=350 , SCR_YSIZE=33, /Align_left $
-      ,VALUE= 'Distance from tank wall to the pressure gauge, m' ,XSIZE=5 ,YSIZE=1)
-   
-
-      P_Duct_Text = Widget_Text(Neutral_Gas_Base, UNAME='P_Duct_Text'  $
-      ,XOFFSET=366, YOFFSET=160,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
-      ,VALUE=strtrim(string(duct_pressure,format='(F10.3)'),1),XSIZE=20 ,YSIZE=1)
-
-      
-      P_Duct_Label = Widget_Label(Neutral_Gas_Base, UNAME='P_Duct_Label'  $
-      ,XOFFSET=8, YOFFSET=160, SCR_XSIZE=350 , SCR_YSIZE=33, /Align_left $
-      ,VALUE= 'Pressure in the duct, mtorr' ,XSIZE=5 ,YSIZE=1)
-       
+      ,XOFFSET=8, YOFFSET=70, SCR_XSIZE=225 , SCR_YSIZE=33 $
+      ,VALUE= 'Pressure in the torus, mtorr         ' ,XSIZE=5 ,YSIZE=1)       
 
       Neutral_Gas_Save_Button = Widget_Button(Neutral_Gas_Base, UNAME='Neutral_Gas_Save_Button'  $
-      ,XOFFSET=4, YOFFSET=230, SCR_XSIZE=80, SCR_YSIZE=25 $
+      ,XOFFSET=4, YOFFSET=130, SCR_XSIZE=80, SCR_YSIZE=25 $
       ,VALUE= 'Save' ,XSIZE=25 ,YSIZE=25, /Align_Center)
     
       Neutral_Gas_Close_Button = Widget_Button(Neutral_Gas_Base, UNAME='Neutral_Gas_Close_Button'  $
-      ,XOFFSET=108, YOFFSET=230, SCR_XSIZE=80, SCR_YSIZE=25 $
+      ,XOFFSET=108, YOFFSET=130, SCR_XSIZE=80, SCR_YSIZE=25 $
       ,VALUE= 'Close' ,XSIZE=25 ,YSIZE=25, /Align_Center)
 
 
@@ -1663,8 +1604,8 @@ common construct_settings, flux_surf_names, flux_surf_arr_type,ne_arr_type,te_ar
 stop_plasma_type_names,exc_plasma_type, exc_plasma_type_names,gas_arr_type,stop_gas_type,lim_arr_type,grid_aper_names,grid_aper_type
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, $
-tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, $
+tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
 ; The following common block contains general parameters: which user,
 ; what beam, what shot and time interval
 common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
@@ -1796,7 +1737,7 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
       ,XOFFSET=3, YOFFSET=392, SCR_XSIZE=220 , SCR_YSIZE=33 $
       ,VALUE= 'Decrease number of grid apertures:' ,XSIZE=5 ,YSIZE=23,/Align_left)     
      
-      grid_aper_names=transpose((' Every '+string([0,2,5,10],format='(I3)')+' aperture '))     
+      grid_aper_names=transpose((' Every '+string(make_array((n_elements(x_bml)/60),/index)*2,format='(I3)')+' aperture '))     
       grid_aper_names(0)=' All apertures'
       Grid_Aper_Type_Droplist=Widget_Droplist(Construct_Settings_Base, UNAME='Grid_Aper_Type_Droplist'$
       ,XOFFSET=220,YOFFSET=391,XSIZE=100,YSIZE=15,value=Grid_Aper_names)
@@ -1826,7 +1767,7 @@ pro show_calc_settings_window, main_base
 ; what beam, what shot and time interval
 common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
 ;The following common block contains some of the settings for beam attenuation and penetration calculation
-common run_settings, div_type,div_type_names,atten_type,atten_type_names, vel_dis_type, vel_dis_names,save_output_type,save_output_file
+common run_settings, div_type,div_type_names,atten_type,atten_type_names,save_output_type,save_output_file
 ;The following common block is used to transfer the pointer to the
 ;status window and availability states of each data set
 common status, status_wid,error_catch,st_err  
@@ -1849,10 +1790,10 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
     geom=Widget_Info(main_base,/Geometry)
     IF XREGISTERED('Calc_Settings_Widget') EQ 0 then begin
       Calc_Settings_Widget = WIDGET_BASE(/COLUMN, TITLE='Perform Calculation - Settings', Uname='Calc_Settings_Widget',$
-/ALIGN_CENTER,XOFFSET=geom.xoffset+300,YOFFSET=geom.yoffset+geom.ysize-626,xsize=603,ysize=225)
+/ALIGN_CENTER,XOFFSET=geom.xoffset+300,YOFFSET=geom.yoffset+geom.ysize-626,xsize=603,ysize=193)
       Calc_Settings_Base = Widget_base(Calc_Settings_Widget, UNAME='Calc_Settings_Base'  $
       ,XOFFSET=0,YOFFSET=0,Frame=0$
-      ,XSIZE=603,YSIZE=225)
+      ,XSIZE=603,YSIZE=193)
       Calc_Settings_label = Widget_Label(Calc_Settings_Base, UNAME='Calc_Settings_Label'  $
       ,XOFFSET=1, YOFFSET=1, SCR_XSIZE=600 , SCR_YSIZE=33 $
       ,VALUE= 'Choose settings for beam divergence and attenuation calculation' ,XSIZE=5 ,YSIZE=23, /Align_Center,/sunken_frame)
@@ -1876,21 +1817,12 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
       Widget_Control, Atten_Type_Droplist,Set_droplist_select=Atten_type
       if div_type eq 2 then Widget_Control, Atten_Type_Droplist,Sensitive=0 
 
-      Vel_Dis_label = Widget_Label(Calc_Settings_Base, UNAME='Vel_Dis_Label'  $
-      ,XOFFSET=3, YOFFSET=104, SCR_XSIZE=190 , SCR_YSIZE=33 $
-      ,VALUE= 'Calc velocity distribution:    ' ,XSIZE=5 ,YSIZE=23,/Align_left)   
-      
-      Vel_Dis_Droplist=Widget_Droplist(Calc_Settings_Base, UNAME='Vel_Dis_Droplist'$
-      ,XOFFSET=190,YOFFSET=103,XSIZE=100,YSIZE=15,value=vel_dis_names)
-      
-      Widget_Control, Vel_Dis_Droplist,Set_droplist_select=vel_dis_type 
-
       Save_Output_label = Widget_Label(Calc_Settings_Base, UNAME='Save Output_Label'  $
-      ,XOFFSET=3, YOFFSET=136, SCR_XSIZE=190 , SCR_YSIZE=33 $
+      ,XOFFSET=3, YOFFSET=104, SCR_XSIZE=190 , SCR_YSIZE=33 $
       ,VALUE= 'Save output to:       ' ,XSIZE=5 ,YSIZE=23,/Align_left)
  
       Save_Output_Type_Droplist=Widget_Droplist(Calc_Settings_Base, UNAME='Save_Output_Type_Droplist'$
-      ,XOFFSET=190,YOFFSET=135,XSIZE=100,YSIZE=15,value=[['MDSPLUS'],['*.abo output file'],['skip']])
+      ,XOFFSET=190,YOFFSET=103,XSIZE=100,YSIZE=15,value=[['MDSPLUS'],['*.abo output file'],['skip']])
 
       Widget_Control, Save_Output_Type_Droplist,Set_droplist_select=save_output_type    
       
@@ -1899,18 +1831,18 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
       ;save_output_file=file_dir+'/'+beam+'_'+strtrim(string(run),2)+'.abo'
  
       Save_output_File_text = Widget_text(Calc_Settings_Base, UNAME='Save_Output_File_Text'  $
-      ,XOFFSET=350, YOFFSET=137,SCR_XSIZE=255 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=350, YOFFSET=105,SCR_XSIZE=255 ,SCR_YSIZE=30,/editable $
       ,VALUE=save_output_file ,XSIZE=20 ,YSIZE=1) 
       save_output_sens=[0,1,0]
       Widget_Control, Save_Output_File_text,Sensitive=save_output_sens(save_output_type)
      
    
       Calc_Settings_Save_Button = Widget_Button(Calc_Settings_Base, UNAME='Calc_Settings_Save_Button'  $
-      ,XOFFSET=1, YOFFSET=197, SCR_XSIZE=80, SCR_YSIZE=25 $
+      ,XOFFSET=1, YOFFSET=165, SCR_XSIZE=80, SCR_YSIZE=25 $
       ,VALUE= 'Save' ,XSIZE=25 ,YSIZE=25, /Align_Center)
     
       Calc_Settings_Close_Button = Widget_Button(Calc_Settings_Base, UNAME='Calc_Settings_Close_Button'  $
-      ,XOFFSET=105, YOFFSET=197, SCR_XSIZE=80, SCR_YSIZE=25 $
+      ,XOFFSET=105, YOFFSET=165, SCR_XSIZE=80, SCR_YSIZE=25 $
       ,VALUE= 'Close' ,XSIZE=25 ,YSIZE=25, /Align_Center)
 
       WIDGET_CONTROL, Calc_Settings_Base, /REALIZE
@@ -2042,7 +1974,7 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
       ,VALUE= 'Plasma Geometry from :' ,XSIZE=5 ,YSIZE=23,/Align_left)
  
       Plasma_Geom_Type_Droplist=Widget_Droplist(Load_Settings_Base, UNAME='Plasma_Geom_Type_Droplist'$
-      ,XOFFSET=190,YOFFSET=227,XSIZE=100,YSIZE=15,value=[['EFIT (MDSPLUS) '],['EFIT(EQDSK files)'],['*.abi input file  '],['skip']])
+      ,XOFFSET=190,YOFFSET=227,XSIZE=100,YSIZE=15,value=[['EFIT (MDSPULS) '],['*.abi input file   '],['skip']])
 
       Widget_Control, Plasma_Geom_Type_Droplist,Set_droplist_select=plasma_geom_type     
       
@@ -2107,7 +2039,7 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
       ,VALUE= 'Effective charge (Z_eff) from :' ,XSIZE=5 ,YSIZE=23,/Align_left)
  
       Z_Eff_Type_Droplist=Widget_Droplist(Load_Settings_Base, UNAME='Z_Eff_Type_Droplist'$
-      ,XOFFSET=190,YOFFSET=355,XSIZE=100,YSIZE=15,value=[['Dalsa (MDSPLUS)   '],['Z_ave (MDSPLUS)   '],['Constant ='],['z_neo_ave file'],['*.abi input file'],['skip']])
+      ,XOFFSET=190,YOFFSET=355,XSIZE=100,YSIZE=15,value=[['  Dalsa (MDSPLUS) '],['  Z_ave (MDSPLUS) '],['Constant ='],['*.abi input file'],['skip']])
 
       Widget_Control, Z_Eff_Type_Droplist,Set_droplist_select=z_eff_type     
       
@@ -2115,7 +2047,7 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
       ,XOFFSET=355, YOFFSET=357,SCR_XSIZE=250 ,SCR_YSIZE=30,/editable $
       ,VALUE=z_eff_file ,XSIZE=20 ,YSIZE=1) 
       
-      z_eff_sens=[0,0,1,1,1,0]
+      z_eff_sens=[0,0,1,1,0]
       Widget_Control, Z_Eff_File_Text,Sensitive=z_eff_sens(z_eff_type)      
 
 
@@ -2201,10 +2133,10 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
    geom=Widget_Info(Main_Base,/Geometry)
     IF XREGISTERED('Beam_Limiters_Widget') EQ 0 then begin
       Beam_Limiters_Widget = WIDGET_BASE(/COLUMN, TITLE='Beam Limiters', Uname='Beam_Limiters_Widget',$
-/ALIGN_CENTER,XOFFSET=geom.xoffset+300,YOFFSET=geom.yoffset+geom.ysize-626,xsize=493,ysize=289+n_limiters*19)
+/ALIGN_CENTER,XOFFSET=geom.xoffset+300,YOFFSET=geom.yoffset+geom.ysize-626,xsize=443,ysize=264+n_limiters*19)
       Beam_Limiters_Base = Widget_base(Beam_Limiters_Widget, UNAME='Beam_Limiters_Base'  $
       ,XOFFSET=5,YOFFSET=5,Frame=1$
-      ,XSIZE=480,YSIZE=287+n_limiters*19)
+      ,XSIZE=430,YSIZE=261+n_limiters*19)
     
       Beam_Limiters_label = Widget_Label(Beam_Limiters_Base, UNAME='Beam_Limiters_Label'  $
       ,XOFFSET=3, YOFFSET=1, SCR_XSIZE=497 , SCR_YSIZE=33 $
@@ -2223,16 +2155,12 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
       ,VALUE= '(Z-size) - Z length of the limiter' ,XSIZE=5 ,YSIZE=1,/align_left)
 
       N_limiters_Label_4 = Widget_Label(Beam_Limiters_Base, UNAME='N_Limiters_Label_4'  $
-      ,XOFFSET=8, YOFFSET=125, SCR_XSIZE=467 , SCR_YSIZE=23 $
-      ,VALUE= 'Cylindrical limiters - (defined by Diameter), (Z size, Y-size, R-major - NaN)' ,XSIZE=5 ,YSIZE=1,/align_left)
+      ,XOFFSET=8, YOFFSET=125, SCR_XSIZE=417 , SCR_YSIZE=23 $
+      ,VALUE= 'Cylindrical limiters - (defined by Diameter), (Z size, Y-size - NaN)' ,XSIZE=5 ,YSIZE=1,/align_left)
           
       N_limiters_Label_5 = Widget_Label(Beam_Limiters_Base, UNAME='N_Limiters_Label_5'  $
-      ,XOFFSET=8, YOFFSET=150, SCR_XSIZE=467 , SCR_YSIZE=23 $
-      ,VALUE= 'Rectangular limiters - (defined by X and Y sizes), (Diameter, R-major - NaN)' ,XSIZE=5 ,YSIZE=1,/align_left)
-
-      N_limiters_Label_6 = Widget_Label(Beam_Limiters_Base, UNAME='N_Limiters_Label_6'  $
-      ,XOFFSET=8, YOFFSET=175, SCR_XSIZE=467 , SCR_YSIZE=23 $
-      ,VALUE= 'Tokamak walls - (cylinders) - (defined by R-major), (Others - NaN)' ,XSIZE=5 ,YSIZE=1,/align_left)
+      ,XOFFSET=8, YOFFSET=150, SCR_XSIZE=417 , SCR_YSIZE=23 $
+      ,VALUE= 'Rectangular limiters - (defined by X and Y sizes), (Diameter - NaN)' ,XSIZE=5 ,YSIZE=1,/align_left)
       
       N_limiters_Text = Widget_text(Beam_Limiters_Base, UNAME='N_Limiters_Text'  $
       ,XOFFSET=256, YOFFSET=35,SCR_XSIZE=32 ,SCR_YSIZE=33,/editable $
@@ -2242,10 +2170,10 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
       ,XOFFSET=295, YOFFSET=40, SCR_XSIZE=80, SCR_YSIZE=25 $
       ,VALUE= 'Update' ,XSIZE=25 ,YSIZE=25, /Align_Center)
 
-      Beam_Limiters_Table=Widget_Table(Beam_Limiters_Base, Uname='Beam_Limiters_Table',Xoffset=1, yoffset=205$
-      ,scr_xsize=479, scr_ysize=37+n_limiters*19, Alignment=1,column_labels=['Name','Z pos','Z size','Diameter','X size','Y size','R major']$
-      ,row_labels=['1'],column_widths=[100,50,50,55,50,50,50] $
-      ,/editable,Frame=1,row_heights=20,value=[['name','0.000','0.000','0.000','NAN','NAN','NAN']])
+      Beam_Limiters_Table=Widget_Table(Beam_Limiters_Base, Uname='Beam_Limiters_Table',Xoffset=1, yoffset=180$
+      ,scr_xsize=430, scr_ysize=37+n_limiters*19, Alignment=1,column_labels=['Name','Z pos','Z size','Diameter','X size','Y size']$
+      ,row_labels=['1'],column_widths=[100,50,50,55,50,50] $
+      ,/editable,Frame=1,row_heights=20,value=[['name','0.000','0.000','0.000','NAN','NAN']])
       Widget_Control, Beam_Limiters_Table, Sensitive=0    
       
       if n_limiters gt 0 then begin
@@ -2259,11 +2187,11 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
  
 
       Beam_Limiters_Save_Button = Widget_Button(Beam_Limiters_Base, UNAME='Beam_Limiters_Save_Button'  $
-      ,XOFFSET=4, YOFFSET=256+n_limiters*19, SCR_XSIZE=80, SCR_YSIZE=25 $
+      ,XOFFSET=4, YOFFSET=231+n_limiters*19, SCR_XSIZE=80, SCR_YSIZE=25 $
       ,VALUE= 'Save' ,XSIZE=25 ,YSIZE=25, /Align_Center)
     
       Beam_Limiters_Close_Button = Widget_Button(Beam_Limiters_Base, UNAME='Beam_Limiters_Close_Button'  $
-      ,XOFFSET=108, YOFFSET=256+n_limiters*19, SCR_XSIZE=80, SCR_YSIZE=25 $
+      ,XOFFSET=108, YOFFSET=231+n_limiters*19, SCR_XSIZE=80, SCR_YSIZE=25 $
       ,VALUE= 'Close' ,XSIZE=25 ,YSIZE=25, /Align_Center)      
  
       WIDGET_CONTROL, Beam_Limiters_Base, /REALIZE
@@ -2490,7 +2418,7 @@ end
 pro show_beam_geometry_window, main_base
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
 ;The following common block contains the parameters which describe the geometry
 ;and position of the tokamak  plasma
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
@@ -2501,6 +2429,7 @@ common beam_limiters, n_limiters, limiters_table,limiters_arr
 ;The following common block is used to transfer the pointer to the
 ;status window and availability states of each data set
 common status, status_wid,error_catch,st_err  
+
 ;Error handler---------------------------------------
 if error_catch then begin
    Catch,error_status
@@ -2518,14 +2447,14 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
 ;----------------------------------------------------- 
     geom=Widget_Info(Main_Base,/Geometry)
     IF XREGISTERED('Beam_Geometry_Widget') EQ 0 then begin
-      Beam_Geometry_Widget = WIDGET_BASE(/COLUMN, TITLE='Beam Geometry', Uname='Beam_Geometry_Widget',/ALIGN_CENTER,XOFFSET=geom.xoffset-3,YOFFSET=geom.yoffset+50,xsize=950,ysize=833)
+      Beam_Geometry_Widget = WIDGET_BASE(/COLUMN, TITLE='Beam Geometry', Uname='Beam_Geometry_Widget',/ALIGN_CENTER,XOFFSET=geom.xoffset-3,YOFFSET=geom.yoffset+geom.ysize-716,xsize=990,ysize=673)
       Beam_Geometry_Base = Widget_base(Beam_Geometry_Widget, UNAME='Beam_Geometry_Base'  $
       ,XOFFSET=5,YOFFSET=5,Frame=1$
-      ,XSIZE=940,YSIZE=830)
+      ,XSIZE=980,YSIZE=670)
     
       Beam_Geometry_label = Widget_Label(Beam_Geometry_Base, UNAME='Beam_Geometry_Label'  $
-      ,XOFFSET=3, YOFFSET=1, SCR_XSIZE=937 , SCR_YSIZE=31 $
-      ,VALUE= 'Parameters specifying the geometry and location of the beam injector' ,XSIZE=5 ,YSIZE=23, /Align_Center,/sunken_frame)   
+      ,XOFFSET=3, YOFFSET=1, SCR_XSIZE=977 , SCR_YSIZE=31 $
+      ,VALUE= 'Parameters specifying the geometry and location of beam injector' ,XSIZE=5 ,YSIZE=23, /Align_Center,/sunken_frame)   
   
       Beam_Port_Text = Widget_text(Beam_Geometry_Base, UNAME='Beam_Port_Text'  $
       ,XOFFSET=356, YOFFSET=35,SCR_XSIZE=28 ,SCR_YSIZE=30,/editable $
@@ -2533,26 +2462,22 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
 
       Beam_Port_Label = Widget_Label(Beam_Geometry_Base, UNAME='Beam_Port_Label'  $
       ,XOFFSET=8, YOFFSET=35, SCR_XSIZE=347 , SCR_YSIZE=33 $
-      ,VALUE= 'Beam Injector is attached to the port                    ' ,XSIZE=5 ,YSIZE=1) 
-
-      X_Grids_Focus_Text = Widget_text(Beam_Geometry_Base, UNAME='X_Grids_Focus_Text'  $
-      ,XOFFSET=256, YOFFSET=66,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
-      ,VALUE=strtrim(string(x_grid_focus,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
-  
-      Y_Grids_Focus_Text = Widget_text(Beam_Geometry_Base, UNAME='Y_Grids_Focus_Text'  $
-      ,XOFFSET=356, YOFFSET=66,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
-      ,VALUE=strtrim(string(Y_grid_focus,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)    
+      ,VALUE= 'Beam Injector is attached to the port                    ' ,XSIZE=5 ,YSIZE=1)     
 
       Grids_Focus_Label = Widget_Label(Beam_Geometry_Base, UNAME='Grids_Focus_Label'  $
-      ,XOFFSET=8, YOFFSET=65, SCR_XSIZE=345 , SCR_YSIZE=33 $
-      ,VALUE= 'Radii of curvature of the grids, m    X:               Y:' ,XSIZE=5 ,YSIZE=1,/align_left)
+      ,XOFFSET=8, YOFFSET=65, SCR_XSIZE=247 , SCR_YSIZE=33 $
+      ,VALUE= 'Radius of curvature of the grids, m' ,XSIZE=5 ,YSIZE=1,/align_left)
  
+      Grids_Focus_Text = Widget_text(Beam_Geometry_Base, UNAME='Grids_Focus_Text'  $
+      ,XOFFSET=356, YOFFSET=65,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
+      ,VALUE=strtrim(string(grid_focus,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
+
       X_Bml_Label = Widget_Label(Beam_Geometry_Base, UNAME='X_Bml_Label'  $
       ,XOFFSET=8, YOFFSET=95, SCR_XSIZE=247 , SCR_YSIZE=33 $
       ,VALUE= 'X positions of the apertures, mm ' ,XSIZE=5 ,YSIZE=1,/align_left)
  
       X_Bml_Text = Widget_text(Beam_Geometry_Base, UNAME='X_Bml_Text'  $
-      ,XOFFSET=256, YOFFSET=96,SCR_XSIZE=148 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=256, YOFFSET=95,SCR_XSIZE=148 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(x_bml*1e3,format='(F10.5,", ")'),1) ,XSIZE=120 ,YSIZE=1)
       
       Y_Bml_Label = Widget_Label(Beam_Geometry_Base, UNAME='Y_Bml_Label'  $
@@ -2582,142 +2507,108 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
       Tank_Size_Label = Widget_Label(Beam_Geometry_Base, UNAME='Tank_Size_Label'  $
       ,XOFFSET=8, YOFFSET=215, SCR_XSIZE=347 , SCR_YSIZE=33$
       ,VALUE= 'The length of the beam vacuum tank, m                     ', XSIZE=5 ,YSIZE=1)
-
+ 
       Tank_Size_Text = Widget_text(Beam_Geometry_Base, UNAME='Tank_Size_Text'  $
       ,XOFFSET=356, YOFFSET=215,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(tank_size,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
-
-      Tank_Diam_Label = Widget_Label(Beam_Geometry_Base, UNAME='Tank_Diam_Label'  $
-      ,XOFFSET=8, YOFFSET=245, SCR_XSIZE=347 , SCR_YSIZE=33$
-      ,VALUE= 'Inner diameter of the beam vacuum tank, m                 ', XSIZE=5 ,YSIZE=1)
-
-      Tank_Diam_Text = Widget_text(Beam_Geometry_Base, UNAME='Tank_Diam_Text'  $
-      ,XOFFSET=356, YOFFSET=245,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
-      ,VALUE=strtrim(string(tank_diam,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
-
-      Neutr_Front_Label = Widget_Label(Beam_Geometry_Base, UNAME='Neutr_Front_Label'  $
-      ,XOFFSET=8, YOFFSET=275, SCR_XSIZE=347 , SCR_YSIZE=33$
-      ,VALUE= 'Distance from grids to the neutralizer front surface, m   ', XSIZE=5 ,YSIZE=1)
- 
-      Neutr_Front_Text = Widget_text(Beam_Geometry_Base, UNAME='Neutr_Front_Text'  $
-      ,XOFFSET=356, YOFFSET=275,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
-      ,VALUE=strtrim(string(neutr_front_dist,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
      
       Neutr_Size_Label = Widget_Label(Beam_Geometry_Base, UNAME='Neutr_Size_Label'  $
-      ,XOFFSET=8, YOFFSET=305, SCR_XSIZE=347 , SCR_YSIZE=33$
+      ,XOFFSET=8, YOFFSET=245, SCR_XSIZE=347 , SCR_YSIZE=33$
       ,VALUE= 'The length of the beam neutralizer tube, m                ', XSIZE=5 ,YSIZE=1)
  
       Neutr_Size_Text = Widget_text(Beam_Geometry_Base, UNAME='Neutr_Size_Text'  $
-      ,XOFFSET=356, YOFFSET=305,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=356, YOFFSET=245,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(neutr_size,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)     
 
-      Neutr_Diam_Label = Widget_Label(Beam_Geometry_Base, UNAME='Neutr_Diam_Label'  $
-      ,XOFFSET=8, YOFFSET=335, SCR_XSIZE=347 , SCR_YSIZE=33$
-      ,VALUE= 'Inner diameter of the beam neutralizer tube, m            ', XSIZE=5 ,YSIZE=1)
- 
-      Neutr_Diam_Text = Widget_text(Beam_Geometry_Base, UNAME='Neutr_Diam_Text'  $
-      ,XOFFSET=356, YOFFSET=335,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
-      ,VALUE=strtrim(string(neutr_diam,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)  
-
       Tank_Magnet_Label = Widget_Label(Beam_Geometry_Base, UNAME='Tank_Magnet_Label'  $
-      ,XOFFSET=508, YOFFSET=35, SCR_XSIZE=347 , SCR_YSIZE=33$
-      ,VALUE= 'Distance from tank front wall to the front of magnet, m   ', XSIZE=5 ,YSIZE=1)
+      ,XOFFSET=8, YOFFSET=275, SCR_XSIZE=347 , SCR_YSIZE=33$
+      ,VALUE= 'Distance from tank front wall to the front of magnet, m  ', XSIZE=5 ,YSIZE=1)
  
       Tank_Magnet_Text = Widget_text(Beam_Geometry_Base, UNAME='Tank_Magnet_Text'  $
-      ,XOFFSET=856, YOFFSET=35,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=356, YOFFSET=275,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(tank_magnet_dist,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
 
       Magnet_Size_Label = Widget_Label(Beam_Geometry_Base, UNAME='Magnet_Size_Label'  $
-      ,XOFFSET=508, YOFFSET=65, SCR_XSIZE=347 , SCR_YSIZE=33$
-      ,VALUE= 'The length of the ion deflection magnet, m                ', XSIZE=5 ,YSIZE=1)
+      ,XOFFSET=508, YOFFSET=35, SCR_XSIZE=347 , SCR_YSIZE=33$
+      ,VALUE= 'The length of the ions deflection magnet, m               ', XSIZE=5 ,YSIZE=1)
  
       Magnet_Size_Text = Widget_text(Beam_Geometry_Base, UNAME='Magnet_Size_Text'  $
-      ,XOFFSET=856, YOFFSET=65,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
-      ,VALUE=strtrim(string(magnet_size,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
-
-      Magnet_Diam_Label = Widget_Label(Beam_Geometry_Base, UNAME='Magnet_Diam_Label'  $
-      ,XOFFSET=508, YOFFSET=95, SCR_XSIZE=347 , SCR_YSIZE=33$
-      ,VALUE= 'Inner diameter of the ions deflection magnet, m           ', XSIZE=5 ,YSIZE=1)
- 
-      Magnet_Diam_Text = Widget_text(Beam_Geometry_Base, UNAME='Magnet_Diam_Text'  $
-      ,XOFFSET=856, YOFFSET=95,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
-      ,VALUE=strtrim(string(magnet_diam,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
-   
+      ,XOFFSET=856, YOFFSET=35,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
+      ,VALUE=strtrim(string(magnet_size,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)          
+      
       Tank_Calorim_Label = Widget_Label(Beam_Geometry_Base, UNAME='Tank_Calorim_Label'  $
-      ,XOFFSET=508, YOFFSET=125, SCR_XSIZE=347 , SCR_YSIZE=33$
-      ,VALUE= 'Distance from tank end wall to center of calorimeter, m   ' , XSIZE=5 ,YSIZE=1)
+      ,XOFFSET=508, YOFFSET=65, SCR_XSIZE=347 , SCR_YSIZE=33$
+      ,VALUE= 'Distance from tank end wall to center of calorimeter, m  ' , XSIZE=5 ,YSIZE=1)
  
       Tank_Calorim_Text = Widget_text(Beam_Geometry_Base, UNAME='Tank_Calorim_Text'  $
-      ,XOFFSET=856, YOFFSET=125,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=856, YOFFSET=65,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(tank_cal_dist,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
-  
-  
 
       R_Grid_Label = Widget_Label(Beam_Geometry_Base, UNAME='R_Grid_Label'  $
-      ,XOFFSET=508, YOFFSET=185, SCR_XSIZE=347 , SCR_YSIZE=33$
+      ,XOFFSET=508, YOFFSET=125, SCR_XSIZE=347 , SCR_YSIZE=33$
       ,VALUE= 'Major radius of center of beam accelerating grid, m      ' , XSIZE=5 ,YSIZE=1)
  
       R_Grid_Text = Widget_text(Beam_Geometry_Base, UNAME='R_Grid_Text'  $
-      ,XOFFSET=856, YOFFSET=185,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=856, YOFFSET=125,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(R_grid,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
       
       Z_Grid_Label = Widget_Label(Beam_Geometry_Base, UNAME='Z_Grid_Label'  $
-      ,XOFFSET=508, YOFFSET=215, SCR_XSIZE=347 , SCR_YSIZE=33$
-      ,VALUE= 'Z coordinate of center of beam accelerating grid, m      ' , XSIZE=5 ,YSIZE=1)
+      ,XOFFSET=508, YOFFSET=155, SCR_XSIZE=347 , SCR_YSIZE=33$
+      ,VALUE= 'Z coordinate of center of beam accelerating grid, m       ' , XSIZE=5 ,YSIZE=1)
  
       Z_Grid_Text = Widget_text(Beam_Geometry_Base, UNAME='Z_Grid_Text'  $
-      ,XOFFSET=856, YOFFSET=215,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=856, YOFFSET=155,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(Z_Grid,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
   
       Phi_Grid_Label = Widget_Label(Beam_Geometry_Base, UNAME='Phi_Grid_Label'  $
-      ,XOFFSET=508, YOFFSET=245, SCR_XSIZE=347 , SCR_YSIZE=33$
+      ,XOFFSET=508, YOFFSET=185, SCR_XSIZE=347 , SCR_YSIZE=33$
       ,VALUE= 'Toroidal angle of center of beam accelerating grid, rad  ' , XSIZE=5 ,YSIZE=1)
  
       Phi_Grid_Text = Widget_text(Beam_Geometry_Base, UNAME='Phi_Grid_Text'  $
-      ,XOFFSET=856, YOFFSET=245,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=856, YOFFSET=185,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(Phi_Grid,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
 
       R_Wall_Label = Widget_Label(Beam_Geometry_Base, UNAME='R_Wall_Label'  $
-      ,XOFFSET=508, YOFFSET=275, SCR_XSIZE=347 , SCR_YSIZE=33$
+      ,XOFFSET=508, YOFFSET=215, SCR_XSIZE=347 , SCR_YSIZE=33$
       ,VALUE= 'Major radius of second point defining the beam, m        ' , XSIZE=5 ,YSIZE=1)
  
       R_Wall_Text = Widget_text(Beam_Geometry_Base, UNAME='R_Wall_Text'  $
-      ,XOFFSET=856, YOFFSET=275,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=856, YOFFSET=215,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(R_wall,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
       
       Z_Wall_Label = Widget_Label(Beam_Geometry_Base, UNAME='Z_Wall_Label'  $
-      ,XOFFSET=508, YOFFSET=305, SCR_XSIZE=347 , SCR_YSIZE=33$
+      ,XOFFSET=508, YOFFSET=245, SCR_XSIZE=347 , SCR_YSIZE=33$
       ,VALUE= 'Z coordinate of second point defining the beam, m        ' , XSIZE=5 ,YSIZE=1)
  
       Z_Wall_Text = Widget_text(Beam_Geometry_Base, UNAME='Z_Wall_Text'  $
-      ,XOFFSET=856, YOFFSET=305,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=856, YOFFSET=245,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(Z_Wall,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
   
       Phi_Wall_Label = Widget_Label(Beam_Geometry_Base, UNAME='Phi_Wall_Label'  $
-      ,XOFFSET=508, YOFFSET=335, SCR_XSIZE=347 , SCR_YSIZE=33$
+      ,XOFFSET=508, YOFFSET=275, SCR_XSIZE=347 , SCR_YSIZE=33$
       ,VALUE= 'Toroidal angle of second point defining the beam, rad    ' , XSIZE=5 ,YSIZE=1)
  
       Phi_Wall_Text = Widget_text(Beam_Geometry_Base, UNAME='Phi_Wall_Text'  $
-      ,XOFFSET=856, YOFFSET=335,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=856, YOFFSET=275,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(Phi_Wall,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
 
 
     
       Geometry_Plot = Widget_Draw(Beam_Geometry_Base, UNAME='Geometry_Plot'  $
-      ,XOFFSET=8,YOFFSET=380,Frame=5, Retain=2, /Button_events $
-      ,XSIZE=962,YSIZE=400$
+      ,XOFFSET=8,YOFFSET=320,Frame=5, Retain=2, /Button_events $
+      ,XSIZE=962,YSIZE=300$
       ,Graphics_Level=0)
       
       Beam_Geometry_Save_Button = Widget_Button(Beam_Geometry_Base, UNAME='Beam_Geometry_Save_Button'  $
-      ,XOFFSET=4, YOFFSET=800, SCR_XSIZE=80, SCR_YSIZE=25 $
+      ,XOFFSET=4, YOFFSET=640, SCR_XSIZE=80, SCR_YSIZE=25 $
       ,VALUE= 'Save' ,XSIZE=25 ,YSIZE=25, /Align_Center)
     
       Beam_Geometry_Close_Button = Widget_Button(Beam_Geometry_Base, UNAME='Beam_Geometry_Close_Button'  $
-      ,XOFFSET=108, YOFFSET=800, SCR_XSIZE=80, SCR_YSIZE=25 $
+      ,XOFFSET=108, YOFFSET=640, SCR_XSIZE=80, SCR_YSIZE=25 $
       ,VALUE= 'Close' ,XSIZE=25 ,YSIZE=25, /Align_Center)
 
-      Beam_Geometry_View = CW_BGROUP(Beam_Geometry_Base, ['TOP VIEW', 'SIDE VIEW'], UNAME='Beam_Geometry_View' ,XOFFSET=760$
-      ,YOFFSET=800 ,/EXCLUSIVE, Space=10, Ypad=0,column=2)
+      Beam_Geometry_View = CW_BGROUP(Beam_Geometry_Base, ['TOP VIEW', 'SIDE VIEW'], UNAME='Beam_Geometry_View' ,XOFFSET=800$
+      ,YOFFSET=640 ,/EXCLUSIVE, Space=10, Ypad=0,column=2)
       
       Widget_Control, Beam_Geometry_View, set_value=0  
  
@@ -2726,39 +2617,21 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
 
       if beam_port ne '?' then begin     
         Widget_Control,Geometry_Plot,get_value=drawID1
-        cal_diam=neutr_diam*1.5 ; m
-        cal_size=0.2*tank_size ;m
-        x_marg=r_minor
-        y_marg=r_minor
+        tank_width=1.0 ; m
+        magnet_width=0.3 ;m
+        cal_width=0.3 ; m
+        cal_size=0.05 ;m
+        x_marg=0.1
+        y_marg=0.25
         wset, drawID1
-        !X.Margin=[4,2]
-        !Y.Margin=[2,7]
-        ;geometrical factors
-        grid_cent_x=-r_grid*cos(phi_grid)
-        grid_cent_y=-r_grid*sin(phi_grid)
-        wall_cent_x=-r_wall*cos(phi_wall)
-        wall_cent_y=-r_wall*sin(phi_wall)
-        grid_cent_z=z_grid
-        wall_cent_z=z_wall
-       
-        dist_all_XY=sqrt((r_wall*cos(phi_wall)-r_grid*cos(phi_grid))^2.0+(r_wall*sin(phi_wall)-r_grid*sin(phi_grid))^2.0)
-        cos_pivot_XY=(wall_cent_x-grid_cent_x)/dist_all_XY
-        sin_pivot_XY=-(wall_cent_y-grid_cent_y)/dist_all_XY
-        ;dist_all_XYZ=sqrt((r_wall*cos(phi_wall)-r_grid*cos(phi_grid))^2.0+(r_wall*sin(phi_wall)-r_grid*sin(phi_grid))^2.0+(z_wall-z_grid)^2.0)
-        dist_all_XZ=sqrt((r_wall*cos(phi_wall)-r_grid*cos(phi_grid))^2.0+(z_wall-z_grid)^2.0)
-        sin_pivot_XZ=-(wall_cent_z-grid_cent_z)/dist_all_XZ
-        cos_pivot_XZ=(wall_cent_x-grid_cent_x)/dist_all_XZ
-     
-
-        tank_front_x=grid_cent_x+(tank_front_dist)*cos_pivot_XY*cos_pivot_XZ
-        tank_front_y=grid_cent_y-(tank_front_dist)*sin_pivot_XY*cos_pivot_XZ      
-   
-  
-        wx0=min([grid_cent_x-neutr_diam/2.0*sin_pivot_XY,-(r_major+r_minor*1.2),tank_front_x-tank_diam/2.0*sin_pivot_XY,tank_front_x-tank_diam/2.0*cos_pivot_XY])-x_marg
-        wx1=max([-r_wall*cos(phi_grid),-(r_major-r_minor*1.2),tank_front_x+tank_diam/2.0*sin_pivot_XY,tank_front_x+tank_diam/2.0*cos_pivot_XY])+x_marg
-        wy0=min([grid_cent_y-neutr_diam/2.0*cos_pivot_XY,-(r_minor*2.0),tank_front_y-tank_diam/2.0*cos_pivot_XY,tank_front_y-tank_diam/2.0*sin_pivot_XY])-y_marg
-        wy1=max([grid_cent_y+neutr_diam/2.0*cos_pivot_XY,(r_minor*2.0),tank_front_y+tank_diam/2.0*cos_pivot_XY,tank_front_y+tank_diam/2.0*sin_pivot_XY])+y_marg       
-         
+        !X.Margin=[5,5]
+        !Y.Margin=[1.5,0.1]
+        
+        wx_size=r_grid*cos(phi_grid)+0.2+2.0*x_marg 
+        wy_size=tank_width*1.3+2.0*x_marg+abs(r_grid*sin(phi_grid)-r_wall*sin(phi_wall))   
+        wx0=-wx_size & wx1=x_marg
+        wy0=-tank_width/2.0-y_marg-max([r_grid*sin(phi_grid),r_wall*sin(phi_wall)])
+        wy1=wy0+wy_size
         plot,[0,0],[1,1],color=0,background=-1,xrange=[wx0,wx1],yrange=[wy0,wy1],/nodata,ystyle=1,xstyle=1
         angl_arr=interpol([-!Pi,!Pi],200)
         oplot,[wx0,wx1],[0,0],color=0,linestyle=2
@@ -2767,152 +2640,94 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
         oplot,(r_major-r_minor)*cos(angl_arr),(r_major-r_minor)*sin(angl_arr),thick=1,color=120,linestyle=2
         oplot,r_major*cos(angl_arr),r_major*sin(angl_arr),thick=2,color=120              
         oplot,(r_major+r_minor*1.4)*cos(angl_arr),(r_major+r_minor*1.2)*sin(angl_arr),thick=3,color=0
-        xyouts, 630,380,'Tokamak torus',color=0,/device,charsize=1.5
-        xyouts, 630,360,'Plasma center, inner and outer SOL',color=120,/device,charsize=1.5
+        xyouts, 630,280,'Tokamak torus',color=0,/device,charsize=1.5
+        xyouts, 630,260,'Plasma center, inner and outer SOL',color=120,/device,charsize=1.5
         ;plot beam port
         xyouts,-r_minor*3.0-r_major,-0.2,beam_port+' port',color=0,charsize=1.5
 
         ;plot focal point
-        F_diam=(wx1-wx0)/500.0
-        F_shift=(wx1-wx0)/100.0
-        oplot,grid_cent_x+x_grid_focus*cos_pivot_XY*cos_pivot_XZ+F_diam*cos(angl_arr),$
-        grid_cent_y-x_grid_focus*sin_pivot_XY*cos_pivot_XZ+F_diam*sin(angl_arr),thick=2,color=112
-        oplot,grid_cent_x+y_grid_focus*cos_pivot_XY*cos_pivot_XZ+F_diam*cos(angl_arr),$
-        grid_cent_y-y_grid_focus*sin_pivot_XY*cos_pivot_XZ+F_diam*sin(angl_arr),thick=2,color=112       
-
-        if x_grid_focus eq y_grid_focus then begin
-          xyouts,grid_cent_x+x_grid_focus*cos_pivot_XY*cos_pivot_XZ+F_shift,$
-          grid_cent_y-x_grid_focus*sin_pivot_XY*cos_pivot_XZ,'F', color=112,charsize=2
-          xyouts, 400,380,'Grids focal radius (F)',color=112,/device,charsize=1.5
-        endif else begin
-          xyouts,grid_cent_x+x_grid_focus*cos_pivot_XY*cos_pivot_XZ+F_shift,$
-          grid_cent_y-x_grid_focus*sin_pivot_XY*cos_pivot_XZ,'Fx', color=112,charsize=2
-          xyouts, 400,380,'Grids focal radii (Fx, Fy)',color=112,/device,charsize=1.5 
-          xyouts,grid_cent_x+y_grid_focus*cos_pivot_XY*cos_pivot_XZ+F_shift,$
-          grid_cent_y-y_grid_focus*sin_pivot_XY*cos_pivot_XZ,'Fy', color=112,charsize=2    
-        endelse 
+        dist_all=sqrt((r_wall*cos(phi_wall)-r_grid*cos(phi_grid))^2.0+(r_wall*sin(phi_wall)-r_grid*sin(phi_grid))^2.0)
+        cos_b=(r_grid^2.0+dist_all^2.0-r_wall^2.0)/(2.0*r_grid*dist_all)
+        r_F=sqrt(r_grid^2.0+grid_focus^2.0-2.0*r_grid*grid_focus*cos_b)
+        phi_F=phi_grid+acos((r_F^2.0+r_grid^2.0-grid_focus^2.0)/(2.0*r_F*r_grid))*sign(phi_wall-phi_grid)
+       
+        oplot,-r_F*cos(phi_F)+0.01*cos(angl_arr),0.01*sin(angl_arr)-r_F*sin(phi_F),thick=2,color=112
+        
+        xyouts,-r_F*cos(phi_F)+0.05,-r_F*sin(Phi_F),'F', color=112,charsize=2
+        xyouts, 400,240,'Grids focal point (F)',color=112,/device,charsize=1.5
         
         ;plot beam centerline and grids
-      
+        grid_cent_x=-r_grid*cos(phi_grid)
+        grid_cent_y=-r_grid*sin(phi_grid)
+        wall_cent_x=-r_wall*cos(phi_wall)
+        wall_cent_y=-r_wall*sin(phi_wall)
+        sin_pivot=-(wall_cent_y-grid_cent_y)/dist_all
+        cos_pivot=(wall_cent_x-grid_cent_x)/dist_all
+
         oplot,[grid_cent_x,wall_cent_x],[grid_cent_y,wall_cent_y],color=0,linestyle=2
-
-       ; oplot,[grid_cent_x-max(x_bml)*sin_pivot_XY,grid_cent_x+max(x_bml)*sin_pivot_XY],$
-       ; [grid_cent_y-max(x_bml)*cos_pivot_XY,grid_cent_y+max(x_bml)*cos_pivot_XY],color=112,thick=6
-        oplot,grid_cent_x+x_bml*sin_pivot_XY-y_bml*cos_pivot_XY*sin_pivot_XZ,grid_cent_y+x_bml*cos_pivot_XY+y_bml*sin_pivot_XY*sin_pivot_XZ,color=112,psym=3
+        oplot,[grid_cent_x-max(x_bml)*sin_pivot,grid_cent_x+max(x_bml)*sin_pivot],$
+        [grid_cent_y-max(x_bml)*cos_pivot,grid_cent_y+max(x_bml)*cos_pivot],color=112,thick=6
         
-        xyouts, 60,380,'Accelerating grids',color=112,/device,charsize=1.5
-        x_c=neutr_diam/2.0*cos(angl_arr)
-        y_c=neutr_diam/2.0*sin(angl_arr)
-        neutr_front_x= grid_cent_x+neutr_front_dist*cos_pivot_XY*cos_pivot_XZ
-        neutr_front_y= grid_cent_y-neutr_front_dist*sin_pivot_XY*cos_pivot_XZ
-        oplot,neutr_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,neutr_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=96 ,thick=2
-        oplot,neutr_front_x+neutr_size*cos_pivot_XY*cos_pivot_XZ+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,$
-        neutr_front_y-neutr_size*sin_pivot_XY*cos_pivot_XZ+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=96,thick=2     
-        oplot,[neutr_front_x-neutr_diam/2.0*sin_pivot_XY,neutr_front_x-neutr_diam/2.0*sin_pivot_XY+neutr_size*cos_pivot_XY*cos_pivot_XZ],$
-        [neutr_front_y-neutr_diam/2.0*cos_pivot_XY,neutr_front_y-neutr_diam/2.0*cos_pivot_XY-neutr_size*sin_pivot_XY*cos_pivot_XZ],color=96,thick=2            
-        oplot,[neutr_front_x+neutr_diam/2.0*sin_pivot_XY,neutr_front_x+neutr_diam/2.0*sin_pivot_XY+neutr_size*cos_pivot_XY*cos_pivot_XZ],$
-        [neutr_front_y+neutr_diam/2.0*cos_pivot_XY,neutr_front_y+neutr_diam/2.0*cos_pivot_XY-neutr_size*sin_pivot_XY*cos_pivot_XZ],color=96,thick=2
-
-
-        xyouts, 60,360,'Neutralizer tube',color=96,/device,charsize=1.5
+        xyouts, 60,280,'Accelerating grids',color=112,/device,charsize=1.5
+        oplot,[grid_cent_x-max(x_bml)*sin_pivot,grid_cent_x-max(x_bml)*sin_pivot+neutr_size*cos_pivot],$
+        [grid_cent_y-max(x_bml)*cos_pivot,grid_cent_y-max(x_bml)*cos_pivot-neutr_size*sin_pivot],color=96,thick=2       
+        oplot,[grid_cent_x+max(x_bml)*sin_pivot,grid_cent_x+max(x_bml)*sin_pivot+neutr_size*cos_pivot],$
+        [grid_cent_y+max(x_bml)*cos_pivot,grid_cent_y+max(x_bml)*cos_pivot-neutr_size*sin_pivot],color=96,thick=2
+        oplot,[grid_cent_x-max(x_bml)*sin_pivot+neutr_size*cos_pivot,grid_cent_x+max(x_bml)*sin_pivot+neutr_size*cos_pivot],$
+        [grid_cent_y-max(x_bml)*cos_pivot-neutr_size*sin_pivot,grid_cent_y+max(x_bml)*cos_pivot-neutr_size*sin_pivot],color=96,thick=2
+        xyouts, 60,260,'Neutralizer tube',color=96,/device,charsize=1.5
         ;plot tank
-        x_c=tank_diam/2.0*cos(angl_arr)
-        y_c=tank_diam/2.0*sin(angl_arr)
-        tank_front_x=grid_cent_x+(tank_front_dist)*cos_pivot_XY*cos_pivot_XZ
-        tank_front_y=grid_cent_y-(tank_front_dist)*sin_pivot_XY*cos_pivot_XZ     
-        oplot,tank_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,tank_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=0 ,thick=2
-        oplot,tank_front_x+tank_size*cos_pivot_XY*cos_pivot_XZ+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,$
-        tank_front_y-tank_size*sin_pivot_XY*cos_pivot_XZ+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=0,thick=2 
-        oplot,[tank_front_x-tank_diam/2.0*sin_pivot_XY,tank_front_x-tank_diam/2.0*sin_pivot_XY+tank_size*cos_pivot_XY*cos_pivot_XZ],$
-        [tank_front_y-tank_diam/2.0*cos_pivot_XY,tank_front_y-tank_diam/2.0*cos_pivot_XY-tank_size*sin_pivot_XY*cos_pivot_XZ],color=0,thick=2       
-        oplot,[tank_front_x+tank_diam/2.0*sin_pivot_XY,tank_front_x+tank_diam/2.0*sin_pivot_XY+tank_size*cos_pivot_XY*cos_pivot_XZ],$
-        [tank_front_y+tank_diam/2.0*cos_pivot_XY,tank_front_y+tank_diam/2.0*cos_pivot_XY-tank_size*sin_pivot_XY*cos_pivot_XZ],color=0,thick=2
- 
-        xyouts, 230,380,'Beam tank',color=0,/device,charsize=1.5
+        tank_front_x=grid_cent_x+(tank_front_dist)*cos_pivot
+        tank_front_y=grid_cent_y-(tank_front_dist)*sin_pivot      
+        oplot,[tank_front_x-tank_width/2.0*sin_pivot,tank_front_x+tank_width/2.0*sin_pivot],$
+        [tank_front_y-tank_width/2.0*cos_pivot,tank_front_y+tank_width/2.0*cos_pivot],color=0,thick=2
+        oplot,[tank_front_x-tank_width/2.0*sin_pivot,tank_front_x-tank_width/2.0*sin_pivot+tank_size*cos_pivot],$
+        [tank_front_y-tank_width/2.0*cos_pivot,tank_front_y-tank_width/2.0*cos_pivot-tank_size*sin_pivot],color=0,thick=2       
+        oplot,[tank_front_x+tank_width/2.0*sin_pivot,tank_front_x+tank_width/2.0*sin_pivot+tank_size*cos_pivot],$
+        [tank_front_y+tank_width/2.0*cos_pivot,tank_front_y+tank_width/2.0*cos_pivot-tank_size*sin_pivot],color=0,thick=2
+        oplot,[tank_front_x-tank_width/2.0*sin_pivot+tank_size*cos_pivot,tank_front_x+tank_width/2.0*sin_pivot+tank_size*cos_pivot],$
+        [tank_front_y-tank_width/2.0*cos_pivot-tank_size*sin_pivot,tank_front_y+tank_width/2.0*cos_pivot-tank_size*sin_pivot],color=0,thick=2
+        xyouts, 230,280,'Beam tank',color=0,/device,charsize=1.5
        ;plot deflection magnet
-        if magnet_size ne 0.0 then begin
-          x_c=magnet_diam/2.0*cos(angl_arr)
-          y_c=magnet_diam/2.0*sin(angl_arr)    
-          magnet_front_x=grid_cent_x+(tank_front_dist+tank_magnet_dist)*cos_pivot_XY*cos_pivot_XZ
-          magnet_front_y=grid_cent_y-(tank_front_dist+tank_magnet_dist)*sin_pivot_XY*cos_pivot_XZ
-          oplot,magnet_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,magnet_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=64 ,thick=2
-          oplot,magnet_front_x+magnet_size*cos_pivot_XY*cos_pivot_XZ+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,$
-          magnet_front_y-magnet_size*sin_pivot_XY*cos_pivot_XZ+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=64,thick=2       
-          oplot,[magnet_front_x-magnet_diam/2.0*sin_pivot_XY,magnet_front_x-magnet_diam/2.0*sin_pivot_XY+magnet_size*cos_pivot_XY*cos_pivot_XZ],$
-          [magnet_front_y-magnet_diam/2.0*cos_pivot_XY,magnet_front_y-magnet_diam/2.0*cos_pivot_XY-magnet_size*sin_pivot_XY*cos_pivot_XZ],color=64 ,thick=2      
-          oplot,[magnet_front_x+magnet_diam/2.0*sin_pivot_XY,magnet_front_x+magnet_diam/2.0*sin_pivot_XY+magnet_size*cos_pivot_XY*cos_pivot_XZ],$
-          [magnet_front_y+magnet_diam/2.0*cos_pivot_XY,magnet_front_y+magnet_diam/2.0*cos_pivot_XY-magnet_size*sin_pivot_XY*cos_pivot_XZ],color=64,thick=2
-          xyouts, 230,360,'Deflection magnet',color=64,/device,charsize=1.5
-        endif
+        magnet_front_x=grid_cent_x+(tank_front_dist+tank_magnet_dist)*cos_pivot
+        magnet_front_y=grid_cent_y-(tank_front_dist+tank_magnet_dist)*sin_pivot      
+        oplot,[magnet_front_x-magnet_width/2.0*sin_pivot,magnet_front_x+magnet_width/2.0*sin_pivot],$
+        [magnet_front_y-magnet_width/2.0*cos_pivot,magnet_front_y+magnet_width/2.0*cos_pivot],color=64,thick=2
+        oplot,[magnet_front_x-magnet_width/2.0*sin_pivot,magnet_front_x-magnet_width/2.0*sin_pivot+magnet_size*cos_pivot],$
+        [magnet_front_y-magnet_width/2.0*cos_pivot,magnet_front_y-magnet_width/2.0*cos_pivot-magnet_size*sin_pivot],color=64 ,thick=2      
+        oplot,[magnet_front_x+magnet_width/2.0*sin_pivot,magnet_front_x+magnet_width/2.0*sin_pivot+magnet_size*cos_pivot],$
+        [magnet_front_y+magnet_width/2.0*cos_pivot,magnet_front_y+magnet_width/2.0*cos_pivot-magnet_size*sin_pivot],color=64,thick=2
+        oplot,[magnet_front_x-magnet_width/2.0*sin_pivot+magnet_size*cos_pivot,magnet_front_x+magnet_width/2.0*sin_pivot+magnet_size*cos_pivot],$
+        [magnet_front_y-magnet_width/2.0*cos_pivot-magnet_size*sin_pivot,magnet_front_y+magnet_width/2.0*cos_pivot-magnet_size*sin_pivot],color=64,thick=2
+        xyouts, 230,260,'Deflection magnet',color=64,/device,charsize=1.5
         ;plot calorimeter
-        if tank_cal_dist ne 0.0 then begin
-          x_c=cal_diam/2.0*cos(angl_arr)
-          y_c=cal_diam/2.0*sin(angl_arr)    
-          cal_front_x=grid_cent_x+(tank_front_dist+tank_size+tank_cal_dist)*cos_pivot_XY*cos_pivot_XZ
-          cal_front_y=grid_cent_y-(tank_front_dist+tank_size+tank_cal_dist)*sin_pivot_XY*cos_pivot_XZ
-          oplot,cal_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,cal_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=160 ,thick=2
-          oplot,cal_front_x+cal_size*cos_pivot_XY*cos_pivot_XZ+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,$
-          cal_front_y-cal_size*sin_pivot_XY*cos_pivot_XZ+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=160,thick=2     
-          oplot,[cal_front_x-cal_diam/2.0*sin_pivot_XY,cal_front_x-cal_diam/2.0*sin_pivot_XY+cal_size*cos_pivot_XY*cos_pivot_XZ],$
-          [cal_front_y-cal_diam/2.0*cos_pivot_XY,cal_front_y-cal_diam/2.0*cos_pivot_XY-cal_size*sin_pivot_XY*cos_pivot_XZ],color=160 ,thick=2     
-          oplot,[cal_front_x+cal_diam/2.0*sin_pivot_XY,cal_front_x+cal_diam/2.0*sin_pivot_XY+cal_size*cos_pivot_XY*cos_pivot_XZ],$
-          [cal_front_y+cal_diam/2.0*cos_pivot_XY,cal_front_y+cal_diam/2.0*cos_pivot_XY-cal_size*sin_pivot_XY*cos_pivot_XZ],color=160,thick=2
-          xyouts, 400,340,'Calorimeter',color=160,/device,charsize=1.5                    
-        endif
+        cal_front_x=grid_cent_x+(tank_front_dist+tank_size+tank_cal_dist)*cos_pivot
+        cal_front_y=grid_cent_y-(tank_front_dist+tank_size+tank_cal_dist)*sin_pivot      
+        oplot,[cal_front_x-cal_width/2.0*sin_pivot,cal_front_x+cal_width/2.0*sin_pivot],$
+        [cal_front_y-cal_width/2.0*cos_pivot,cal_front_y+cal_width/2.0*cos_pivot],color=0,thick=1,linestyle=3
+        oplot,[cal_front_x-cal_width/2.0*sin_pivot,cal_front_x-cal_width/2.0*sin_pivot+cal_size*cos_pivot],$
+        [cal_front_y-cal_width/2.0*cos_pivot,cal_front_y-cal_width/2.0*cos_pivot-cal_size*sin_pivot],color=160 ,thick=8     
+        oplot,[cal_front_x+cal_width/2.0*sin_pivot,cal_front_x+cal_width/2.0*sin_pivot+cal_size*cos_pivot],$
+        [cal_front_y+cal_width/2.0*cos_pivot,cal_front_y+cal_width/2.0*cos_pivot-cal_size*sin_pivot],color=160,thick=8
+        oplot,[cal_front_x-cal_width/2.0*sin_pivot+cal_size*cos_pivot,cal_front_x+cal_width/2.0*sin_pivot+cal_size*cos_pivot],$
+        [cal_front_y-cal_width/2.0*cos_pivot-cal_size*sin_pivot,cal_front_y+cal_width/2.0*cos_pivot-cal_size*sin_pivot],color=0,thick=1,linestyle=3
+        xyouts, 400,280,'Calorimeter',color=160,/device,charsize=1.5                    
         ;plot limiters
         for i=0,n_limiters-1 do begin
           z_pos=float(limiters_table(1,i))
-          lim_size=float(limiters_table(2,i))
-          lim_diam=float(limiters_table(3,i))
-          x_size=float(limiters_table(4,i))/2.0
-          y_size=float(limiters_table(5,i))/2.0
-          r_lim =float(limiters_table(6,i)) 
-          if finite(r_lim) then begin
-            oplot,r_lim*cos(angl_arr),r_lim*sin(angl_arr),color=48,thick=2
-          endif else begin
-            lim_front_x=grid_cent_x+(z_pos)*cos_pivot_XY*cos_pivot_XZ
-            lim_front_y=grid_cent_y-(z_pos)*sin_pivot_XY*cos_pivot_XZ
-            lim_back_x=lim_front_x+lim_size*cos_pivot_XY*cos_pivot_XZ
-            lim_back_y=lim_front_y-lim_size*sin_pivot_XY*cos_pivot_XZ     
-            if finite(lim_diam) then begin
-              x_c=lim_diam/2.0*cos(angl_arr)
-              y_c=lim_diam/2.0*sin(angl_arr)
-              oplot,lim_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,lim_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=48 ,thick=2
-              oplot,lim_front_x+lim_size*cos_pivot_XY*cos_pivot_XZ+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,$
-              lim_front_y-lim_size*sin_pivot_XY*cos_pivot_XZ+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=48,thick=2 
-              oplot,[lim_front_x+lim_diam/2.0*sin_pivot_XY,lim_back_x+lim_diam/2.0*sin_pivot_XY],$
-              [lim_front_y+lim_diam/2.0*cos_pivot_XY,lim_back_y+lim_diam/2.0*cos_pivot_XY],color=48,thick=2
-              oplot,[lim_front_x-lim_diam/2.0*sin_pivot_XY,lim_back_x-lim_diam/2.0*sin_pivot_XY],$
-              [lim_front_y-lim_diam/2.0*cos_pivot_XY,lim_back_y-lim_diam/2.0*cos_pivot_XY],color=48,thick=2
-            endif else begin 
-              oplot,[lim_front_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_front_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_front_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_front_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_front_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_front_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_front_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_front_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_front_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ,lim_front_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_front_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ,lim_front_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_front_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ,lim_front_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_front_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ,lim_front_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_front_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ,lim_front_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_front_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ,lim_front_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_front_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ,lim_front_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_front_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ,lim_front_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_back_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_back_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_back_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_back_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_back_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_back_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_back_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_back_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-            endelse
-         endelse
+          z_size=float(limiters_table(2,i))
+          diam=float(limiters_table(3,i))
+          x_size=float(limiters_table(4,i))
+          y_size=float(limiters_table(5,i))
+          lim_front_x=grid_cent_x+(z_pos)*cos_pivot
+          lim_front_y=grid_cent_y-(z_pos)*sin_pivot      
+          if finite(diam) then lim_width=diam else lim_width=x_size 
+          oplot,[lim_front_x+lim_width/2.0*sin_pivot,lim_front_x+lim_width/2.0*sin_pivot+z_size*cos_pivot],$
+          [lim_front_y+lim_width/2.0*cos_pivot,lim_front_y+lim_width/2.0*cos_pivot-z_size*sin_pivot],color=48,thick=2
+          oplot,[lim_front_x-lim_width/2.0*sin_pivot,lim_front_x-lim_width/2.0*sin_pivot+z_size*cos_pivot],$
+          [lim_front_y-lim_width/2.0*cos_pivot,lim_front_y-lim_width/2.0*cos_pivot-z_size*sin_pivot],color=48,thick=2
        endfor
-       xyouts, 400,360,'Beam limiters (beam duct)',color=48,/device,charsize=1.5       
+       xyouts, 400,260,'Beam limiters (beam duct)',color=48,/device,charsize=1.5
     endif
   endif
 end
@@ -2961,12 +2776,12 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
       Code_Grid_Table1=Widget_Table(Code_Grid_Base, Uname='Code_Grid_Table1',Xoffset=1, yoffset=55$
       ,scr_xsize=250, scr_ysize=56, Alignment=1,column_labels=['Min','Step1','Mid','Step2','Max']$
       ,row_labels=['z_beam, m']$
-      ,/editable,Frame=1,column_width=35,row_heights=20,value=string(code_grid_arr.z,format='(F6.3)'),FORMAT = '(F6.3)')
+      ,/editable,Frame=1,column_width=35,row_heights=20,value=code_grid_arr.z,FORMAT = '(F6.3)')
       
       Code_Grid_Table2=Widget_Table(Code_Grid_Base, Uname='Code_Grid_Table2',Xoffset=1, yoffset=120$
       ,scr_xsize=180, scr_ysize=76, Alignment=1,column_labels=['Min','Step','Max']$
       ,row_labels=['x_beam, m','y_beam, m']$
-      ,/editable,Frame=1,column_width=35,row_heights=20,value=[[string(code_grid_arr.x,format='(F6.3)')],[string(code_grid_arr.y,format='(F6.3)')]],FORMAT = '(F6.3)')
+      ,/editable,Frame=1,column_width=35,row_heights=20,value=[[code_grid_arr.x],[code_grid_arr.y]],FORMAT = '(F6.3)')
 
        Code_Save_Grid_Button = Widget_Button(Code_Grid_Base, UNAME='Code_Save_Grid_Button'  $
       ,XOFFSET=1, YOFFSET=225, SCR_XSIZE=80, SCR_YSIZE=25 $
@@ -2991,7 +2806,7 @@ end
 pro show_beam_param_window, main_base
 ;The following common block contains the parameters which describe the non-geometrical
 ;parameters of the beam (particle and energy distribution)
-common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
+common beam_param, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,div_bml_opt, div_dist_par
 ;The following common block is used to transfer the pointer to the
 ;status window and availability states of each data set
 common status, status_wid,error_catch,st_err  
@@ -3014,141 +2829,120 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
 
    geom=Widget_Info(Main_Base,/Geometry)
     IF XREGISTERED('Beam_Param_Widget') EQ 0 then begin
-      Beam_Param_Widget = WIDGET_BASE(/COLUMN, TITLE='Beam Parameters', Uname='Beam_Param_Widget',/ALIGN_CENTER,XOFFSET=geom.xoffset+300,YOFFSET=geom.yoffset+geom.ysize-626,xsize=473,ysize=528)
+      Beam_Param_Widget = WIDGET_BASE(/COLUMN, TITLE='Beam Parameters', Uname='Beam_Param_Widget',/ALIGN_CENTER,XOFFSET=geom.xoffset+300,YOFFSET=geom.yoffset+geom.ysize-626,xsize=473,ysize=453)
       Beam_Param_Base = Widget_base(Beam_Param_Widget, UNAME='Beam_Param_Base'  $
       ,XOFFSET=5,YOFFSET=5,Frame=1$
-      ,XSIZE=460,YSIZE=525)
+      ,XSIZE=460,YSIZE=450)
   
       Beam_Param_label = Widget_Label(Beam_Param_Base, UNAME='Beam_Param_Label'  $
       ,XOFFSET=3, YOFFSET=1, SCR_XSIZE=457 , SCR_YSIZE=33 $
-      ,VALUE= 'Selected parameters of the beam' ,XSIZE=5 ,YSIZE=23, /Align_Center,/sunken_frame)      
+      ,VALUE= 'Selected parameters of the H beam' ,XSIZE=5 ,YSIZE=23, /Align_Center,/sunken_frame)      
  
-      Beam_Atom_Label = Widget_Label(Beam_Param_Base, UNAME='Beam_Atom_Label'  $
-      ,XOFFSET=8, YOFFSET=40, SCR_XSIZE=227 , SCR_YSIZE=33 $
-      ,VALUE= 'Beam atom (H, D or T) :', XSIZE=5 ,YSIZE=1, /Align_Left)
-
-      Beam_Atom_Text = Widget_text(Beam_Param_Base, UNAME='Beam_Atom_Text'  $
-      ,XOFFSET=376, YOFFSET=40,SCR_XSIZE=78 ,SCR_YSIZE=30,/editable $
-      ,VALUE=beam_atom ,XSIZE=20 ,YSIZE=1)  
-
       Full_Energy_Label = Widget_Label(Beam_Param_Base, UNAME='Full_Energy_Label'  $
-      ,XOFFSET=8, YOFFSET=70, SCR_XSIZE=227 , SCR_YSIZE=33 $
+      ,XOFFSET=8, YOFFSET=40, SCR_XSIZE=227 , SCR_YSIZE=33 $
       ,VALUE= 'Energy of the main component, keV :  ', XSIZE=5 ,YSIZE=1, /Align_Left)
 
       Full_Energy_Text = Widget_text(Beam_Param_Base, UNAME='Full_Energy_Text'  $
-      ,XOFFSET=376, YOFFSET=70,SCR_XSIZE=78 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=376, YOFFSET=40,SCR_XSIZE=78 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(e_full,format='(F10.2)'),1) ,XSIZE=20 ,YSIZE=1)      
           
       Energy_Frac_Label = Widget_Label(Beam_Param_Base, UNAME='Energy_Frac_Label'  $
-      ,XOFFSET=8, YOFFSET=100, SCR_XSIZE=227 , SCR_YSIZE=33 $
+      ,XOFFSET=8, YOFFSET=70, SCR_XSIZE=227 , SCR_YSIZE=33 $
       ,VALUE= 'Beam enegy components (fractions):   ', XSIZE=5 ,YSIZE=1, /Align_Left)
  
       energy_frac_text='['+strjoin('1/'+strtrim(string(round(1.0/e_frac),format='(I10)'),2),', ')+']'
   
       Energy_Frac_Text = Widget_text(Beam_Param_Base, UNAME='Energy_Frac_Text'  $
-      ,XOFFSET=236, YOFFSET=100,SCR_XSIZE=218 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=236, YOFFSET=70,SCR_XSIZE=218 ,SCR_YSIZE=30,/editable $
       ,VALUE=energy_frac_text ,XSIZE=20 ,YSIZE=1)       
 
       I_Beam_Label_1 = Widget_Label(Beam_Param_Base, UNAME='I_Beam_Label_1'  $
-      ,XOFFSET=8, YOFFSET=145, SCR_XSIZE=227 , SCR_YSIZE=17 $
+      ,XOFFSET=8, YOFFSET=115, SCR_XSIZE=227 , SCR_YSIZE=17 $
       ,VALUE= 'Total current of the beam, A:                            ', XSIZE=5 ,YSIZE=1, /Align_Left)
 
       I_Beam_Label_2 = Widget_Label(Beam_Param_Base, UNAME='I_Beam_Label_2'  $
-      ,XOFFSET=8, YOFFSET=160, SCR_XSIZE=361 , SCR_YSIZE=17 $
+      ,XOFFSET=8, YOFFSET=130, SCR_XSIZE=361 , SCR_YSIZE=17 $
       ,VALUE= '(positive for (H+) ion source, negative for (H-) ion source) ', XSIZE=5 ,YSIZE=1, /Align_Left)     
  
       I_Beam_Text = Widget_text(Beam_Param_Base, UNAME='I_Beam_Text'  $
-      ,XOFFSET=376, YOFFSET=145,SCR_XSIZE=78 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=376, YOFFSET=115,SCR_XSIZE=78 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(I_beam,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
 
       I_Frac_Label = Widget_Label(Beam_Param_Base, UNAME='I_Frac_Label'  $
-      ,XOFFSET=8, YOFFSET=190, SCR_XSIZE=227 , SCR_YSIZE=33 $
+      ,XOFFSET=8, YOFFSET=160, SCR_XSIZE=227 , SCR_YSIZE=33 $
       ,VALUE= 'Current fraction of each component:  ', XSIZE=5 ,YSIZE=1, /Align_Left)
  
       I_frac_text='['+strjoin(strtrim(string(I_frac,format='(F10.3)'),2),', ')+']'
   
       I_Frac_Text = Widget_text(Beam_Param_Base, UNAME='I_Frac_Text'  $
-      ,XOFFSET=236, YOFFSET=190,SCR_XSIZE=218 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=236, YOFFSET=160,SCR_XSIZE=218 ,SCR_YSIZE=30,/editable $
       ,VALUE=I_frac_text ,XSIZE=20 ,YSIZE=1)
 
       I_Opt_Label_1 = Widget_Label(Beam_Param_Base, UNAME='I_Opt_Label_1'  $
-      ,XOFFSET=8, YOFFSET=235, SCR_XSIZE=361 , SCR_YSIZE=17 $
+      ,XOFFSET=8, YOFFSET=205, SCR_XSIZE=361 , SCR_YSIZE=17 $
       ,VALUE= 'Optimal extraction current I_opt, A:', XSIZE=5 ,YSIZE=1, /Align_Left)
 
       I_Opt_Label_2 = Widget_Label(Beam_Param_Base, UNAME='I_Opt_Label_2'  $
-      ,XOFFSET=8, YOFFSET=250, SCR_XSIZE=361 , SCR_YSIZE=17 $
+      ,XOFFSET=8, YOFFSET=220, SCR_XSIZE=361 , SCR_YSIZE=17 $
       ,VALUE= '(positive for (H+) ion source, negative for (H-) ion source) ', XSIZE=5 ,YSIZE=1, /Align_Left)
 
       I_Opt_Text = Widget_text(Beam_Param_Base, UNAME='I_Opt_Text'  $
-      ,XOFFSET=376, YOFFSET=235,SCR_XSIZE=78 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=376, YOFFSET=205,SCR_XSIZE=78 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(I_opt,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1) 
       
              
       def_font = Widget_Info(I_Opt_Text,/FONTNAME)  
  
       I_Dens_Par_Label_symb = Widget_Label(Beam_Param_Base, UNAME='I_Dens_Par_Label_Symb'  $
-      ,XOFFSET=270, YOFFSET=295, SCR_XSIZE=10 , SCR_YSIZE=17, font='-adobe-symbol-medium-r-normal--14-140-75-75-p-85-adobe-fontspecific'  $
+      ,XOFFSET=270, YOFFSET=265, SCR_XSIZE=10 , SCR_YSIZE=17, font='-adobe-symbol-medium-r-normal--14-140-75-75-p-85-adobe-fontspecific'  $
       ,VALUE= 'b', XSIZE=5 ,YSIZE=1, /Align_Left)
      
       I_Dens_Par_Label_1 = Widget_Label(Beam_Param_Base, UNAME='I_Dens_Par_Label_1'  $
-      ,XOFFSET=8, YOFFSET=295, SCR_XSIZE=357 , SCR_YSIZE=17, font=def_font  $
+      ,XOFFSET=8, YOFFSET=265, SCR_XSIZE=357 , SCR_YSIZE=17, font=def_font  $
       ,VALUE= 'Source current density profile (parabolic), b coef (0 - 1):', XSIZE=5 ,YSIZE=1, /Align_Left)
    
       I_Dens_Par_Label_2 = Widget_Label(Beam_Param_Base, UNAME='I_Dens_Par_Label_2'  $
-      ,XOFFSET=8, YOFFSET=310, SCR_XSIZE=357 , SCR_YSIZE=17 $
+      ,XOFFSET=8, YOFFSET=280, SCR_XSIZE=357 , SCR_YSIZE=17 $
       ,VALUE= '(0-uniform), (1-pure parabolic, zero density at the edge)', XSIZE=5 ,YSIZE=1, /Align_Left)
 
       I_Dens_Par_Text = Widget_text(Beam_Param_Base, UNAME='I_Dens_Par_Text'  $
-      ,XOFFSET=376, YOFFSET=295,SCR_XSIZE=78 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=376, YOFFSET=265,SCR_XSIZE=78 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(I_dens_par,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)   
 
-      X_Div_Angle_Label_symb = Widget_Label(Beam_Param_Base, UNAME='X_Div_Angle_Label_Symb'  $
-      ,XOFFSET=282, YOFFSET=340, SCR_XSIZE=10 , SCR_YSIZE=33, font='-adobe-symbol-medium-r-normal--14-140-75-75-p-85-adobe-fontspecific' $
+      Div_Angle_Label_symb = Widget_Label(Beam_Param_Base, UNAME='Div_Angle_Label_Symb'  $
+      ,XOFFSET=282, YOFFSET=310, SCR_XSIZE=10 , SCR_YSIZE=33, font='-adobe-symbol-medium-r-normal--14-140-75-75-p-85-adobe-fontspecific' $
       ,VALUE= 'q', XSIZE=5 ,YSIZE=1, /Align_Left)
 
-      Y_Div_Angle_Label_symb = Widget_Label(Beam_Param_Base, UNAME='Y_Div_Angle_Label_Symb'  $
-      ,XOFFSET=282, YOFFSET=385, SCR_XSIZE=10 , SCR_YSIZE=33, font='-adobe-symbol-medium-r-normal--14-140-75-75-p-85-adobe-fontspecific' $
-      ,VALUE= 'q', XSIZE=5 ,YSIZE=1, /Align_Left)
-
-      X_Div_Angle_Label = Widget_Label(Beam_Param_Base, UNAME='X_Div_Angle_Label'  $
-      ,XOFFSET=8, YOFFSET=340, SCR_XSIZE=357 , SCR_YSIZE=33, font=def_font $
-      ,VALUE= 'Optimal/minimal beamlet divergence half-angle omin (X), deg', XSIZE=5 ,YSIZE=1, /Align_Left)
+      Div_Angle_Label = Widget_Label(Beam_Param_Base, UNAME='Div_Angle_Label'  $
+      ,XOFFSET=8, YOFFSET=310, SCR_XSIZE=347 , SCR_YSIZE=33, font=def_font $
+      ,VALUE= 'Optimal/minimal beamlet divergence half-angle omin, deg', XSIZE=5 ,YSIZE=1, /Align_Left)
        
-      X_Div_Angle_Text = Widget_text(Beam_Param_Base, UNAME='X_Div_Angle_Text'  $
-      ,XOFFSET=376, YOFFSET=340,SCR_XSIZE=78 ,SCR_YSIZE=30,/editable $
-      ,VALUE=strtrim(string(x_div_bml_opt,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
-
-      Y_Div_Angle_Label = Widget_Label(Beam_Param_Base, UNAME='Y_Div_Angle_Label'  $
-      ,XOFFSET=8, YOFFSET=385, SCR_XSIZE=357 , SCR_YSIZE=33, font=def_font $
-      ,VALUE= 'Optimal/minimal beamlet divergence half-angle omin (Y), deg', XSIZE=5 ,YSIZE=1, /Align_Left)
-       
-      Y_Div_Angle_Text = Widget_text(Beam_Param_Base, UNAME='Y_Div_Angle_Text'  $
-      ,XOFFSET=376, YOFFSET=385,SCR_XSIZE=78 ,SCR_YSIZE=30,/editable $
-      ,VALUE=strtrim(string(y_div_bml_opt,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
-
+      Div_Angle_Text = Widget_text(Beam_Param_Base, UNAME='Div_Angle_Text'  $
+      ,XOFFSET=376, YOFFSET=310,SCR_XSIZE=78 ,SCR_YSIZE=30,/editable $
+      ,VALUE=strtrim(string(div_bml_opt,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
      
       Div_Angle_Par_Label_symb = Widget_Label(Beam_Param_Base, UNAME='Div_Angle_Par_Label_Symb'  $
-      ,XOFFSET=288, YOFFSET=430, SCR_XSIZE=10 , SCR_YSIZE=17, font='-adobe-symbol-medium-r-normal--14-140-75-75-p-85-adobe-fontspecific'  $
+      ,XOFFSET=288, YOFFSET=355, SCR_XSIZE=10 , SCR_YSIZE=17, font='-adobe-symbol-medium-r-normal--14-140-75-75-p-85-adobe-fontspecific'  $
       ,VALUE= 'g', XSIZE=5 ,YSIZE=1, /Align_Left)
 
       Div_Dist_Par_Label_1 = Widget_Label(Beam_Param_Base, UNAME='Div_Dist_Par_Label_1'  $
-      ,XOFFSET=8, YOFFSET=430, SCR_XSIZE=357 , SCR_YSIZE=17, font=def_font   $
+      ,XOFFSET=8, YOFFSET=355, SCR_XSIZE=357 , SCR_YSIZE=17, font=def_font   $
       ,VALUE= 'Beamlet divergence variation law (parabolic) , g coef:', XSIZE=5 ,YSIZE=1, /Align_Left)
     
       Div_Dist_Par_Label_2 = Widget_Label(Beam_Param_Base, UNAME='Div_Dist_Par_Label_2'  $
-      ,XOFFSET=8, YOFFSET=445, SCR_XSIZE=357 , SCR_YSIZE=17 $
+      ,XOFFSET=8, YOFFSET=370, SCR_XSIZE=357 , SCR_YSIZE=17 $
       ,VALUE= '(0-minimal), (>0 - strength of deviation from minimal)', XSIZE=5 ,YSIZE=1, /Align_Left)
 
       Div_Dist_Par_Text = Widget_text(Beam_Param_Base, UNAME='Div_Dist_Par_Text'  $
-      ,XOFFSET=376, YOFFSET=430,SCR_XSIZE=78 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=376, YOFFSET=355,SCR_XSIZE=78 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(div_dist_par,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
 
       Beam_Param_Save_Button = Widget_Button(Beam_Param_Base, UNAME='Beam_Param_Save_Button'  $
-      ,XOFFSET=4, YOFFSET=495, SCR_XSIZE=80, SCR_YSIZE=25 $
+      ,XOFFSET=4, YOFFSET=420, SCR_XSIZE=80, SCR_YSIZE=25 $
       ,VALUE= 'Save' ,XSIZE=25 ,YSIZE=25, /Align_Center)
     
       Beam_Param_Close_Button = Widget_Button(Beam_Param_Base, UNAME='Beam_Param_Close_Button'  $
-      ,XOFFSET=108, YOFFSET=495, SCR_XSIZE=80, SCR_YSIZE=25 $
+      ,XOFFSET=108, YOFFSET=420, SCR_XSIZE=80, SCR_YSIZE=25 $
       ,VALUE= 'Close' ,XSIZE=25 ,YSIZE=25, /Align_Center)
 
  
@@ -3461,6 +3255,7 @@ if z_eff_type eq 1 then begin
     return
   endelse
 endif
+
 if z_eff_type eq 2 then begin
     st_z_eff=0
     val=float(z_eff_file)  
@@ -3474,27 +3269,7 @@ if z_eff_type eq 2 then begin
    
     z_eff_err=interpol(z_eff_raw_err,z_eff_raw_r,z_eff_r)
 endif
-if z_eff_type eq 3 then begin
-  file=file_search(z_eff_file)
-  if file(0) eq "" then begin
-    Widget_control, status_wid, Get_Value=status_tx
-    Widget_Control, status_wid,$
-    Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' :  The '+z_eff_file+' does not exist']], Set_text_top_line=n_elements(status_tx)-4
-    st_err=1
-    return
-  endif
-  restore,z_eff_file
-  t1_ind=locate(time,t1)
-  t2_ind=locate(time,t2)
-  
-  y_arr=mean(interpolate(z_eff_ave,interpol(make_array(n_elements(time),/index),time,[t1,t2])))
-  z_eff_r = n_e_r
-  z_eff=fltarr(n_elements(n_e_r))+y_arr(0)
-  z_eff_err=fltarr(n_elements(n_e_r))+y_arr(0)*0.1
-  z_eff_raw=z_eff
-  z_eff_raw_r=z_eff_r
-  z_eff_raw_err=z_eff_raw
-endif
+
 end
 ;-------------------------------------------------------------------------------------------------------------------------
 
@@ -3913,7 +3688,7 @@ endif
 if n_elements(n_e) le 1 and n_elements(n_e_r) le 1 and n_elements(n_e_err) le 1 and n_elements(n_e_raw) gt 1 and n_elements(n_e_raw_r) gt 1 and n_elements(n_e_raw_err) gt 1 then begin
   n_e=n_e_raw
   n_e_r=n_e_raw_r
-  n_e_err=n_e_raw_err
+  n_e_err=n_e_r_err
   st=st+3
   Widget_control, status_wid, Get_Value=status_tx
   Widget_Control, status_wid,$
@@ -4158,47 +3933,36 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
 ;----------------------------------------------------- 
   n_e=0 & n_e_r=0 & n_e_err=0 & n_e_raw=0 & n_e_raw_r=0 & n_e_raw_err=0
   ;use Y. Ma routine to fit TS data
-   nedeg=long(3.0)
+   nedeg=long(5.0)
    quick_fit, shot, ne_deg=nedeg,adata, /nosave
-   if n_elements(adata) gt 0 then begin
-     t_quickfit  = adata.t_ts
-     r_quickfit  = adata.ax
-     rout_quickfit  = adata.r_out   
-     f_quickfit  = adata.afp
-     fer_quickfit  = adata.afper
+   t_quickfit  = adata.t_ts
+   r_quickfit  = adata.ax
+   rout_quickfit  = adata.r_out   
+   f_quickfit  = adata.afp
+   fer_quickfit  = adata.afper
 
-     n_t_int=100
-     t_int=interpol([t1(0),t2(0)],n_t_int)  
+   n_t_int=100
+   t_int=interpol([t1(0),t2(0)],n_t_int)  
+   
+   n_r_int=400
+   r_int=interpol([r_major,r_major+r_minor],n_r_int)
 
-     n_r_int=400
-     r_int=interpol([r_major,r_major+r_minor],n_r_int)
-
-     n_e_int=fltarr(n_elements(t_quickfit),n_r_int)
-     n_e_err_int=fltarr(n_elements(t_quickfit),n_r_int)   
-     for i=0,n_elements(t_quickfit)-1 do n_e_int(i,*)=interpol(f_quickfit(i,*,0),r_quickfit+rout_quickfit(i),r_int,/spline)
-     for i=0,n_elements(t_quickfit)-1 do n_e_err_int(i,*)=interpol(fer_quickfit(i,*,0),r_quickfit+rout_quickfit(i),r_int,/spline)
-
-     n_e_int2=fltarr(n_t_int,n_r_int)
-     n_e_err_int2=fltarr(n_t_int,n_r_int)
-     for i=0,n_r_int-1 do n_e_int2(*,i)=interpol(n_e_int(*,i),t_quickfit,t_int,/spline)
-     for i=0,n_r_int-1 do n_e_err_int2(*,i)=interpol(n_e_err_int(*,i),t_quickfit,t_int,/spline)
-
-     n_e_raw_r=r_int
-     n_e_raw=mean2d(transpose(n_e_int2))*1e14
-     n_e_raw_err=mean2d(transpose(n_e_err_int2))*1e14
-     n_e_r=n_e_raw_r
-     n_e=n_e_raw
-     n_e_err=n_e_raw_err
-  endif else begin
-     n_r_int=400
-     r_int=interpol([r_major,r_major+r_minor],n_r_int)
-     n_e_raw_r=r_int
-     n_e_raw=n_e_raw_r*0.0
-     n_e_raw_err=n_e_raw_r*0.0
-     n_e_r=n_e_raw_r
-     n_e=n_e_raw
-     n_e_err=n_e_raw_err   
-  endelse
+   n_e_int=fltarr(n_elements(t_quickfit),n_r_int)
+   n_e_err_int=fltarr(n_elements(t_quickfit),n_r_int)   
+   for i=0,n_elements(t_quickfit)-1 do n_e_int(i,*)=interpol(f_quickfit(i,*,0),r_quickfit+rout_quickfit(i),r_int,/spline)
+   for i=0,n_elements(t_quickfit)-1 do n_e_err_int(i,*)=interpol(fer_quickfit(i,*,0),r_quickfit+rout_quickfit(i),r_int,/spline)
+   
+   n_e_int2=fltarr(n_t_int,n_r_int)
+   n_e_err_int2=fltarr(n_t_int,n_r_int)
+   for i=0,n_r_int-1 do n_e_int2(*,i)=interpol(n_e_int(*,i),t_quickfit,t_int,/spline)
+   for i=0,n_r_int-1 do n_e_err_int2(*,i)=interpol(n_e_err_int(*,i),t_quickfit,t_int,/spline)
+  
+   n_e_raw_r=r_int
+   n_e_raw=mean2d(transpose(n_e_int2))*1e14
+   n_e_raw_err=mean2d(transpose(n_e_err_int2))*1e14
+   n_e_r=n_e_raw_r
+   n_e=n_e_raw
+   n_e_err=n_e_raw_err
 end
 ;-------------------------------------------------------------------------------------------------------------------------
 
@@ -4304,7 +4068,7 @@ endif
 if n_elements(t_e) le 1 and n_elements(t_e_r) le 1 and n_elements(t_e_err) le 1 and n_elements(t_e_raw) gt 1 and n_elements(t_e_raw_r) gt 1 and n_elements(t_e_raw_err) gt 1 then begin
   t_e=t_e_raw
   t_e_r=t_e_raw_r
-  t_e_err=t_e_raw_err
+  t_e_err=t_e_r_err
   st=st+3
   Widget_control, status_wid, Get_Value=status_tx
   Widget_Control, status_wid,$
@@ -4554,45 +4318,34 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
   ;use Y. Ma routine to fit TS data
    tedeg=long(2.0)
    quick_fit, shot, te_deg=tedeg,adata, /nosave
-   if n_elements(adata) gt 0 then begin
-     t_quickfit  = adata.t_ts
-     r_quickfit  = adata.ax
-     rout_quickfit  = adata.r_out
-     f_quickfit  = adata.afp
-     fer_quickfit  = adata.afper
+   t_quickfit  = adata.t_ts
+   r_quickfit  = adata.ax
+   rout_quickfit  = adata.r_out
+   f_quickfit  = adata.afp
+   fer_quickfit  = adata.afper
 
-     n_t_int=100
-     t_int=interpol([t1(0),t2(0)],n_t_int)  
+   n_t_int=100
+   t_int=interpol([t1(0),t2(0)],n_t_int)  
+   
+   n_r_int=400
+   r_int=interpol([r_major,r_major+r_minor],n_r_int)
 
-     n_r_int=400
-     r_int=interpol([r_major,r_major+r_minor],n_r_int)
-
-     t_e_int=fltarr(n_elements(t_quickfit),n_r_int)
-     t_e_err_int=fltarr(n_elements(t_quickfit),n_r_int)   
-     for i=0,n_elements(t_quickfit)-1 do t_e_int(i,*)=interpol(f_quickfit(i,*,1),r_quickfit+rout_quickfit(i),r_int,/spline)
-     for i=0,n_elements(t_quickfit)-1 do t_e_err_int(i,*)=interpol(fer_quickfit(i,*,1),r_quickfit+rout_quickfit(i),r_int,/spline)
-
-     t_e_int2=fltarr(n_t_int,n_r_int)
-     t_e_err_int2=fltarr(n_t_int,n_r_int)
-     for i=0,n_r_int-1 do t_e_int2(*,i)=interpol(t_e_int(*,i),t_quickfit,t_int,/spline)
-     for i=0,n_r_int-1 do t_e_err_int2(*,i)=interpol(t_e_err_int(*,i),t_quickfit,t_int,/spline)
-
-     t_e_raw_r=r_int
-     t_e_raw=mean2d(transpose(t_e_int2))/1e3
-     t_e_raw_err=mean2d(transpose(t_e_err_int2))/1e3
-     t_e_r=t_e_raw_r
-     t_e=t_e_raw
-     t_e_err=t_e_raw_err   
-  endif else begin
-     n_r_int=400
-     r_int=interpol([r_major,r_major+r_minor],n_r_int)
-     t_e_raw_r=r_int
-     t_e_raw=t_e_raw_r*0.0
-     t_e_raw_err=t_e_raw_r*0.0
-     t_e_r=t_e_raw_r
-     t_e=t_e_raw
-     t_e_err=t_e_raw_err   
-  endelse
+   t_e_int=fltarr(n_elements(t_quickfit),n_r_int)
+   t_e_err_int=fltarr(n_elements(t_quickfit),n_r_int)   
+   for i=0,n_elements(t_quickfit)-1 do t_e_int(i,*)=interpol(f_quickfit(i,*,1),r_quickfit+rout_quickfit(i),r_int,/spline)
+   for i=0,n_elements(t_quickfit)-1 do t_e_err_int(i,*)=interpol(fer_quickfit(i,*,1),r_quickfit+rout_quickfit(i),r_int,/spline)
+   
+   t_e_int2=fltarr(n_t_int,n_r_int)
+   t_e_err_int2=fltarr(n_t_int,n_r_int)
+   for i=0,n_r_int-1 do t_e_int2(*,i)=interpol(t_e_int(*,i),t_quickfit,t_int,/spline)
+   for i=0,n_r_int-1 do t_e_err_int2(*,i)=interpol(t_e_err_int(*,i),t_quickfit,t_int,/spline)
+  
+   t_e_raw_r=r_int
+   t_e_raw=mean2d(transpose(t_e_int2))/1e3
+   t_e_raw_err=mean2d(transpose(t_e_err_int2))/1e3
+   t_e_r=t_e_raw_r
+   t_e=t_e_raw
+   t_e_err=t_e_raw_err   
 end
 ;-------------------------------------------------------------------------------------------------------------------------
 
@@ -4823,23 +4576,22 @@ if error_catch then begin
   if st0 then begin  
     mdsset_def,'\efit_aeqdsk'
     tout=MdsValue('dim_of(\efit_aeqdsk:cpasma)',status=st1)
-    ;rmagx=mdsvalue('rmagx',status=st2)
-    ;zmagx=mdsvalue('zmagx',status=st3)
-    zout= mdsvalue('zout',status=st3)
+    rmagx=mdsvalue('rmagx',status=st2)
+    zmagx=mdsvalue('zmagx',status=st3)
     aout= mdsvalue('aout',status=st4)
-    rout= mdsvalue('rout',status=st4)    
+    rout= mdsvalue('rout',status=st4)
     eout=mdsvalue('eout',status=st5)
     doutu=mdsvalue('doutu',status=st6)
     doutl=mdsvalue('doutl',status=st7)
     mdsclose
-    if st1 and st3 and st4 and st5 and st6 and st7 then begin
+    if st1 and st2 and st3 and st4 and st5 and st6 and st7 then begin
       ;---------------------------
       t1_ind=locate(tout,t1)
       t2_ind=locate(tout,t2) 
-      ;amagx=aout+rout-rmagx
-      r_major=mean(rout(t1_ind:t2_ind))/100.0 ;m
-      z_major=mean(zout(t1_ind:t2_ind))/100.0 ;m 
-      r_minor=mean(aout(t1_ind:t2_ind))/100.0 ;m
+      amagx=aout+rout-rmagx
+      r_major=mean(rmagx(t1_ind:t2_ind))/100.0 ;m
+      z_major=mean(zmagx(t1_ind:t2_ind))/100.0 ;m 
+      r_minor=mean(amagx(t1_ind:t2_ind))/100.0 ;m
       elong=mean(eout(t1_ind:t2_ind))
       triang_upper=mean(doutu(t1_ind:t2_ind))
       triang_lower=mean(doutl(t1_ind:t2_ind))
@@ -4871,100 +4623,8 @@ end
 
 
 ;-------------------------------------------------------------------------------------------------------------------------
-;Procedure which loads plasma geometry parameters from the EFIT file
-;-------------------------------------------------------------------------------------------------------------------------
-Pro load_plasma_geom_efit_file
-;The following common block contains the parameters which describe the geometry
-;and position of the tokamak  plasma.
-common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
-
-;The following common block contains some of the settings for loading of
-;the input data used for the beam attenuation and penetration
-;calculation. ;The following common block contains the name of the input file from which the input
-;data is extracted 
-common load_settings, load_set_def,load_choice,general_type, general_file, beam_geom_type,beam_geom_file,beam_lim_type,beam_lim_file,beam_param_type,beam_param_file,$
-ne_type,ne_file,te_type,te_file,z_eff_type,z_eff_file,plasma_geom_type,plasma_geom_file,gas_type,gas_file,grid_type,grid_file,plasma_param_type,plasma_param_file
-; The following common block contains general parameters: which user,
-; what beam, what shot and time interval
-common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
-;The following common block is used to transfer the pointer to the
-;status window and availability states of each data set
-common status, status_wid,error_catch,st_err  
-
-;Error handler---------------------------------------
-if error_catch then begin
-   Catch,error_status
-   if error_status ne 0 then begin
-     err_msg=strjoin(strsplit(!Error_State.MSG,string(10B),/extract))
-     Widget_control, status_wid, Get_Value=status_tx
-     Widget_Control, status_wid,$
-     Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+$
-' : IDL Error. Error Status: '+strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line=n_elements(status_tx)-4
-     catch,/cancel
-     st_err=1
-     return
-   endif
- endif
-;----------------------------------------------------- 
-afiles = strsplit(plasma_geom_file,'*',/extract)
-afiles = afiles(0)+'a'+shot+'.*'
-afiles_all=file_search(afiles)
-if n_elements(afiles_all) le 1 then begin
-    Widget_control, status_wid, Get_Value=status_tx
-    Widget_Control, status_wid,$
-    Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+$
-' : There are no EFIT files available for selected time interval']], Set_text_top_line=n_elements(status_tx)-4
-    st_err=1
-    return
-endif
-afiles = ""
-;only consider times within time interval
-for i=0, n_elements(afiles_all)-1 do begin
-   tfile = float((strsplit(afiles_all(i),'.',/extract))(1))/1000.0
-   if  tfile ge t1 and tfile le t2 then afiles = [afiles,afiles_all(i)]
-endfor
-afiles=afiles[1:n_elements(afiles)-1]
-; Establish formats for formatted reads
-form1040 = '(1x,4e16.9)'
-rout = fltarr(n_elements(afiles))
-zout = fltarr(n_elements(afiles))
-aout = fltarr(n_elements(afiles))
-eout = fltarr(n_elements(afiles))
-doutu = fltarr(n_elements(afiles))
-doutl = fltarr(n_elements(afiles))
-temp="line"
-for i=0, n_elements(afiles)-1 do begin
-  ;reading afile
-   close,1
-   openr,1,afiles(i)
-   readf,1,temp
-   readf,1,temp
-   readf,1,temp
-   readf,1,temp
-   readf,1,temp
-   readf,1,form=form1040,a,b,c,d
-   rout(i) = float(b)
-   zout(i) = float(c)
-   aout(i) = float(d)
-   readf,1,form=form1040,a,b,c,d
-   eout(i) = float(a)
-   doutu(i) = float(b)
-   doutl(i) = float(c)
-   close,1
-endfor
-r_major= mean(rout)/100.0
-z_major=mean(zout)/100.0
-r_minor=mean(aout)/100.0
-elong=mean(eout)
-triang_upper=mean(doutu)
-triang_lower=mean(doutl)
-end
-;-------------------------------------------------------------------------------------------------------------------------
-
-
-;-------------------------------------------------------------------------------------------------------------------------
-;Procedure which constructs 3D plasma rho surfaces either from input data or
-;from EFIT parameters and 
+;Procedure which constructs 3D plasma rho surfaces either from output data of
+;the efit_rz2rho.pro code or from Equllibrium formula using calculated
 ;"plasma geometry" parameters.
 ;-------------------------------------------------------------------------------------------------------------------------
 
@@ -4975,24 +4635,18 @@ Pro make_flux_surf
 ;construct 3D rho array.
 common construct_settings, flux_surf_names, flux_surf_arr_type,ne_arr_type,te_arr_type,z_eff_arr_type,stop_plasma_type, stop_plasma_type_names,exc_plasma_type, $
 exc_plasma_type_names,gas_arr_type,stop_gas_type,lim_arr_type,grid_aper_names,grid_aper_type
-;The following common block contains some of the settings for loading of
-;the input data used for the beam attenuation and penetration
-;calculation. ;The following common block contains the name of the input file from which the input
-;data is extracted 
-common load_settings, load_set_def,load_choice,general_type, general_file, beam_geom_type,beam_geom_file,beam_lim_type,beam_lim_file,beam_param_type,beam_param_file,$
-ne_type,ne_file,te_type,te_file,z_eff_type,z_eff_file,plasma_geom_type,plasma_geom_file,gas_type,gas_file,grid_type,grid_file,plasma_param_type,plasma_param_file
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for
 ;calculation. These parameters are needed here to map the plasma
 ;surfaces defined in tokamak coordinates to the beam coordinates
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
 ;The following common block contains the parameters which describe the geometry
 ;and position of the tokamak plasma. These parameters are used here to
 ;construct rho array based on the equillibrium formula.
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
 ;The following common block contains X,Y,Z coordinate arrays for the beam
 ;calculation grid and output 3D arrays of the beam density and excitation fracitons
-common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
+common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac
 ;The following commong block contains the rho arrays which used for
 ;mapping of 1D Ne,Te,Z_eff arrays to the tokamak 3D coordinated and
 ;eventually to the beam coordinates.
@@ -5043,138 +4697,34 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
 ; do this if EFIT(MDSPLUS) setting is choosen
  if strtrim(flux_surf_names(flux_surf_arr_type)) eq 'EFIT (MDSPLUS)' then begin
     sel=0 
-    ;-----------get EFIT grid
+   ;-----------get EFIT grid
     mdsopen,'analysis',shot
       mdsset_def,'\efit_geqdsk'
-      psirz= mdsvalue('psirz')
       zgrid= mdsvalue('zgrid')
-      rgrid= mdsvalue('rgrid')
-      sibry= mdsvalue('ssibry')
-      simag= mdsvalue('ssimag')
-      t_efit = mdsvalue('dim_of(ssibry)') 
+      rgrid= mdsvalue('rgrid')    
     mdsclose
- 
-    t1_ind=(locate(t_efit,t1))(0)
-    t2_ind=(locate(t_efit,t2))(0)
-
-    psirz = total(psirz(*,*,t1_ind:t2_ind),3)/(t2_ind-t1_ind+1)
-    simag = mean(simag(t1_ind:t2_ind))
-    sibry = mean(sibry(t1_ind:t2_ind))
     n_z_int=200
     n_r_int=1000
     rgrid_arr = interpol([rgrid(0),rgrid(n_elements(rgrid)-1)],n_r_int)
-    zgrid_arr = interpol([zgrid(0),zgrid(n_elements(zgrid)-1)],n_z_int)
-    rgrid_arr_2 = interpol([0,n_elements(rgrid)-1],n_r_int)
-    zgrid_arr_2 = interpol([0,n_elements(zgrid)-1],n_z_int)
+    zgrid_arr = interpol([zgrid(0),zgrid(n_elements(rgrid)-1)],n_z_int)
     rgrid_arr_1 = make_array(n_r_int,/index)
-    zgrid_arr_1 = make_array(n_z_int,/index)  
-       
+    zgrid_arr_1 = make_array(n_z_int,/index)       
 
-   psi_grid = interpolate(psirz,rgrid_arr_2,zgrid_arr_2,cubic = -0.5, /grid)
-   rho_grid = sqrt((psi_grid-simag)/(sibry-simag))
-   ind_bound=where(rho_grid gt 1.0)
-   ;patch to remove the no-plasma filedline islands
-   rho_grid(ind_bound)=1.1
-   z_bound = where(zgrid_arr gt z_major + r_minor*elong*1.1 or zgrid_arr lt z_major - r_minor*elong*1.1)
-   rho_grid (*,z_bound) = 1.1     
-  endif
- ; do this if EFIT(EQDSK files) setting is choosen
- if strtrim(flux_surf_names(flux_surf_arr_type)) eq 'EFIT (EQDSK files)' then begin
-    gfiles = strsplit(plasma_geom_file,'*',/extract)
-    gfiles = gfiles(0)+'g'+shot+'.*'
-    gfiles_all=file_search(gfiles)
-    ; Establish formats for formatted reads
-        BOM = ['EF'x,'BB'x,'BF'x]      ; UTF-8 "BOM" marker code
-	form2000 = '(6a8,3i4)'
-        form2000U = '(3x,6a8,3i4)'
-	form2020 = '(5e16.9)'
-    if n_elements(gfiles_all) le 1 then begin
-        Widget_control, status_wid, Get_Value=status_tx
-        Widget_Control, status_wid,$
-        Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+$
-    ' : There are no EFIT files available for selected time interval']], Set_text_top_line=n_elements(status_tx)-4
-        st_err=1
-        return
-    endif
-    sel=1
-    gfiles = ""
-    ;only consider times within time interval
-    for i=0, n_elements(gfiles_all)-1 do begin
-       tfile = float((strsplit(gfiles_all(i),'.',/extract))(1))/1000.0
-       if  tfile ge t1 and tfile le t2 then gfiles = [gfiles,gfiles_all(i)]
-    endfor
-    gfiles=gfiles[1:n_elements(gfiles)-1]
+    rho_grid=fltarr(n_r_int,n_z_int)
 
     
-    doutl = fltarr(n_elements(gfiles))
-    temp="line"
-    for i=0, n_elements(gfiles)-1 do begin
-      ;reading afile
-      close,1
-      openr,1,gfiles(i)
-      ; Test first three bytes for UTF-8 BOM code. This encoding is used in Eqdsk
-      ; files from EAST, and possibly elsewhere
-      casee= strarr(6)
-      first_line = ''
-      readf,1,form='(a)',first_line
-      test_UTF = array_equal((byte(first_line))[0:2],BOM) 
-      reads,first_line,form=(test_UTF ? form2000U : form2000),casee,idum,mw,mh
-      aa = fltarr(mw)
-      aaa = fltarr(mw,mh)
-      if i eq 0 then begin
-         psirz = fltarr(mw,mh,n_elements(gfiles))
-         zgrid = fltarr(mh,n_elements(gfiles))
-         rgrid = fltarr(mw,n_elements(gfiles))
-         simag = fltarr(n_elements(gfiles))
-         sibry = fltarr(n_elements(gfiles)) 
-      endif
-      readf,1,form=form2020,a,b,c,d,e
-      zgrid(*,i)= interpol([float(e)-float(b)/2.0,float(e)+float(b)/2.0],mh)
-      rgrid(*,i)= interpol([float(d),float(d)+float(a)],mw)
-      readf,1,form=form2020,a,b,c,d,e
-      simag(i) = c
-      sibry(i) = d
-      readf,1,temp
-      readf,1,temp
-      readf,1,form=form2020,aa
-      readf,1,form=form2020,aa
-      readf,1,form=form2020,aa
-      readf,1,form=form2020,aa 
-      readf,1,form=form2020,aaa
-      psirz(*,*,i)=aaa
-      close,1   
-    endfor
-   ;interpolation
-   psirz = total(psirz,3)/n_elements(gfiles)
-   rgrid = mean2d(rgrid)
-   zgrid = mean2d(zgrid)
-   simag = mean(simag)
-   sibry = mean(sibry)
+    z_grid_arr2D=zgrid_arr ## make_array(n_r_int,value=1.0)
+    r_grid_arr2D=make_array(n_z_int,value=1) ## rgrid_arr
+    z_grid_arr1D=reform(z_grid_arr2D,long(n_z_int)*n_r_int)
+    r_grid_arr1D=reform(r_grid_arr2D,long(n_z_int)*n_r_int) 
+    rho_grid=reform(efit_rz2rho(r_grid_arr1D,z_grid_arr1D,(t1+t2)/2.0,shot=shot,/phinorm,/sqrt),n_r_int,n_z_int) 
 
-   n_z_int=200
-   n_r_int=1000
-   rgrid_arr = interpol([rgrid(0),rgrid(n_elements(rgrid)-1)],n_r_int)
-   zgrid_arr = interpol([zgrid(0),zgrid(n_elements(zgrid)-1)],n_z_int)
-   rgrid_arr_2 = interpol([0,n_elements(rgrid)-1],n_r_int)
-   zgrid_arr_2 = interpol([0,n_elements(zgrid)-1],n_z_int)
-   rgrid_arr_1 = make_array(n_r_int,/index)
-   zgrid_arr_1 = make_array(n_z_int,/index)  
-       
-
-   psi_grid = interpolate(psirz,rgrid_arr_2,zgrid_arr_2,cubic = -0.5, /grid)
-   rho_grid = sqrt((psi_grid-simag)/(sibry-simag))
-   ind_bound=where(rho_grid gt 1.0)
-   ;patch to remove the no-plasma filedline islands
-   rho_grid(ind_bound)=1.1
-   z_bound = where(zgrid_arr gt z_major + r_minor*elong*1.1 or zgrid_arr lt z_major - r_minor*elong*1.1)
-   rho_grid (*,z_bound) = 1.1 
- 
- endif
+endif 
  ; do this if Miller or Hakkarainen setting are choosen
  if strpos(flux_surf_names(flux_surf_arr_type), 'Miller') ne -1 or strpos(flux_surf_names(flux_surf_arr_type), 'Hakkarainen') ne -1 then begin
  ;Miller Physics of Plasmas,5,5,1998 (Miller equillibrium)
  ;SP Hakkarainen, phys_fluids B 2(7) 1990
-   if strpos(flux_surf_names(flux_surf_arr_type), 'Miller') ne -1 then sel=2 else sel=3  
+   if strpos(flux_surf_names(flux_surf_arr_type), 'Miller') ne -1 then sel=1 else sel=2  
     n_z_int=200
     n_r_int=1000
     rgrid1=r_major-r_minor*1.1
@@ -5194,7 +4744,7 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
     theta_arr=interpol([-!Pi,!Pi],n_theta)    
     triang=fltarr(n_theta)
     triang(where(theta_arr gt 0))=triang_upper
-    triang(where(theta_arr le 0))=triang_lower
+    triang(where(theta_arr le 0))=triang_lower 
     for i=0,n_r_minor-1 do begin   
         if sel eq 1 then r_new=r_major+r_minor_arr(i)*cos(theta_arr+sin(theta_arr)*asin(triang))
         if sel eq 1 then z_new=elong*r_minor_arr(i)*sin(theta_arr)+z_major
@@ -5229,17 +4779,17 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
    ; rho_arr_beam_coord=rho_arr_beam_coord<1.1
     ;help,rho_arr_beam_coord
    
-    if sel eq 0 or sel eq 1 then begin 
+    if sel eq 0 then begin 
       Widget_control, status_wid, Get_Value=status_tx
       Widget_Control, status_wid, $
       Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Flux Surfaces Array was constructed successfully from EFIT equillibrium']], Set_text_top_line=n_elements(status_tx)-4 
     endif
-    if sel eq 2 then begin 
+    if sel eq 1 then begin 
       Widget_control, status_wid, Get_Value=status_tx
       Widget_Control, status_wid, $
       Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Flux Surfaces Array was constructed successfully from plasma parameters and Miller equillibrium']], Set_text_top_line=n_elements(status_tx)-4 
     endif
-    if sel eq 3 then begin
+    if sel eq 2 then begin
       Widget_control, status_wid, Get_Value=status_tx
       Widget_Control, status_wid, $
       Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Flux Surfaces Array was constructed successfully from plasma parameters and Hakkaraien equllibrium']], Set_text_top_line=n_elements(status_tx)-4 
@@ -5265,7 +4815,7 @@ Pro make_n_e_arr
 common dens_electrons,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
 ;The following common block contains X,Y,Z coordinate arrays for the beam
 ;calculation grid and output 3D arrays of the beam density and excitation fracitons
-common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
+common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac
 ;The following commong block contains the rho arrays which used for
 ;mapping of 1D Ne,Te,Z_eff arrays to the tokamak 3D coordinated and
 ;eventually to the beam coordinates.
@@ -5306,9 +4856,7 @@ if ne_arr_type eq 0 then begin
   ;to make arrays ascending
   rgrid=rgrid(uniq(rho_grid_ne))
   rho_grid_ne=rho_grid_ne(uniq(rho_grid_ne)) 
-  ; correction for lack of the non-midplane data Dec 16 2011
-  rho_arr_beam_coord=rho_arr_beam_coord>min(rho_grid_ne)
-  ;--------------------------
+
   ind_1=interpol(rgrid,rho_grid_ne,rho_arr_beam_coord,/spline)
   ind_1=reform(ind_1,(size(rho_arr_beam_coord))(1),(size(rho_arr_beam_coord))(2),(size(rho_arr_beam_coord))(3),/overwrite)
   num=100
@@ -5382,10 +4930,7 @@ if te_arr_type eq 0 then begin
   ;to make arrays ascending
   rgrid=rgrid(uniq(rho_grid_te))
   rho_grid_te=rho_grid_te(uniq(rho_grid_te))
-  ; correction for lack of the non-midplane data Dec 16 2011
-  rho_arr_beam_coord=rho_arr_beam_coord>min(rho_grid_te)
-  ;--------------------------  
-
+  
   ind_1=interpol(rgrid,rho_grid_te,rho_arr_beam_coord,/spline)
   ind_1=reform(ind_1,(size(rho_arr_beam_coord))(1),(size(rho_arr_beam_coord))(2),(size(rho_arr_beam_coord))(3),/overwrite)
   num=100
@@ -5428,9 +4973,6 @@ common flux_surfaces, rho_arr_beam_coord,rho_grid,rgrid_arr,zgrid_arr,rgrid_midp
 ;of the arrays used for the beam attenuation and penetration
 ;calculation. z_eff_arr_type parameter defines which way to
 ;construct the 3D z_eff array.
-common plasma_param, main_ion,n_impur,impur_table
-;The following common block contains the table of the parameters which
-;defile the 3D spatial grid which used for calculation
 common construct_settings, flux_surf_names, flux_surf_arr_type,ne_arr_type,te_arr_type,z_eff_arr_type,stop_plasma_type, stop_plasma_type_names,exc_plasma_type, $
 exc_plasma_type_names,gas_arr_type,stop_gas_type,lim_arr_type,grid_aper_names,grid_aper_type
 ; The following common block contains general parameters: which user,
@@ -5457,7 +4999,6 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
 ;-----------------------------------------------------
 
 if z_eff_arr_type eq 0 then begin
-  
   val=min(rho_grid_midplane,min_ind,/Nan)
   rho_grid_z_eff=rho_grid_midplane(min_ind:*)
   rgrid=rgrid_midplane(min_ind:*)
@@ -5465,9 +5006,6 @@ if z_eff_arr_type eq 0 then begin
   ;to make arrays ascending
   rgrid=rgrid(uniq(rho_grid_z_eff))
   rho_grid_z_eff=rho_grid_z_eff(uniq(rho_grid_z_eff))
-  ; correction for lack of the non-midplane data Dec 16 2011
-  rho_arr_beam_coord=rho_arr_beam_coord>min(rho_grid_z_eff)
-  ;--------------------------
 
   ind_1=interpol(rgrid,rho_grid_z_eff,rho_arr_beam_coord,/spline)
   ind_1=reform(ind_1,(size(rho_arr_beam_coord))(1),(size(rho_arr_beam_coord))(2),(size(rho_arr_beam_coord))(3),/overwrite)
@@ -5510,7 +5048,7 @@ common dens_electrons,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_
 common temp_electrons,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
 ;The following common block contains X,Y,Z coordinate arrays for the beam
 ;calculation grid and output 3D arrays of the beam density and excitation fracitons
-common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
+common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac
 ;The following common block contains 1D z_eff profiles of raw and smoothed data, and 3D
 ;z_eff array after it constructed.
 common effective_charge, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_eff_r,z_eff_arr,z_eff_err_arr
@@ -5625,7 +5163,7 @@ common dens_electrons,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_
 common temp_electrons,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
 ;The following common block contains X,Y,Z coordinate arrays for the beam
 ;calculation grid and output 3D arrays of the beam density and excitation fracitons
-common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
+common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac
 ;The following common block contains 1D z_eff profiles of raw and smoothed data, and 3D
 ;z_eff array after it constructed.
 common effective_charge, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_eff_r,z_eff_arr,z_eff_err_arr
@@ -5735,10 +5273,10 @@ end
 Pro make_gas_arr
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
 ;The following common block contains X,Y,Z coordinate arrays used for the beam
 ;calculation grid and output 3D arrays of the beam density and excitation fracitons
-common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
+common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac
 ;The following common block contains the parameters which describe the
 ;positions and sizes of the beam limiters. This block also contains the
 ;3D array of the limiters positions after it is constructed
@@ -5749,7 +5287,7 @@ common temp_electrons,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_
 ;The following common block contains neutral gas parameters used in
 ;calculation of the beam attenuation in the gas. It also contains the
 ;constructed 3D neutral gas array.
-common neutral_gas,tank_pressure,torus_pressure,duct_pressure,duct_pressure_loc,n0_arr,n0_stop_cross_section
+common neutral_gas,tank_pressure,torus_pressure,n0_arr,n0_stop_cross_section
 ;The following commong block contains the rho arrays which used for
 ;mapping of 1D Ne,Te,Z_eff arrays to the tokamak 3D coordinated and
 ;eventually to the beam coordinates.
@@ -5791,44 +5329,27 @@ if gas_arr_type eq 0 then begin
 
   tank_dens=0.133/1.38e-23/300.0*tank_pressure*1e-6 ;cm-3
   torus_dens=0.133/1.38e-23/300.0*torus_pressure*1e-6 ;cm-3
-  duct_dens=0.133/1.38e-23/300.0*duct_pressure*1e-6 ;cm-3
   
-  ind_0=locate(z_beam,neutr_front_dist+neutr_size)
-  ind_1=locate(z_beam,tank_front_dist+tank_size)
-  ind_2 =locate(z_beam,tank_front_dist+tank_size+duct_pressure_loc)
-  max_dist=tank_front_dist+tank_size
-  ;size_lim=(size(limiters_table))(2)
-  ;if n_elements(limiters_table) lt 2 then size_lim=0
-  if n_limiters eq 1 then begin
-    if strpos(strtrim(limiters_table(0),2),'duct') ne -1 then max_dist=max_dist>max(float(limiters_table(1))+float(limiters_table(2)))
-  endif
-  if n_limiters gt 1 then begin
-    for j=0,n_limiters-1 do if strpos(strtrim(limiters_table(0,j),2),'duct') ne -1 then  max_dist=max_dist>max(float(limiters_table(1,j))+float(limiters_table(2,j)))
-  endif
-  ind_3=locate(z_beam,max_dist)
-
-  n0_arr(ind_3:n_z-1,*,*)=torus_dens
-  n0_arr(ind_0:ind_1,*,*)=tank_dens
-  if ind_3 gt ind_2 and duct_pressure gt min([torus_pressure,tank_pressure])*0.5 then begin
-
-    for i=ind_1,ind_2 do n0_arr(i,*,*)=tank_dens+(duct_dens-tank_dens)*(i-ind_1)/(ind_2-ind_1)
-    for i=ind_2,ind_3 do n0_arr(i,*,*)=duct_dens+(torus_dens-duct_dens)*(i-ind_2)/(ind_3-ind_2)
-  endif
-  if ind_2 ge ind_3 and duct_pressure gt min([torus_pressure,tank_pressure])*0.5 then begin
-
-    for i=ind_1,ind_2 do n0_arr(i,*,*)=tank_dens+(duct_dens-tank_dens)*(i-ind_1)/(ind_2-ind_1)
-    n0_arr(ind_2,*,*)=(duct_dens+torus_dens)/2.0
-  endif
-  if ind_2 ge ind_3 and duct_pressure le min([torus_pressure,tank_pressure])*0.5 then begin
-    n0_arr(ind_3,*,*)=(torus_dens+tank_dens)/2.0
-  endif
  
-  if ind_3 gt ind_2 and duct_pressure le min([torus_pressure,tank_pressure])*0.5 then begin
+  ind_0=locate(z_beam,neutr_size)
+  ind_1=locate(z_beam,tank_front_dist+tank_size)
+  max_dist=tank_front_dist+tank_size
+  size_lim=(size(limiters_table))(1)/6
+  if n_elements(limiters_table) lt 2 then size_lim=0
+  if size_lim eq 1 then max_dist=max_dist>max(float(limiters_table(1))+float(limiters_table(2))) else $
+  for j=0,size_lim-1 do max_dist=max_dist>max(float(limiters_table(j,1))+float(limiters_table(j,2)))
 
-    for i=ind_1,ind_3 do n0_arr(i,*,*)=tank_dens+(torus_dens-tank_dens)*(i-ind_1)/(ind_3-ind_1)    
-  endif
+  ind_2=locate(z_beam,max_dist)
+  
+  n0_arr(ind_2:n_z-1,*,*)=torus_dens
+  n0_arr(ind_0:ind_1,*,*)=tank_dens
+  
+  if ind_1 eq ind_2 then n0_arr(ind_1,*,*)=(torus_dens+tank_dens)/2.0 else $
+  for i=ind_1,ind_2 do n0_arr(i,*,*)=tank_dens+(torus_dens-tank_dens)*(i-ind_1)/(ind_2-ind_1)
+
   ; no gas where plasma with T_e>10ev
-  if n_elements(t_e_arr) gt 0 then if (where(t_e_arr gt 0.01))(0) ne -1 then n0_arr(where(t_e_arr gt 0.01))=0
+  if (where(t_e_arr gt 0.01))(0) ne -1 then n0_arr(where(t_e_arr gt 0.01))=0
+
   Widget_control, status_wid, Get_Value=status_tx  
   Widget_Control, status_wid,$
   Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Neutral Gas Density  array was constructed successfully']], Set_text_top_line=n_elements(status_tx)-4
@@ -5850,15 +5371,9 @@ Pro make_lim_arr
 ;positions and sizes of the beam limiters. This block also contains the
 ;3D array of the limiters positions after it is constructed
 common beam_limiters, n_limiters, limiters_table,limiters_arr
-;The following common block contains the parameters which describe the geometry
-;and position of the tokamak plasma
-common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lowe
-;The following common block contains the parameters which describe the geometry
-;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains X,Y,Z coordinate arrays used for the beam
 ;calculation grid and output 3D arrays of the beam density and excitation fracitons
-common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
+common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac
 ;The following common block contains some of the settings for construction
 ;of the arrays used for the beam attenuation and penetration
 ;calculation. lim_array_type parameter defines which way to
@@ -5897,61 +5412,20 @@ if lim_arr_type eq 0 then begin
     z_size=float(limiters_table(2,i))
     diam=float(limiters_table(3,i))
     x_size=float(limiters_table(4,i))
-    y_size=float(limiters_table(5,i))
-    r_lim=float(limiters_table(6,i))
-    if finite(r_lim) then begin
-      ;calulation r_major along the beam centerline x_beam=0, y_beam=0
-      grid_cent_x=r_grid*cos(phi_grid)
-      grid_cent_y=-r_grid*sin(phi_grid)
-      wall_cent_x=r_wall*cos(phi_wall)
-      wall_cent_y=-r_wall*sin(phi_wall)
-      dist_all_XY=sqrt((wall_cent_x-grid_cent_x)^2.0+(wall_cent_y-grid_cent_y)^2.0)
-      sin_pivot=-(wall_cent_y-grid_cent_y)/dist_all_XY;angle in tokamak XY plane (horizontal)
-      cos_pivot=-(wall_cent_x-grid_cent_x)/dist_all_XY
-
-      dist_all_XYZ=sqrt((wall_cent_x-grid_cent_x)^2.0+(wall_cent_y-grid_cent_y)^2.0+(z_wall-z_grid)^2.0)
-      sin_alpha=(z_wall-z_grid)/dist_all_XYZ ; angle in tokamak XZ plane (vertical)
-      cos_alpha=sqrt(1.0-sin_alpha^2.0)
-      ;rotating beam coordinate to tokamak midplane projection
-      ;find tangent rad
-      z_beam1_tang=z_beam*cos_alpha-y_beam((n_y-1)/2)*sin_alpha
-      y__beam1_tang=z_beam*sin_alpha+y_beam((n_y-1)/2)*cos_alpha+z_grid
-      x_beam1_tang=x_beam((n_x-1)/2)                   
-      ;moving beam to tokamak center and rotating
-      x_tang=-z_beam1_tang*cos_pivot+x_beam1_tang*sin_pivot+r_grid*cos(phi_grid)
-      y_tang=-z_beam1_tang*sin_pivot-x_beam1_tang*cos_pivot-r_grid*sin(phi_grid)
-      r_tang=sqrt(x_tang^2.0+y_tang^2.0) 
-      r_tang_mic=min(r_tang,min_r_ind)
-      for j=0,n_x-1 do begin
-        for k=0, n_y-1 do begin
-          for l=0,n_z-1 do begin
-            z_beam1=z_beam(l)*cos_alpha-y_beam(k)*sin_alpha
-            y_beam1=z_beam(l)*sin_alpha+y_beam(k)*cos_alpha+z_grid
-            x_beam1=x_beam(j)                   
-            ;moving beam to tokamak center and rotating
-            x_tor2=-z_beam1*cos_pivot+x_beam1*sin_pivot+r_grid*cos(phi_grid)
-            y_tor2=-z_beam1*sin_pivot-x_beam1*cos_pivot-r_grid*sin(phi_grid)
-            r_tor2=sqrt(x_tor2^2.0+y_tor2^2.0)
-            if r_tor2 le r_lim and r_lim lt r_major then limiters_arr(l,j,k)=1e6
-            if r_tor2 ge r_lim and r_lim gt r_major and l gt min_r_ind then limiters_arr(l,j,k)=1e6
-          endfor
-        endfor
-      endfor
-    endif        
+    y_size=float(limiters_table(5,i))     
     if finite(diam) then begin
       for j=0,n_x-1 do begin
         for k=0, n_y-1 do begin
           if (round(sqrt(x_beam(j)^2.0+y_beam(k)^2.0)*1000.0)/1000.0) ge diam/2.0 then limiters_arr(locate(z_beam,z_pos):locate(z_beam,z_pos+z_size),j,k)=1e6
         endfor
       endfor
-    endif
-    if finite(x_size) then begin
+    endif else begin
       for j=0,n_x-1 do begin
         for k=0, n_y-1 do begin
           if abs(x_beam(j)) ge x_size/2.0 or abs(y_beam(k)) ge y_size/2.0 then limiters_arr(locate(z_beam,z_pos):locate(z_beam,z_pos+z_size),j,k)=1e6
         endfor
       endfor
-    endif
+    endelse
   endfor
   Widget_control, status_wid, Get_Value=status_tx  
   Widget_Control, status_wid,$
@@ -6053,10 +5527,10 @@ Pro make_beam_grid
 common grid_arr, code_grid_arr
 ;The following common block contains the parameters which describe the non-geometrical
 ;parameters of the beam (particle and energy distribution)
-common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
+common beam_param, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,div_bml_opt, div_dist_par
 ;The following common block contains X,Y,Z coordinate arrays used for the beam
 ;calculation grid and output 3D arrays of the beam density and excitation fracitons
-common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
+common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac
 ;The following common block is used to transfer the pointer to the
 ;status window and availability states of each data set
 common status, status_wid,error_catch,st_err  
@@ -6111,7 +5585,7 @@ Pro load_beam_grid
 common grid_arr, code_grid_arr
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
 ;The following common block contains the parameters which describe the geometry
 ;and position of the tokamak plasma
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
@@ -6148,7 +5622,7 @@ Pro load_neutral_gas_file
 ;The following common block contains neutral gas parameters used in
 ;calculation of the beam attenuation in the gas. It also contains the
 ;constructed 3D neutral gas array.
-common neutral_gas,tank_pressure,torus_pressure,duct_pressure,duct_pressure_loc,n0_arr,n0_stop_cross_section 
+common neutral_gas,tank_pressure,torus_pressure,n0_arr,n0_stop_cross_section 
 ;The following common block contains some of the settings for loading of
 ;the input data used for the beam attenuation and penetration
 ;calculation. ;The following common block contains the name of the input file from which the input
@@ -6191,9 +5665,6 @@ if file(0) eq "" then begin
 endif
 openr,1,gas_file
 
-;put ofor duct pressure
-duct_pressure=0.0
-duct_pressure_loc=0.0
 
 while ~EOF(1) do begin
 
@@ -6208,14 +5679,6 @@ if val eq 'torus_pressure:' then begin
   readf,1,val
   torus_pressure=float(val)
   if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
-endif
-if val eq 'duct_pressure:' then begin 
-  readf,1,val
-  duct_pressure=float(val)
-endif
-if val eq 'duct_pressure_loc:' then begin 
-  readf,1,val
-  duct_pressure_loc=float(val)
 endif
 endwhile
 if st ne 2 then begin
@@ -6239,7 +5702,7 @@ Pro load_neutral_gas
 ;The following common block contains neutral gas parameters used in
 ;calculation of the beam attenuation in the gas. It also contains the
 ;constructed 3D neutral gas array.
-common neutral_gas,tank_pressure,torus_pressure,duct_pressure,duct_pressure_loc,n0_arr,n0_stop_cross_section
+common neutral_gas,tank_pressure,torus_pressure,n0_arr,n0_stop_cross_section
 ;The following common block contains some of the settings for loading of
 ;the input data used for the beam attenuation and penetration
 ;calculation. ;The following common block contains the name of the input file from which the input
@@ -6269,59 +5732,23 @@ if error_catch then begin
 ;-----------------------------------------------------
  
 if gas_type eq 0 then begin
-   duct_pressure_loc=1.09; m
+   tank_pressure=0.3 ;mtorr
+
    MDSOPEN,'CMOD',SHOT,/QUIET,STATUS=ST0
    if st0 then begin
      F_side_p=mdsvalue('\edge::top.gas.ratiomatic:F_side',/quiet,status=st1)
      F_side_t=mdsvalue('Dim_of(\edge::top.gas.ratiomatic:F_side)',/quiet,status=st2)
-     G_side_p=mdsvalue('\edge::top.gas.mks:G_side',/quiet,status=st11)
-     G_side_t=mdsvalue('Dim_of(\edge::top.gas.mks:G_side)',/quiet,status=st21)
-     beam_tank_p=mdsvalue('\dnb::top.dnb_eng.camac:T4012.t2812_03:input_3',/quiet,status=st3)
-     beam_tank_t=mdsvalue('Dim_of(\dnb::top.dnb_eng.camac:T4012.t2812_03:input_3)',/quiet,status=st4)    
-     beam_duct_p=mdsvalue('\edge::top.gas.mks.dnb',/quiet,status=st5)
-     beam_duct_t=mdsvalue('Dim_of(\edge::top.gas.mks.dnb)',/quiet,status=st6)
      if st1 and st2 then begin
-       torus_pressure=mean(F_side_p(locate(F_side_t,t1):locate(F_side_t,t2)))-mean(F_side_p(0:locate(F_side_t,-1)));mtorr
-       ;torus_pressure_check=mean(F_side_p(locate(F_side_t,0.5):locate(F_side_t,1.0)))-mean(F_side_p(0:locate(F_side_t,-1)));mtorr
-       torus_pressure_check=mean(F_side_p(locate(F_side_t,0.5):locate(F_side_t,1.5)))
+       torus_pressure=mean(F_side_p(locate(F_side_t,t1):locate(F_side_t,t2))) ;mtorr
        torus_pressure=round(torus_pressure*1000.0)/1000.0
-       if torus_pressure_check gt 7 and st11 and st21 and n_elements(g_side_p) gt 10 then begin
-         torus_pressure=mean(G_side_p(locate(G_side_t,t1):locate(G_side_t,t2)))-mean(G_side_p(0:locate(G_side_t,-1)));mtorr
-         torus_pressure=round(torus_pressure*1000.0)/1000.0      
-       endif
      endif else begin
        Widget_control, status_wid, Get_Value=status_tx
        Widget_Control, status_wid,$
-       Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : The Neutral Gas (torus pressure) data set is not available (MDSPLUS)']], Set_text_top_line=n_elements(status_tx)-4
+       Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : The Neutral Gas data set is not available (MDSPLUS)']], Set_text_top_line=n_elements(status_tx)-4
        st_err=1
        return
      endelse
-     if st3 and st4 then begin
-       tank_pressure=mean(beam_tank_p(locate(beam_tank_t,t1):locate(beam_tank_t,t2)))*10.0-mean(beam_tank_p(0:locate(beam_tank_t,-1)))*10.0 ;mtorr
-       tank_pressure=round(tank_pressure*1000.0)/1000.0
-       if tank_pressure lt 0.0 then tank_pressure=0.3
-     endif else begin
-       Widget_control, status_wid, Get_Value=status_tx
-       Widget_Control, status_wid,$
-       Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : The Neutral Gas (beam tank pressure) data set is not available (MDSPLUS)']], Set_text_top_line=n_elements(status_tx)-4
-       Widget_control, status_wid, Get_Value=status_tx
-       Widget_Control, status_wid,$
-       Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : The beam tank pressure is set to 0.3 mtorr']], Set_text_top_line=n_elements(status_tx)-4
-      tank_pressure=0.3 ;mtorr
-     endelse
-     if st5 and st6 then begin
-       duct_pressure=mean(beam_duct_p(locate(beam_duct_t,t1):locate(beam_duct_t,t2)))-mean(beam_duct_p(0:locate(beam_duct_t,-1))) ;mtorr
-       duct_pressure=round(duct_pressure*1000.0)/1000.0     
-     endif else begin
-       Widget_control, status_wid, Get_Value=status_tx
-       Widget_Control, status_wid,$
-       Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : The Neutral Gas (beam duct pressure) data set is not available (MDSPLUS)']], Set_text_top_line=n_elements(status_tx)-4
-       Widget_control, status_wid, Get_Value=status_tx
-       Widget_Control, status_wid,$
-       Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : The beam duct pressure will be interpolated']], Set_text_top_line=n_elements(status_tx)-4
-      duct_pressure=0.0 ;mtorr
-     endelse  
-  endif else begin
+   endif else begin
      Widget_control, status_wid, Get_Value=status_tx
      Widget_Control, status_wid,$
      Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : This shot is not existed in MDSPLUS']], Set_text_top_line=n_elements(status_tx)-4
@@ -6342,10 +5769,10 @@ Pro make_stop_gas_arr
 ;The following common block contains neutral gas parameters used in
 ;calculation of the beam attenuation in the gas. It also contains the
 ;constructed neutral gas stoppping cross section array.
-common neutral_gas,tank_pressure,torus_pressure,duct_pressure,duct_pressure_loc,n0_arr,n0_stop_cross_section
+common neutral_gas,tank_pressure,torus_pressure,n0_arr,n0_stop_cross_section
 ;The following common block contains the parameters which describe the non-geometrical
 ;parameters of the beam (particle and energy distribution)
-common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
+common beam_param, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,div_bml_opt, div_dist_par
 ;The following common block contains some of the settings for construction
 ;of the arrays used for the beam attenuation and penetration
 ;calculation. stop_gas_type parameter defines which way to
@@ -6374,18 +5801,13 @@ if error_catch then begin
  endif
 ;-----------------------------------------------------
 if stop_gas_type eq 0 then begin
-    ;beam atom
-    beam_atom_table=['H','D','T']
-    beam_atom_mass=[1.0,2.0,3.0]
-    m_atom=(beam_atom_mass(where(beam_atom_table eq beam_atom)))(0)
-
     ; Stripping cross sections for H + H2  --> H+ + H2 + e
 
    E_b=[6.0e1,7.0e1,1.0e2,1.5e2,2.0e2,4.0e2,7.0e2,1.0e3,1.5e3,2.0e3,4.0e3,7.0e3,1.0e4,1.5e4,2.0e4,4.0e4,7.3e4,1.0e5,1.5e5,2.0e5,4.0e5,7.0e5,1.0e6,1.5e6,2.0e6,4.0e6,7.0e6,1.0e7,1.5e7,2.0e7]*1e-3
    sigma_n0=[1.17e-19,1.91e-19,5.24e-19,1.37e-18,2.39e-18,8.32e-18,2.09e-17,3.37e-17,5.08e-17,6.36e-17,8.63e-17,9.09e-17,9.21e-17,1.06e-16,$
 1.36e-16,1.54e-16,1.34e-16,1.10e-16,8.61e-17,7.04e-17,4.20e-17,2.63e-17,1.91e-17,1.30e-17,9.74e-18,4.60e-18,2.64e-18,1.65e-18,1.02e-18,7.34e-19]
    
-   n0_stop_cross_section=interpolate(sigma_n0,interpol(make_array(n_elements(E_b),/index),E_b,e_full*E_frac/m_atom),cubic=-0.5)
+   n0_stop_cross_section=interpolate(sigma_n0,interpol(make_array(n_elements(E_b),/index),E_b,e_full*E_frac),cubic=-0.5)
    Widget_control, status_wid, Get_Value=status_tx  
    Widget_Control, status_wid,$
    Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Gas Stopping Cross sections Array was constructed successfully']], Set_text_top_line=n_elements(status_tx)-4
@@ -6405,7 +5827,7 @@ end
 Pro load_beam_param_file
 ;The following common block contains the parameters which describe the non-geometrical
 ;parameters of the beam (particle and energy distribution)
-common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
+common beam_param, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,div_bml_opt, div_dist_par
 ;The following common block contains some of the settings for loading of
 ;the input data used for the beam attenuation and penetration
 ;calculation. ;The following common block contains the name of the input file from which the input
@@ -6413,7 +5835,7 @@ common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par,
 common load_settings, load_set_def,load_choice,general_type, general_file, beam_geom_type,beam_geom_file,beam_lim_type,beam_lim_file,beam_param_type,beam_param_file,$
 ne_type,ne_file,te_type,te_file,z_eff_type,z_eff_file,plasma_geom_type,plasma_geom_file,gas_type,gas_file,grid_type,grid_file,plasma_param_type,plasma_param_file
 ;E_beam is loaded here to the following common block
-common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
+common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac
 ; The following common block contains general parameters: which user,
 ; what beam, what shot and time interval
 common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
@@ -6436,7 +5858,6 @@ if error_catch then begin
  endif
 ;-----------------------------------------------------
 
-beam_atom='H' ;default
 val='template'
 close,1
 st=0
@@ -6456,10 +5877,6 @@ while ~EOF(1) do begin
 
 readf,1,val
 
-if val eq 'beam_atom:' then begin 
-  readf,1,val
-  beam_atom=strtrim(val,2)
-endif
 if val eq 'e_full:' then begin 
   readf,1,val
   e_full=float(val)
@@ -6493,18 +5910,8 @@ if val eq 'i_opt:' then begin
 endif
 if val eq 'div_bml_opt:' then begin 
   readf,1,val
-  x_div_bml_opt=float(val)
-  y_div_bml_opt=x_div_bml_opt
+  div_bml_opt=float(val)
   if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
-endif
-if val eq 'x_div_bml_opt:' then begin 
-  readf,1,val
-  x_div_bml_opt=float(val)
-  if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
-endif
-if val eq 'y_div_bml_opt:' then begin 
-  readf,1,val
-  y_div_bml_opt=float(val)
 endif
 if val eq 'div_dist_par:' then begin 
   readf,1,val
@@ -6531,21 +5938,12 @@ end
 Pro neutralization
      ;The following common block contains the parameters which describe the non-geometrical
      ;parameters of the beam (particle and energy distribution)
-     common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
-     ;The following common block contains the parameters which describe the non-geometrical
-     ;parameters of the beam (particle and energy distribution)
-     common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
+     common beam_param, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,div_bml_opt, div_dist_par
      ;E_beam is loaded here to the following common block
-     common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
+     common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac
      
-
-     ;beam atom
-     beam_atom_table=['H','D','T']
-     beam_atom_mass=[1.0,2.0,3.0]
-     m_atom=(beam_atom_mass(where(beam_atom_table eq beam_atom)))(0)
-
      E_beam=e_full*e_frac 
-     vel=SQRT(2.0*1.602E-19*E_beam*1000.0/1.673E-27/m_atom)*100 ; cm/sec
+     vel=SQRT(2.0*1.602E-19*E_beam*1000.0/1.673E-27)*100 ; cm/sec
 
      source_neutr=1.0
      ; by default beam is hydrogen
@@ -6556,7 +5954,6 @@ Pro neutralization
        if round(1/e_frac(i)) eq 3 then n_at(i)=3.4 ; H3+ ion
        if round(1/e_frac(i)) eq 18 then n_at(i)=2.0 ; H20 ion
        if round(1/e_frac(i)) eq 16 then n_at(i)=4.0 ; CH4 ion
-       if round(1/e_frac(i)) eq 20 then n_at(i)=4.0 ; ????
      endfor
      ;beam neutralization factor
      ;borrowed from Bob Granetz's spectroscopy code
@@ -6571,7 +5968,7 @@ Pro neutralization
      source_nS=sign(I_beam)*comp_cur/(vel*1.602E-19)
 
   
-     neutr = exp(interpol(alog(neut_frac), energy_keV, E_beam/m_atom)) ;fit to log is better  
+     neutr = exp(interpol(alog(neut_frac), energy_keV, E_beam)) ;fit to log is better  
      if I_beam lt 0.0 then neutr(*)=1.0 ;neutralization fractions for negative ions are equal to 1.0
      neutr_nS=source_nS*neutr*n_at
 
@@ -6587,13 +5984,13 @@ end
 ;-------------------------------------------------------------------------------------------------------------------------
 Pro load_beam_param
 ;E_beam is loaded here to the following common block
-common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
+common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac
 ;The following common block contains the parameters which describe the non-geometrical
 ;parameters of the beam (particle and energy distribution)
-common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
+common beam_param, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,div_bml_opt, div_dist_par
 ; The following common block contains general parameters: which user,
 ; what beam, what shot and time interval
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
 ;The following common block is used to transfer the pointer to the
 ;status window and availability states of each data set
 common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
@@ -6616,7 +6013,7 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
    endif
  endif
 ;-----------------------------------------------------
- beam_atom='H'
+ 
  MDSOPEN,'CMOD',SHOT,/QUIET,STATUS=ST0
  if st0 then begin  
    I_frac_tot = MDSVALUE('\DNB::TOP.DNB_SPECTRA:ENERGY_FRACS',/quiet,status=st1)
@@ -6656,6 +6053,7 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
      ;e_frac_time_ind=locate(interpol(e_frac_time,n_int),(t1+t2)/2.0)/(n_int-1)*(n_elements(e_frac_time)-1)
      ;I_frac=interpolate(I_frac_tot,e_frac_time_ind,cubic=-0.5)
      ;e_full = interpolate(e_energy,e_frac_time_ind,cubic=-0.5)
+    
      E_frac=e_frac_p(0:3)
 
     
@@ -6668,9 +6066,9 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
      I_frac=round(I_frac*1000.0)/1000.0
 
      neutralization
-     x_div_bml_opt=0.70 ;half divergence angle of a beamlet, degree
-     y_div_bml_opt=0.70 ;half divergence angle of a beamlet, degree
-     div_dist_par=0.0 ; changed from 5.0 -> 0.0  on 5 Apr 2012 
+
+     div_bml_opt=0.70 ;half divergence angle of a beamlet, degree
+     div_dist_par=5.0
      I_opt=5.6;A (from perveance measurements at the calorimeter)
      ;n_bml=n_elements(x_bml)
      ;I_opt=I_opt/n_bml/!PI/(grid_ap_diam/2.0)^2.0*1e6*1e-1 ;mA/cm^2 based on the uniform distribution over all apertures
@@ -6736,10 +6134,6 @@ if error_catch then begin
      b_t2=i_beam_time(where((p_beam gt max(p_beam)*0.1)*[((p_beam lt max(p_beam)*0.1))(1:*),1]))
      b_t2=b_t2(where(b_t1 gt float(driver_time(0))))
      b_t1=b_t1(where(b_t1 gt float(driver_time(0))))
-     ;remove faulty beam frames
-     ind_beam=where(b_t2-b_t1 gt 0.02)
-     b_t2=b_t2(ind_beam)
-     b_t1=b_t1(ind_beam)
      Widget_control, status_wid, Get_Value=status_tx
      Widget_Control, status_wid,$
      Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : The Beam time intervals were successfully extracted from MDSPLUS']], Set_text_top_line=n_elements(status_tx)-4
@@ -6770,13 +6164,13 @@ pro save_output_to_file
 common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
 ;The following common block contains the parameters which describe the non-geometrical
 ;parameters of the beam (particle and energy distribution)
-common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
+common beam_param, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,div_bml_opt, div_dist_par
 ;The following common block contains neutral gas parameters used in
 ;calculation of the beam attenuation in the gas.
-common neutral_gas,tank_pressure,torus_pressure,duct_pressure,duct_pressure_loc,n0_arr,n0_stop_cross_section
+common neutral_gas,tank_pressure,torus_pressure,n0_arr,n0_stop_cross_section
 ;The following common block contains 1D n_e profiles of raw and
 ;smoothed data, 3D n_e and ne_stop_cross_section arrays after they constructed
 common dens_electrons,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
@@ -6788,7 +6182,7 @@ common temp_electrons,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_
 common effective_charge, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_eff_r,z_eff_arr,z_eff_err_arr
 ;The following common block contains X,Y,Z coordinate arrays used for the beam
 ;calculation grid and output 3D arrays of the beam density and excitation fracitons
-common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
+common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac
 ;The following common block contains the parameters which describe the geometry
 ;and position of the tokamak plasma
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
@@ -6801,7 +6195,7 @@ common grid_arr, code_grid_arr
 ;The following common block contains some of the settings of how to
 ;run the beam attenuation and penetration calculation. ;The following
 ;common block contains the name of the output save file
-common run_settings, div_type,div_type_names,atten_type, atten_type_names, vel_dis_type,vel_dis_names,save_output_type,save_output_file
+common run_settings, div_type,div_type_names,atten_type, atten_type_names,save_output_type,save_output_file
 ;The following common block contains the parameters which describe the
 ;positions and sizes of the beam limiters.
 common beam_limiters, n_limiters, limiters_table,limiters_arr
@@ -6866,10 +6260,6 @@ printf,1,';Attenuation type'
 printf,1,'atten_type:'
 printf,1,atten_type_names(atten_type)
 printf,1,''
-printf,1,';Velocity Distribution'
-printf,1,'vel_dis_type:'
-printf,1,vel_dis_names(vel_dis_type)
-printf,1,''
 printf,1,';Plasma stopping cross sections source'
 printf,1,'stop_plsm_cs:'
 printf,1,stop_plasma_type_names(stop_plasma_type)
@@ -6880,7 +6270,7 @@ printf,1,exc_plasma_type_names(exc_plasma_type)
 printf,1,''
 printf,1,'----------------------------------'
 ;Saving beam geometry to file
-;x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+;x_bml,y_bml,grid_ap_diam,grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
 printf,1,''
 printf,1,';X positions of the apertures in the accelerating grid, m'
 printf,1,'x_bml:'
@@ -6901,13 +6291,9 @@ printf,1,';Beam injector is attached to the port'
 printf,1,'beam_port:'
 printf,1,beam_port
 printf,1,''
-printf,1,';Radius of curvature of the grids (X:horizontal), m'
-printf,1,'x_grid_focus:'
-printf,1,strtrim(string(x_grid_focus,format='(F10.3)'),1)
-printf,1,''
-printf,1,';Radius of curvature of the grids (Y:vertical), m'
-printf,1,'y_grid_focus:'
-printf,1,strtrim(string(y_grid_focus,format='(F10.3)'),1)
+printf,1,';Radius of curvature of the grids, m'
+printf,1,'grid_focus:'
+printf,1,strtrim(string(grid_focus,format='(F10.3)'),1)
 printf,1,''
 printf,1,';Distance from grids to the tank front wall, m'
 printf,1,'tank_front_dist:'
@@ -6917,21 +6303,9 @@ printf,1,';The size of the beam vacuum tank, m'
 printf,1,'tank_size:'
 printf,1,strtrim(string(tank_size,format='(F10.3)'),1)
 printf,1,''
-printf,1,';Inner diameter of the beam vacuum tank, m'
-printf,1,'tank_diam:'
-printf,1,strtrim(string(tank_diam,format='(F10.3)'),1)
-printf,1,''
-printf,1,';Distance from grids to the neutralizer front surface, m'
-printf,1,'neutr_front_dist:'
-printf,1,strtrim(string(neutr_front_dist,format='(F10.3)'),1)
-printf,1,''
 printf,1,';The size of the beam neutralizer tube, m'
 printf,1,'neutr_size:'
 printf,1,strtrim(string(neutr_size,format='(F10.3)'),1)
-printf,1,''
-printf,1,';Inner diameter of the beam neutralizer tube, m'
-printf,1,'neutr_diam:'
-printf,1,strtrim(string(neutr_diam,format='(F10.3)'),1)
 printf,1,''
 printf,1,';Distance from tank end wall to the front of magnet, m'
 printf,1,'tank_magnet_dist:'
@@ -6940,10 +6314,6 @@ printf,1,''
 printf,1,';The size of the beam deflection magnet, m'
 printf,1,'magnet_size:'
 printf,1,strtrim(string(magnet_size,format='(F10.3)'),1)
-printf,1,''
-printf,1,';Inner diameter of the beam deflection magnet, m'
-printf,1,'magnet_diam:'
-printf,1,strtrim(string(magnet_diam,format='(F10.3)'),1)
 printf,1,''
 printf,1,';Distance from tank end wall to front of calorimeter, m'
 printf,1,'tank_cal_dist:'
@@ -6975,11 +6345,7 @@ printf,1,strtrim(string(phi_wall,format='(F10.3)'),1)
 printf,1,''
 
 ;Saving beam parameters to file
-;e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, x_div_bml_opt, y_div_bml_opt,div_dist_par
-printf,1,''
-printf,1,';Beam atom:'
-printf,1,'beam_atom:'
-printf,1,beam_atom
+;e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, div_bml_opt, div_dist_par
 printf,1,''
 printf,1,';Energy of the main component, keV'
 printf,1,'e_full:'
@@ -7011,13 +6377,9 @@ printf,1,';Parabolic source density parameter'
 printf,1,'i_dens_par:'
 printf,1,strtrim(string(I_dens_par,format='(F10.3)'),1)
 printf,1,''
-printf,1,';beamlet divergence half-angle (X:horizontal), deg'
-printf,1,'x_div_bml_opt:'
-printf,1,strtrim(string(x_div_bml_opt,format='(F10.3)'),1)
-printf,1,''
-printf,1,';beamlet divergence half-angle (Y:vertical), deg'
-printf,1,'y_div_bml_opt:'
-printf,1,strtrim(string(y_div_bml_opt,format='(F10.3)'),1)
+printf,1,';beamlet divergence half-angle, deg'
+printf,1,'div_bml_opt:'
+printf,1,strtrim(string(div_bml_opt,format='(F10.3)'),1)
 printf,1,''
 printf,1,';Beamlet divergence variation parameter'
 printf,1,'div_dist_par:'
@@ -7036,11 +6398,11 @@ printf,1,';If limiter is circular X size and Y size should be blank or 0.000, Di
 printf,1,';If limiter is rectangular Diameter should be blank or 0.000, X size and Y size should be non zero'
 printf,1,'limiters_table:'
 printf,1,'--------------------------------------------------------------'
-printf,1,'name          :  Z pos : Z size :Diameter:  X size:Y size:R major'
+printf,1,'name          :  Z pos : Z size :Diameter:  X size:Y size'
 printf,1,'--------------------------------------------------------------'
 if n_limiters eq 0 then printf,1,''
 for i=0, n_limiters-1 do begin
-  printf,1,strtrim(string(limiters_table(*,i),format='(A,T15,":",A8,":",A8,":",A8,":",A8,":",A8,":",A8)'),1)
+  printf,1,strtrim(string(limiters_table(*,i),format='(A,T15,":",A8,":",A8,":",A8,":",A8,":",A8)'),1)
 endfor
 printf,1,'--------------------------------------------------------------'
 printf,1,''
@@ -7053,15 +6415,9 @@ printf,1,';Pressure in the beam tank, mtorr'
 printf,1,'tank_pressure:'
 printf,1,strtrim(string(tank_pressure,format='(F10.3)'),1)
 printf,1,''
-printf,1,';Pressure of the residual gas in the torus, mtorr'
+printf,1,';Pressure in the residual gas in the torus, mtorr'
 printf,1,'torus_pressure:'
 printf,1,strtrim(string(torus_pressure,format='(F10.3)'),1)
-printf,1,';Distance from the tank wall to the duct pressure gauge, m'
-printf,1,'duct_pressure_loc:'
-printf,1,strtrim(string(duct_pressure_loc,format='(F10.3)'),1)
-printf,1,';Pressure in the duct, mtorr'
-printf,1,'duct_pressure:'
-printf,1,strtrim(string(duct_pressure,format='(F10.3)'),1)
 
 
 ;Saving plasma geometry parameters to file
@@ -7275,7 +6631,7 @@ printf,1,z_eff_err_str
 
 
 ;Save 3D arrays of the beam data
-;n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
+;n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac
 printf,1,''
 printf,1,';Energy components of the beam, keV'
 printf,1,'e_beam:'
@@ -7323,23 +6679,6 @@ printf,1,';Fraction of the atoms in second excited state, n=2'
 printf,1,'exc_n3_frac:'
 writeu,1,exc_n3_frac
 
-if vel_dis_type eq 0 then begin
-  printf,1,''
-  printf,1,';X Coordinates of the velocity vector for all beam pores, m'
-  printf,1,'vel_vec_x:'
-  writeu,1,vel_vec_x
-
-  printf,1,''
-  printf,1,';Y Coordinates of the velocity vector for all beam pores, m'
-  printf,1,'vel_vec_y:'
-  writeu,1,vel_vec_y
- 
-  printf,1,''
-  printf,1,'; Polynomial fit coefficients for XY velocity distribution'
-  printf,1,'vel_vec_coef:'
-  writeu,1,vel_vec_coef
-endif
-
 
 printf,1,''
 printf,1,'End of file:'
@@ -7363,13 +6702,13 @@ common save_param, save_param_file
 common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
 ;The following common block contains the parameters which describe the non-geometrical
 ;parameters of the beam (particle and energy distribution)
-common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
+common beam_param, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,div_bml_opt, div_dist_par
 ;The following common block contains neutral gas parameters used in
 ;calculation of the beam attenuation in the gas.
-common neutral_gas,tank_pressure,torus_pressure,duct_pressure,duct_pressure_loc,n0_arr,n0_stop_cross_section
+common neutral_gas,tank_pressure,torus_pressure,n0_arr,n0_stop_cross_section
 ;The following common block contains 1D n_e profiles of raw and smoothed data, and 3D
 ;n_e array after it constructed.
 common dens_electrons,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
@@ -7381,7 +6720,7 @@ common temp_electrons,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_
 common effective_charge, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_eff_r,z_eff_arr,z_eff_err_arr
 ;The following common block contains X,Y,Z coordinate arrays used for the beam
 ;calculation grid and output 3D arrays of the beam density and excitation fracitons
-common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
+common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac
 ;The following common block contains the parameters which describe the geometry
 ;and position of the tokamak plasma
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
@@ -7427,7 +6766,7 @@ printf,1,';File is created by:'
 printf,1, 'ALCBEAM (ver. '+alcbeam_ver+')'
 
 ;Saving beam geometry to file
-;x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+;x_bml,y_bml,grid_ap_diam,grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_di
 printf,1,''
 printf,1,';Beam label'
 printf,1,'beam:'
@@ -7466,13 +6805,9 @@ printf,1,';Beam injector is attached to the port'
 printf,1,'beam_port:'
 printf,1,beam_port
 printf,1,''
-printf,1,';Radius of curvature of the grids (X:horizontal), m'
-printf,1,'x_grid_focus:'
-printf,1,strtrim(string(x_grid_focus,format='(F10.3)'),1)
-printf,1,''
-printf,1,';Radius of curvature of the grids (Y:vertical), m'
-printf,1,'y_grid_focus:'
-printf,1,strtrim(string(y_grid_focus,format='(F10.3)'),1)
+printf,1,';Radius of curvature of the grids, m'
+printf,1,'grid_focus:'
+printf,1,strtrim(string(grid_focus,format='(F10.3)'),1)
 printf,1,''
 printf,1,';Distance from grids to the tank front wall, m'
 printf,1,'tank_front_dist:'
@@ -7482,33 +6817,17 @@ printf,1,';The size of the beam vacuum tank, m'
 printf,1,'tank_size:'
 printf,1,strtrim(string(tank_size,format='(F10.3)'),1)
 printf,1,''
-printf,1,';Inner diameter of the beam vacuum tank, m'
-printf,1,'tank_diam:'
-printf,1,strtrim(string(tank_diam,format='(F10.3)'),1)
-printf,1,''
-printf,1,';Distance from grids to the neutralizer front surface, m'
-printf,1,'neutr_front_dist:'
-printf,1,strtrim(string(neutr_front_dist,format='(F10.3)'),1)
-printf,1,''
 printf,1,';The size of the beam neutralizer tube, m'
 printf,1,'neutr_size:'
 printf,1,strtrim(string(neutr_size,format='(F10.3)'),1)
 printf,1,''
-printf,1,';Inner diameter of the beam neutralizer tube, m'
-printf,1,'neutr_diam:'
-printf,1,strtrim(string(neutr_diam,format='(F10.3)'),1)
-printf,1,''
-printf,1,';Distance from tank end wall to the front of magnet, m'
+printf,1,';Distance from tank front wall to the front of magnet, m'
 printf,1,'tank_magnet_dist:'
 printf,1,strtrim(string(tank_magnet_dist,format='(F10.3)'),1)
 printf,1,''
 printf,1,';The size of the beam deflection magnet, m'
 printf,1,'magnet_size:'
 printf,1,strtrim(string(magnet_size,format='(F10.3)'),1)
-printf,1,''
-printf,1,';Inner diameter of the beam deflection magnet, m'
-printf,1,'magnet_diam:'
-printf,1,strtrim(string(magnet_diam,format='(F10.3)'),1)
 printf,1,''
 printf,1,';Distance from tank end wall to front of calorimeter, m'
 printf,1,'tank_cal_dist:'
@@ -7540,11 +6859,7 @@ printf,1,strtrim(string(phi_wall,format='(F10.3)'),1)
 printf,1,''
 
 ;Saving beam parameters to file
-;e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, x_div_bml_opt, y_div_bml_opt,div_dist_par
-printf,1,''
-printf,1,';Beam atom:'
-printf,1,'beam_atom:'
-printf,1,beam_atom
+;e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, div_bml_opt, div_dist_par
 printf,1,''
 printf,1,';Energy of the main component, keV'
 printf,1,'e_full:'
@@ -7576,13 +6891,9 @@ printf,1,';Parabolic source density parameter'
 printf,1,'i_dens_par:'
 printf,1,strtrim(string(I_dens_par,format='(F10.3)'),1)
 printf,1,''
-printf,1,';beamlet divergence half-angle (X:horizontal), deg'
-printf,1,'x_div_bml_opt:'
-printf,1,strtrim(string(x_div_bml_opt,format='(F10.3)'),1)
-printf,1,''
-printf,1,';beamlet divergence half-angle (Y:vertical), deg'
-printf,1,'y_div_bml_opt:'
-printf,1,strtrim(string(y_div_bml_opt,format='(F10.3)'),1)
+printf,1,';beamlet divergence half-angle, deg'
+printf,1,'div_bml_opt:'
+printf,1,strtrim(string(div_bml_opt,format='(F10.3)'),1)
 printf,1,''
 printf,1,';Beamlet divergence variation parameter'
 printf,1,'div_dist_par:'
@@ -7600,11 +6911,11 @@ printf,1,';If limiter is circular X size and Y size should be blank or 0.000, Di
 printf,1,';If limiter is rectangular Diameter should be blank or 0.000, X size and Y size should be non zero'
 printf,1,'limiters_table:'
 printf,1,'--------------------------------------------------------------'
-printf,1,'name          :  Z pos : Z size :Diameter:  X size:Y size: R major'
+printf,1,'name          :  Z pos : Z size :Diameter:  X size:Y size'
 printf,1,'--------------------------------------------------------------'
 if n_limiters eq 0 then printf,1,''
 for i=0, n_limiters-1 do begin
-  printf,1,strtrim(string(limiters_table(*,i),format='(A,T15,":",A8,":",A8,":",A8,":",A8,":",A8,":",A8)'),1)
+  printf,1,strtrim(string(limiters_table(*,i),format='(A,T15,":",A8,":",A8,":",A8,":",A8,":",A8)'),1)
 endfor
 printf,1,'--------------------------------------------------------------'
 printf,1,''
@@ -7619,12 +6930,7 @@ printf,1,''
 printf,1,';Pressure in the residual gas in the torus, mtorr'
 printf,1,'torus_pressure:'
 printf,1,strtrim(string(torus_pressure,format='(F10.3)'),1)
-printf,1,';Distance from the tank wall to the duct pressure gauge, m'
-printf,1,'duct_pressure_loc:'
-printf,1,strtrim(string(duct_pressure_loc,format='(F10.3)'),1)
-printf,1,';Pressure in the duct, mtorr'
-printf,1,'duct_pressure:'
-printf,1,strtrim(string(duct_pressure,format='(F10.3)'),1)
+
 
 ;Saving plasma geometry parameters to file
 ;r_major,z_major,r_minor,elong,triang_upper,triang_lower
@@ -7662,7 +6968,7 @@ printf,1,strtrim(main_ion,1)
 printf,1,''
 printf,1,';Number of plasma impurities to set up'
 printf,1,'n_impur:'
-printf,1,strtrim(string(n_impur,format='(I2)'),1)
+printf,1,strtrim(string(n_limiters,format='(I2)'),1)
 printf,1,''
 printf,1,';Table of impurities (symbol, ion charge, and density fractions relative to total density of all impurities)'
 printf,1,';At least one impurity column should be selected'
@@ -7860,7 +7166,7 @@ common load_settings, load_set_def,load_choice,general_type, general_file, beam_
 ne_type,ne_file,te_type,te_file,z_eff_type,z_eff_file,plasma_geom_type,plasma_geom_file,gas_type,gas_file,grid_type,grid_file,plasma_param_type,plasma_param_file
 ;The following common block contains some of the settings of how to
 ;run the beam attenuation and penetration calculation.
-common run_settings, div_type,div_type_names,atten_type, atten_type_names, vel_dis_type,vel_dis_names,save_output_type,save_output_file
+common run_settings, div_type,div_type_names,atten_type, atten_type_names,save_output_type,save_output_file
 ;The following common block contains some of the settings for construction
 ;of the arrays used for the beam attenuation and penetration
 ;calculation. flux_surf_arr_type parameter defines which way to
@@ -8071,7 +7377,7 @@ printf,1,strtrim(string(grid_aper_type,format='(I10)'),1)
 printf,1,''
 
 ;Save run settings
-;div_type,div_type_names,atten_type, atten_type_names, vel_dis_type,vel_dis_names,save_output_type,save_output_file
+;div_type,div_type_names,atten_type, atten_type_names,save_output_type,save_output_file
 printf,1,''
 printf,1,';Divergence model type'
 printf,1,'div_type:'
@@ -8092,17 +7398,6 @@ printf,1,';Attenuation model names'
 printf,1,'atten_type_names:'
 form='('+strtrim(string(n_elements(atten_type_names)),2)+'(A-,", "))'
 str=string(transpose(atten_type_names),format=form)
-str=strmid(str,0,strlen(str)-2)
-printf,1,str
-printf,1,''
-printf,1,';Calculate velocity distribution'
-printf,1,'vel_dis_type:'
-printf,1,strtrim(string(vel_dis_type,format='(I10)'),1)
-printf,1,''
-printf,1,';Calculate velocity distribution names'
-printf,1,'vel_dis_names:'
-form='('+strtrim(string(n_elements(vel_dis_names)),2)+'(A-,", "))'
-str=string(transpose(vel_dis_names),format=form)
 str=strmid(str,0,strlen(str)-2)
 printf,1,str
 printf,1,''
@@ -8140,7 +7435,7 @@ common load_settings, load_set_def,load_choice,general_type, general_file, beam_
 ne_type,ne_file,te_type,te_file,z_eff_type,z_eff_file,plasma_geom_type,plasma_geom_file,gas_type,gas_file,grid_type,grid_file,plasma_param_type,plasma_param_file
 ;The following common block contains some of the settings of how to
 ;run the beam attenuation and penetration calculation.
-common run_settings, div_type,div_type_names,atten_type, atten_type_names, vel_dis_type,vel_dis_names,save_output_type,save_output_file
+common run_settings, div_type,div_type_names,atten_type, atten_type_names,save_output_type,save_output_file
 ;The following common block contains some of the settings for construction
 ;of the arrays used for the beam attenuation and penetration
 ;calculation. flux_surf_arr_type parameter defines which way to
@@ -8179,7 +7474,7 @@ if file(0) eq "" then begin
   return
 endif
 openr,1,save_set_file
-vel_dis_type=1
+
 while ~EOF(1) do begin
 
 readf,1,val
@@ -8382,7 +7677,7 @@ endif
 
 
 ;load run_settings
-;div_type,div_type_names,atten_type, atten_type_names, vel_dis_type,vel_dis_names,save_output_type,save_output_file
+;div_type,div_type_names,atten_type, atten_type_names,save_output_type,save_output_file
 if val eq 'div_type:' then begin 
   readf,1,val
   div_type=fix(val)
@@ -8403,16 +7698,6 @@ if val eq 'atten_type_names:' then begin
   atten_type_names=transpose(strsplit(val,', ',/extract,/regex))
   if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
 endif
-if val eq 'vel_dis_type:' then begin 
-  readf,1,val
-  vel_dis_type=fix(val)
-  if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
-endif
-if val eq 'vel_dis_names:' then begin 
-  readf,1,val
-  vel_dis_names=transpose(strsplit(val,', ',/extract,/regex))
-  if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
-endif
 if val eq 'save_output_type:' then begin 
   readf,1,val
   save_output_type=fix(val)
@@ -8425,7 +7710,7 @@ if val eq 'save_output_file:' then begin
 endif
 
 endwhile
-if st lt 43 then begin
+if st ne 43 then begin
   Widget_control, status_wid, Get_Value=status_tx
   Widget_Control, status_wid,$
   Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Full set of run settings is missing in the file']], Set_text_top_line=n_elements(status_tx)-4
@@ -8671,14 +7956,12 @@ endif
 if val eq 'limiters_table:'then begin 
   readf,1,val
   readf,1,val
-  lim_l=n_elements(strsplit(val,':',/extract))
   readf,1,val
   if n_limiters eq 0 then limiters_table='' else begin
-    limiters_table=strarr(7,n_limiters)
-    limiters_table(*,*)='NAN'
+    limiters_table=strarr(6,n_limiters)
     for i=0, n_limiters-1 do begin
       readf,1,val
-      limiters_table(0:lim_l-1,i)=(strsplit(val,':   ',/extract,/regex))
+      limiters_table(*,i)=(strsplit(val,':   ',/extract,/regex))
     endfor
   endelse
   if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
@@ -8700,7 +7983,7 @@ end
 ;Procedure which load copy of the general parameters from *.abo output
 ;file to preview them
 ;-------------------------------------------------------------------------------------------------------------------------
-Pro load_general_temp,file_name,beam_val,shot_val,run_time_ver,t1_val,t2_val,div_type_val,atten_type_val,vel_dis_type_val,stop_plsm_cs,exc_plsm_cs
+Pro load_general_temp,file_name,beam_val,shot_val,run_time_ver,t1_val,t2_val,div_type_val,atten_type_val,stop_plsm_cs,exc_plsm_cs
 ;The following common block is used to transfer the pointer to the
 ;status window and availability states of each data set
 common status, status_wid,error_catch,st_err
@@ -8723,7 +8006,6 @@ if error_catch then begin
 val='template'
 close,1
 openr,1,file_name
-vel_dis_type_val='NO'
 
 while ~EOF(1) do begin
 
@@ -8761,10 +8043,6 @@ if val eq 'atten_type:' then begin
   readf,1,val
   atten_type_val=strtrim(val,2)
 endif
-if val eq 'vel_dis_type:' then begin 
-  readf,1,val
-  vel_dis_type_val=strtrim(val,2)
-endif
 if val eq 'stop_plsm_cs:' then begin 
   readf,1,val
   stop_plsm_cs=strtrim(val,2)
@@ -8790,16 +8068,16 @@ Pro load_output_data_file,file_name
 common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
 ;The following common block contains the parameters which describe the non-geometrical
 ;parameters of the beam (particle and energy distribution)
-common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
+common beam_param, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,div_bml_opt, div_dist_par
 ;The following common block contains neutral gas parameters used in
 ;calculation of the beam attenuation in the gas.
-common neutral_gas,tank_pressure,torus_pressure,duct_pressure,duct_pressure_loc,n0_arr,n0_stop_cross_section
+common neutral_gas,tank_pressure,torus_pressure,n0_arr,n0_stop_cross_section
 ;The following common block contains X,Y,Z coordinate arrays used for the beam
 ;calculation grid and output 3D arrays of the beam density and excitation fracitons
-common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
+common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac
 ;The following common block contains the parameters which describe the geometry
 ;and position of the tokamak plasma
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
@@ -8824,7 +8102,7 @@ common effective_charge, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_e
 ;The following common block contains some of the settings of how to
 ;run the beam attenuation and penetration calculation. ;The following
 ;common block contains the name of the output save file
-common run_settings, div_type,div_type_names,atten_type, atten_type_names, vel_dis_type,vel_dis_names,save_output_type,save_output_file
+common run_settings, div_type,div_type_names,atten_type, atten_type_names,save_output_type,save_output_file
 ;The following common block contains some of the settings for construction
 ;of the arrays used for the beam attenuation and penetration
 ;calculation.
@@ -8849,24 +8127,11 @@ if error_catch then begin
  endif
 ;-----------------------------------------------------
 
-beam_atom='H';default
+
 val='template'
 close,1
 openr,1,file_name
 st=0
-;put 0 for duct pressure
-duct_pressure=0.0
-duct_pressure_loc=0.0
-;put default for tank_diam,neutr_diam and magnet_diam for older files
-tank_diam=1.0
-magnet_diam=0.2
-neutr_diam=0.2
-neutr_front_dist=0.0
-
-vel_dis_type=1 ;default
-vel_vec_coef=0
-vel_vec_x=0
-vel_vec_y=0
 
 while ~EOF(1) do begin
 
@@ -8894,31 +8159,25 @@ endif
 if val eq 'div_type:' then begin 
   readf,1,val
   div_type_val=strtrim(val,2)
-  div_type=where(strtrim(div_type_names,2) eq div_type_val)
+  div_type=locate(strtrim(div_type_names,2),div_type_val)
   if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
 endif
 if val eq 'atten_type:' then begin 
   readf,1,val
   atten_type_val=strtrim(val,2)
-  atten_type=where(strtrim(atten_type_names,2) eq atten_type_val)
-  if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
-endif
-if val eq 'vel_dis_type:' then begin 
-  readf,1,val
-  vel_dis_type_val=strtrim(val,2)
-  vel_dis_type=where(strtrim(vel_dis_names,2) eq vel_dis_type_val)
+  atten_type=locate(strtrim(atten_type_names,2),atten_type_val)
   if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
 endif
 if val eq 'stop_plsm_cs:' then begin 
   readf,1,val
   stop_plasma_type_val=strtrim(val,2)
-  stop_plasma_type=where(strtrim(stop_plasma_type_names,2) eq stop_plasma_type_val)
+  stop_plasma_type=locate(strtrim(stop_plasma_type_names,2),stop_plasma_type_val)
   if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
 endif
 if val eq 'exc_plsm_cs:' then begin 
   readf,1,val
   exc_plasma_type_val=strtrim(val,2)
-  exc_plasma_type=where(strtrim(exc_plasma_type_names,2) eq exc_plasma_type_val)
+  exc_plasma_type=locate(strtrim(exc_plasma_type_names,2),exc_plasma_type_val)
   if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
 endif
 
@@ -8945,18 +8204,8 @@ if val eq 'beam_port:' then begin
 endif
 if val eq 'grid_focus:' then begin 
   readf,1,val
-  x_grid_focus=float(val)
-  y_grid_focus=x_grid_focus
+  grid_focus=float(val)
   if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
-endif
-if val eq 'x_grid_focus:' then begin 
-  readf,1,val
-  x_grid_focus=float(val)
-  if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
-endif
-if val eq 'y_grid_focus:' then begin 
-  readf,1,val
-  y_grid_focus=float(val)
 endif
 if val eq 'tank_front_dist:' then begin 
   readf,1,val
@@ -8968,22 +8217,10 @@ if val eq 'tank_size:' then begin
   tank_size=float(val)
   if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
 endif
-if val eq 'tank_diam:' then begin 
-  readf,1,val
-  tank_diam=float(val)
-endif
-if val eq 'neutr_front_dist:' then begin 
-  readf,1,val
-  neutr_front_dist=float(val)
-endif
 if val eq 'neutr_size:' then begin 
   readf,1,val
   neutr_size=float(val)
   if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
-endif
-if val eq 'neutr_diam:' then begin 
-  readf,1,val
-  neutr_diam=float(val)
 endif
 if val eq 'tank_magnet_dist:' then begin 
   readf,1,val
@@ -8994,10 +8231,6 @@ if val eq 'magnet_size:' then begin
   readf,1,val
   magnet_size=float(val)
   if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
-endif
-if val eq 'magnet_diam:' then begin 
-  readf,1,val
-  magnet_diam=float(val)
 endif
 if val eq 'tank_cal_dist:' then begin 
   readf,1,val
@@ -9036,10 +8269,6 @@ if val eq 'phi_wall:' then begin
 endif
 
 ;load beam parameters
-if val eq 'beam_atom:' then begin 
-  readf,1,val
-  beam_atom=strtrim(val,2)
-endif
 if val eq 'e_full:' then begin 
   readf,1,val
   e_full=float(val)
@@ -9072,18 +8301,8 @@ if val eq 'i_opt:' then begin
 endif
 if val eq 'div_bml_opt:' then begin 
   readf,1,val
-  x_div_bml_opt=float(val)
-  y_div_bml_opt=x_div_bml_opt
+  div_bml_opt=float(val)
   if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
-endif
-if val eq 'x_div_bml_opt:' then begin 
-  readf,1,val
-  x_div_bml_opt=float(val)
-  if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
-endif
-if val eq 'y_div_bml_opt:' then begin 
-  readf,1,val
-  y_div_bml_opt=float(val)
 endif
 if val eq 'div_dist_par:' then begin 
   readf,1,val
@@ -9100,14 +8319,12 @@ endif
 if val eq 'limiters_table:'then begin 
   readf,1,val
   readf,1,val
-  lim_l=n_elements(strsplit(val,':',/extract))
   readf,1,val
   if n_limiters eq 0 then limiters_table='' else begin
-    limiters_table=strarr(7,n_limiters)
-    limiters_table(*,*)='NAN'
+    limiters_table=strarr(6,n_limiters)
     for i=0, n_limiters-1 do begin
       readf,1,val
-      limiters_table(0:lim_l-1,i)=(strsplit(val,':   ',/extract,/regex))
+      limiters_table(*,i)=(strsplit(val,':   ',/extract,/regex))
     endfor
   endelse
   if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
@@ -9123,14 +8340,6 @@ if val eq 'torus_pressure:' then begin
   readf,1,val
   torus_pressure=float(val)
   if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
-endif
-if val eq 'duct_pressure:' then begin 
-  readf,1,val
-  duct_pressure=float(val)
-endif
-if val eq 'duct_pressure_loc:' then begin 
-  readf,1,val
-  duct_pressure_loc=float(val)
 endif
 
 ;Load plasma geometry
@@ -9349,46 +8558,13 @@ if val eq 'exc_n3_frac:' then begin
   readu,1,exc_n3_frac
   if n_elements(exc_n2_frac) gt 100 then st=st+1
 endif
-if val eq 'vel_vec_x:' then begin
-  n_bml=n_elements(x_bml)  
-  n_x=n_elements(x_beam)
-  n_y=n_elements(y_beam) 
-  vel_vec_x=fltarr(n_x,n_y,n_bml)
-  readu,1,vel_vec_x
-  if n_elements(vel_vec_x) gt 100 then st=st+1
-endif
-if val eq 'vel_vec_y:' then begin
-  n_bml=n_elements(x_bml)  
-  n_x=n_elements(x_beam)
-  n_y=n_elements(y_beam) 
-  vel_vec_y=fltarr(n_x,n_y,n_bml)
-  readu,1,vel_vec_y
-  if n_elements(vel_vec_y) gt 100 then st=st+1
-endif
-if val eq 'vel_vec_coef:' then begin
-  n_ebeam=n_elements(e_beam)  
-  n_z=n_elements(z_beam)
-  n_x=n_elements(x_beam)
-  n_y=n_elements(y_beam) 
-  vel_vec_coef=fltarr(n_ebeam,n_z,n_x,n_y,9)
-  readu,1,vel_vec_coef
-  if n_elements(vel_vec_coef) gt 100 then st=st+1
-endif
-
 endwhile
-if vel_dis_type eq 1 and st lt 72 then begin
+if st ne 72 then begin
   Widget_control, status_wid, Get_Value=status_tx
   Widget_Control, status_wid,$
   Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Full set of output data is missing in the file']], Set_text_top_line=n_elements(status_tx)-4
   st_err=1
 endif
-if vel_dis_type eq 0 and st lt 76 then begin
-  Widget_control, status_wid, Get_Value=status_tx
-  Widget_Control, status_wid,$
-  Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Full set of output data is missing in the file']], Set_text_top_line=n_elements(status_tx)-4
-  st_err=1
-endif
-
 close,1
 neutralization ;procedure which is needed for beam parameters
 end
@@ -9401,7 +8577,7 @@ end
 Pro load_beam_geometry_file
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
 ;The following common block contains some of the settings for loading of
 ;the input data used for the beam attenuation and penetration
 ;calculation. ;The following common block contains the name of the input file from which the input
@@ -9443,10 +8619,6 @@ if file(0) eq "" then begin
   return
 endif
 openr,1,beam_geom_file
-;put default for tank_diam,neutr_diam and magnet_diam for older files
-tank_diam=1.0
-magnet_diam=0.2
-neutr_diam=0.2
 
 while ~EOF(1) do begin
 
@@ -9474,18 +8646,8 @@ if val eq 'beam_port:' then begin
 endif
 if val eq 'grid_focus:' then begin 
   readf,1,val
-  x_grid_focus=float(val)
-  x_grid_focus=y_grid_focus
+  grid_focus=float(val)
   if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
-endif
-if val eq 'x_grid_focus:' then begin 
-  readf,1,val
-  x_grid_focus=float(val)
-  if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
-endif
-if val eq 'y_grid_focus:' then begin 
-  readf,1,val
-  y_grid_focus=float(val)
 endif
 if val eq 'tank_front_dist:' then begin 
   readf,1,val
@@ -9497,22 +8659,10 @@ if val eq 'tank_size:' then begin
   tank_size=float(val)
   if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
 endif
-if val eq 'tank_diam:' then begin 
-  readf,1,val
-  tank_diam=float(val)
-endif
-if val eq 'neutr_front_dist:' then begin 
-  readf,1,val
-  neutr_front_dist=float(val)
-endif
 if val eq 'neutr_size:' then begin 
   readf,1,val
   neutr_size=float(val)
   if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
-endif
-if val eq 'neutr_diam:' then begin 
-  readf,1,val
-  neutr_diam=float(val)
 endif
 if val eq 'tank_magnet_dist:' then begin 
   readf,1,val
@@ -9523,10 +8673,6 @@ if val eq 'magnet_size:' then begin
   readf,1,val
   magnet_size=float(val)
   if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
-endif
-if val eq 'magnet_diam:' then begin 
-  readf,1,val
-  magnet_diam=float(val)
 endif
 if val eq 'tank_cal_dist:' then begin 
   readf,1,val
@@ -9614,7 +8760,7 @@ end
 Pro load_beam_lim
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
 ;The following common block contains the parameters which describe the
 ;positions and sizes of the beam limiters.
 common beam_limiters, n_limiters, limiters_table,limiters_arr
@@ -9638,22 +8784,10 @@ if error_catch then begin
    endif
  endif
 ;-----------------------------------------------------
-  F_port_flange=1.26;m
-  grid_outer_wall_dist=fix(sqrt(r_grid^2.0+f_port_flange^2.0-2.0*r_grid*f_port_flange*cos(phi_grid))*10.0)/10.0
+  grid_outer_wall_dist=fix(sqrt(r_grid^2.0+(r_major+r_minor*1.4)^2.0-2.0*r_grid*(r_major+r_minor*1.4)*cos(phi_grid))*10.0)/10.0
   tank_flange_dist=grid_outer_wall_dist-tank_front_dist-tank_size
-  n_limiters=4
-  limiters_table=strarr(7,n_limiters)
-  limiters_table(*,0)=['beam_duct',strtrim(string(tank_front_dist+tank_size,format='(F5.3)'),2),strtrim(string(tank_flange_dist,format='(F5.3)'),2),'0.200','NAN','NAN','NAN']
-  
-  r_inner_wall=0.44
-  l_aperture=0.020
-  d_aperture=0.16
-  limiters_table(*,1)=['duct_aperture',strtrim(string(tank_front_dist+tank_size-l_aperture,format='(F5.3)'),2),strtrim(string(l_aperture,format='(F5.3)'),2),strtrim(string(d_aperture,format='(F5.3)'),2),'NAN','NAN','NAN']
-  l_offset=1.31
-  thick_offset=0.05
-  d_offset=0.146
-  limiters_table(*,2)=['duct_offset',strtrim(string(tank_front_dist+tank_size+l_offset,format='(F5.3)'),2),strtrim(string(thick_offset,format='(F5.3)'),2),strtrim(string(d_offset,format='(F5.3)'),2),'NAN','NAN','NAN']
-  limiters_table(*,3)=['inner wall','NAN','NAN','NAN','NAN','NAN',strtrim(string(r_inner_wall,format='(F5.3)'),2)]
+  n_limiters=1
+  limiters_table=['beam_duct',strtrim(string(tank_front_dist+tank_size,format='(F5.3)'),2),strtrim(string(tank_flange_dist,format='(F5.3)'),2),'0.200','NAN','NAN']
 end
 ;-------------------------------------------------------------------------------------------------------------------------
 
@@ -9664,7 +8798,7 @@ end
 Pro load_beam_geometry
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
 ;The following common block is used to transfer the pointer to the
 ;status window and availability states of each data set
 common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
@@ -9688,29 +8822,22 @@ if error_catch then begin
 ;-----------------------------------------------------
  MDSOPEN,'CMOD',SHOT,/QUIET,STATUS=ST0
  if st0 then begin
-   r_wall=mdsvalue('\DNB::TOP.DNB_GEOM.R_wall',status=st1,/quiet);center of the second point defining the beam
-   z_wall=mdsvalue('\DNB::TOP.DNB_GEOM.z_wall',status=st2,/quiet);center of the second point defining the beam
-   phi_wall=mdsvalue('\DNB::TOP.DNB_GEOM.phi_wall',status=st3,/quiet);center of of the second point defining the beam
-   r_grid=mdsvalue('\DNB::TOP.DNB_GEOM.R_grid',status=st4,/quiet);center of the grid
-   z_grid=mdsvalue('\DNB::TOP.DNB_GEOM.z_grid',status=st5,/quiet);center of the grid
-   phi_grid=mdsvalue('\DNB::TOP.DNB_GEOM.phi_grid',status=st6,/quiet) ;center of the grid
-   beam_port=MDSVALUE('\DNB::TOP.DNB_GEOM.beam_port', status=st7,/quiet); tokamak port to which beam is attached
-   x_grid_focus=MDSVALUE('\DNB::TOP.DNB_GEOM.grid_focus', status=st8,/quiet);x focal distance of the beam
-   y_grid_focus=x_grid_focus;y focal distance of the beam    
-   tank_front_dist=MDSVALUE('\DNB::TOP.DNB_GEOM.tank_front', status=st9,/quiet);distance from grids to the front of the beam tank
-   tank_size=MDSVALUE('\DNB::TOP.DNB_GEOM.tank_size', status=st10,/quiet);length of the beam tank
-   neutr_size=MDSVALUE('\DNB::TOP.DNB_GEOM.neutr_size', status=st11,/quiet) ; size of the neutralizer tube
-   tank_magnet_dist=MDSVALUE('\DNB::TOP.DNB_GEOM.tank_magnet', status=st12,/quiet) ; distance from from wall fo the tank to front side of the deflection magnet
-   magnet_size=MDSVALUE('\DNB::TOP.DNB_GEOM.magnet_size', status=st13,/quiet); size of the magnet
-   tank_cal_dist=MDSVALUE('\DNB::TOP.DNB_GEOM.tank_cal', status=st14,/quiet);distance from tank end to calorimeter
-   beam_apertur=MDSVALUE('\DNB::TOP.DNB_GEOM.beam_apertur', status=st15,/quiet) ;positions of the elemental apertures in the extraction grid
-   grid_ap_diam=MDSVALUE('\DNB::TOP.DNB_GEOM.grid_ap_diam', status=st16,/quiet);diameter of the elemental apertures in the extraction grid
-   ;put default C-Mod for tank_diam,neutr_diam and magnet_diam for older files
-   tank_diam=1.0
-   magnet_diam=0.2
-   neutr_diam=0.2
-   neutr_front_dist=0.0
-
+   r_wall=mdsvalue('\DNB::TOP.ROPER.DNB_GEOM.R_wall',status=st1,/quiet);center of the second point defining the beam
+   z_wall=mdsvalue('\DNB::TOP.ROPER.DNB_GEOM.z_wall',status=st2,/quiet);center of the second point defining the beam
+   phi_wall=mdsvalue('\DNB::TOP.ROPER.DNB_GEOM.phi_wall',status=st3,/quiet);center of of the second point defining the beam
+   r_grid=mdsvalue('\DNB::TOP.ROPER.DNB_GEOM.R_grid',status=st4,/quiet);center of the grid
+   z_grid=mdsvalue('\DNB::TOP.ROPER.DNB_GEOM.z_grid',status=st5,/quiet);center of the grid
+   phi_grid=mdsvalue('\DNB::TOP.ROPER.DNB_GEOM.phi_grid',status=st6,/quiet) ;center of the grid
+   beam_port=MDSVALUE('\DNB::TOP.ROPER.DNB_GEOM.beam_port', status=st7,/quiet); tokamak port to which beam is attached
+   grid_focus=MDSVALUE('\DNB::TOP.ROPER.DNB_GEOM.grid_focus', status=st8,/quiet); focal distance of the beam   
+   tank_front_dist=MDSVALUE('\DNB::TOP.ROPER.DNB_GEOM.tank_front', status=st9,/quiet);distance from grids to the front of the beam tank
+   tank_size=MDSVALUE('\DNB::TOP.ROPER.DNB_GEOM.tank_size', status=st10,/quiet);length of the beam tank
+   neutr_size=MDSVALUE('\DNB::TOP.ROPER.DNB_GEOM.neutr_size', status=st11,/quiet) ; size of the neutralizer tube
+   tank_magnet_dist=MDSVALUE('\DNB::TOP.ROPER.DNB_GEOM.tank_magnet', status=st12,/quiet) ; distance from from wall fo the tank to front side of the deflection magnet
+   magnet_size=MDSVALUE('\DNB::TOP.ROPER.DNB_GEOM.magnet_size', status=st13,/quiet); size of the magnet
+   tank_cal_dist=MDSVALUE('\DNB::TOP.ROPER.DNB_GEOM.tank_cal', status=st14,/quiet);distance from tank end to calorimeter
+   beam_apertur=MDSVALUE('\DNB::TOP.ROPER.DNB_GEOM.beam_apertur', status=st15,/quiet) ;positions of the elemental apertures in the extraction grid
+   grid_ap_diam=MDSVALUE('\DNB::TOP.ROPER.DNB_GEOM.grid_ap_diam', status=st16,/quiet);diameter of the elemental apertures in the extraction grid
    if st1 and st2 and st3 and st4 and st5 and st6 and st7 and st8 and st9 and st10 and st11 and st12 and st13 and st14 and st15 and st16 then begin
      x_bml=beam_apertur(*,0)
      y_bml=beam_apertur(*,1) 
@@ -9721,16 +8848,15 @@ if error_catch then begin
      r_grid=round(r_grid*1000.0)/1000.0
      z_grid=round(z_grid*1000.0)/1000.0
      phi_grid=round(phi_grid*1000.0)/1000.0
-     x_grid_focus=round(x_grid_focus*1000.0)/1000.0
-     y_grid_focus=round(y_grid_focus*1000.0)/1000.0
+     grid_focus=round(grid_focus*1000.0)/1000.0
      tank_front_dist=round(tank_front_dist*1000.0)/1000.0
      tank_size=round(tank_size*1000.0)/1000.0
      neutr_size=round(neutr_size*1000.0)/1000.0
-     neutr_front_dist=round(neutr_front_dist*1000.0)/1000.0
      tank_magnet_dist=round(tank_magnet_dist*1000.0)/1000.0
      magnet_size=round(magnet_size*1000.0)/1000.0
      tank_cal_dist=round(tank_cal_dist*1000.0)/1000.0
    endif else begin
+     stop
      Widget_control, status_wid, Get_Value=status_tx
      Widget_Control, status_wid,$
      Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : The Beam Geometry data set is not available in MDSPLUS']], Set_text_top_line=n_elements(status_tx)-4
@@ -9811,13 +8937,13 @@ Pro beam_code_analytic, Main_Base
 common main_widget,widget_id, driver_id
 ;The following common block contains X,Y,Z coordinate arrays used for the beam
 ;calculation grid and output 3D arrays of the beam density and excitation fracitons
-common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
+common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac
 ;The following common block contains the parameters which describe the non-geometrical
 ;parameters of the beam (particle and energy distribution)
-common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
+common beam_param, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,div_bml_opt, div_dist_par
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist 
+common beam_geometry, x_bml,y_bml,grid_ap_diam,grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist 
 ;The following common block is used to transfer the pointer to the status window and availability states of each data set
 common status, status_wid,error_catch,st_err
 
@@ -9858,7 +8984,7 @@ Widget_Control, status_wid, Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n
 ' : The calculation was started ']], Set_text_top_line=n_elements(status_tx)-4 
 
 J_tot=1.0 ;total current from each beamlet
-div_bml_opt_rad=x_div_bml_opt*!Pi/180.0
+div_bml_opt_rad=div_bml_opt*!Pi/180.0
 
 a=max([x_bml,y_bml]);grid radius
 systime_0=systime(/seconds)
@@ -9875,7 +9001,7 @@ strtrim(string(rem_hours,format='(I2)'),2)+' hours, '+strtrim(string(rem_min,for
   endif
 
   for i=0, n_r-1 do begin
-     beam_cur_r(i)=beam_cur_den(r_beam(i),z_beam(j),J_tot,div_bml_opt_rad,a,x_grid_focus)
+     beam_cur_r(i)=beam_cur_den(r_beam(i),z_beam(j),J_tot,div_bml_opt_rad,a,grid_focus)
      if st_err then return
   endfor
   for i=0, n_x-1 do begin
@@ -9900,16 +9026,9 @@ strtrim(string(rem_hours,format='(I2)'),2)+' hours, '+strtrim(string(rem_min,for
    n_beam(k,*,*,*)=n_beam(k,*,*,*)*neutr_dens_ns_tot*neutr_dens_frac(k) ;cm-3
  endfor
  ;added on Jan 21, 2010 to account for neutralizer.
- for i_z=0,locate(z_beam,neutr_front_dist) do begin
-   n_beam(*,i_z,*,*)=0.0
+ for i_z=0,locate(z_beam,neutr_size) do begin
+   n_beam(*,i_z,*,*)=n_beam(*,i_z,*,*)*z_beam(i_z)/neutr_size
  endfor
- for i_z=locate(z_beam,neutr_front_dist),locate(z_beam,neutr_front_dist+neutr_size) do begin
-   if i_z ne -1 then n_beam(*,i_z,*,*)=n_beam(*,i_z,*,*)*(z_beam(i_z)-neutr_front_dist)/neutr_size
- endfor
-  vel_vec_x=0
-  vel_vec_y=0
-  vel_vec_coef=0 
-
   Widget_control, status_wid, Get_Value=status_tx
   status_tx=status_tx(0:n_elements(status_tx)-2)
   Widget_Control, status_wid,Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+$
@@ -9927,16 +9046,16 @@ Pro beam_code_ray_tracing, Main_Base
 ;the following commonblock contains the id of the main widget
 common main_widget,widget_id, driver_id
 ;The following common block contains some of the settings for beam attenuation and penetration calculation
-common run_settings,div_type,div_type_names,atten_type, atten_type_names, vel_dis_type, vel_dis_names
+common run_settings,div_type,div_type_names,atten_type, atten_type_names
 ;The following common block contains X,Y,Z coordinate arrays used for the beam
 ;calculation grid and output 3D arrays of the beam density and excitation fracitons
-common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
+common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
 ;The following common block contains the parameters which describe the non-geometrical
 ;parameters of the beam (particle and energy distribution) 
-common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
+common beam_param, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,div_bml_opt, div_dist_par
 ;The following common block contains 1D n_e profiles of raw and
 ;smoothed data, 3D n_e and ne_stop_cross_section arrays after they constructed
 common dens_electrons,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
@@ -9945,7 +9064,7 @@ common dens_electrons,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_
 common temp_electrons,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
 ;The following common block contains neutral gas parameters used in
 ;calculation of the beam attenuation in the gas.
-common neutral_gas,tank_pressure,torus_pressure,duct_pressure,duct_pressure_loc,n0_arr,n0_stop_cross_section
+common neutral_gas,tank_pressure,torus_pressure,n0_arr,n0_stop_cross_section
 ;The following common block contains some of the settings for construction
 ;of the arrays used for the beam attenuation and penetration
 ;calculation. 
@@ -10002,8 +9121,7 @@ if driver_val eq 'Back to NORMAL mode' then driver_on=1
     Widget_Control, status_wid, Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+$
     ' : The calculation was started ']], Set_text_top_line=n_elements(status_tx)-4 
     
-    x_grid_focus=x_grid_focus(0)
-    y_grid_focus=y_grid_focus(0)
+    grid_focus=grid_focus(0)
     n_bml=n_elements(x_bml_used)
     
    
@@ -10042,41 +9160,29 @@ if driver_val eq 'Back to NORMAL mode' then driver_on=1
     vecf_z = fltarr(n_x,n_y,n_bml) ; ; z coordinate of a vector from aperture to focal point (3D)
     vecp_x = fltarr(n_x,n_y,n_bml) ; ; x_coordinate of a vector from aperture to point of interest(3D)
     vecp_y = fltarr(n_x,n_y,n_bml) ; ; y_coordinate of a vector from aperture to point of interest(3D)
-    if vel_dis_type eq 0 then begin
-      vecp_arr = fltarr(n_x,n_y,3,n_bml) ;; vecp_x,vecp_y,ampl 
-      vecp_coef=fltarr(n_ebeam,n_z,n_x,n_y,9); 9 points    
-    endif 
-
-   vecp_z = fltarr(n_x,n_y,n_bml) ; ; z_coordinate of a vector from aperture to point of interest(3D)
+    vecp_z = fltarr(n_x,n_y,n_bml) ; ; z_coordinate of a vector from aperture to point of interest(3D)
 
     bml_pos_x = fltarr(n_x,n_y,n_bml) ; ; x coordinate of a vector from aperture to point of interest(3D)
     bml_pos_y = fltarr(n_x,n_y,n_bml) ; ; y coordinate of a vector from aperture to point of interest(3D)
     bml_pos_z = fltarr(n_x,n_y,n_bml) ; ; z coordinate of a vector from aperture to point of interest(3D)
 
-    x_div_bml = fltarr(n_x,n_y,n_bml) ; ; beamlet divergence of from a particular aperture for point of interest(3D) (X:horizontal)   
-    y_div_bml = fltarr(n_x,n_y,n_bml) ; ; beamlet divergence of from a particular aperture for point of interest(3D) (Y:vertical)  
+    div_bml = fltarr(n_x,n_y,n_bml) ; ; beamlet divergence of from a particular aperture for point of interest(3D)   
 
     ind_x = make_array(n_x,n_y,n_bml,/uint) ; ; x coordinate of a vector from aperture to point of interest(3D)
     ind_y = make_array(n_x,n_y,n_bml,/uint) ; ; y coordinate of a vector from aperture to point of interest(3D)  
     for j=0, n_bml-1 do begin
-          vecf_x(*,*,j)=make_array(n_x,n_y,value=0)-x_bml_used(j)/x_grid_focus
-          vecf_y(*,*,j)=make_array(n_x,n_y,value=0)-y_bml_used(j)/y_grid_focus
-          vecf_z(*,*,j)=make_array(n_x,n_y,value=0)+1.0
+          vecf_x(*,*,j)=make_array(n_x,n_y,value=0)-x_bml_used(j)
+          vecf_y(*,*,j)=make_array(n_x,n_y,value=0)-y_bml_used(j)
+          vecf_z(*,*,j)=make_array(n_x,n_y,value=0)+grid_focus
           vecp_x(*,*,j)=make_array(n_y,value=1)## x_beam- x_bml_used(j); (without z component)
           vecp_y(*,*,j)=y_beam ## make_array(n_x,value=1) - y_bml_used(j); (without z component)
           vecp_z(*,*,j)=make_array(n_x,n_y,value=0); (without z component)
           
-          x_div_bml(*,*,j)=make_array(n_x,n_y,value=0)+x_div_bml_opt*(1+div_dist_par*(1.0-J_bml(j)/I_dens_opt)^2.0); (without z component)
-          y_div_bml(*,*,j)=make_array(n_x,n_y,value=0)+y_div_bml_opt*(1+div_dist_par*(1.0-J_bml(j)/I_dens_opt)^2.0); (without z component)
-
+          div_bml(*,*,j)=make_array(n_x,n_y,value=0)+div_bml_opt*(1+div_dist_par*(1.0-J_bml(j)/I_dens_opt)^2.0); (without z component)
           ind_x(*,*,j)= make_array(n_y,value=1) ## make_array(n_x,/index)
           ind_y(*,*,j)= make_array(n_y,/index) ## make_array(n_x,value=1)
     endfor
     lvecf = sqrt(vecf_x^2.0+vecf_y^2.0+vecf_z^2.0) ; length of vecf
-    if vel_dis_type eq 0 then begin 
-      vecp_arr(*,*,0,*)=vecp_x
-      vecp_arr(*,*,1,*)=vecp_y
-    endif
 
     n_beam=fltarr(n_ebeam,n_z,n_x,n_y)
     ;n_dep=fltarr(n_ebeam,n_z,n_x,n_y)
@@ -10084,20 +9190,18 @@ if driver_val eq 'Back to NORMAL mode' then driver_on=1
     n0_sigma=fltarr(n_ebeam,n_z,n_x,n_y)
     ne_sigma=fltarr(n_ebeam,n_z,n_x,n_y)
     limiters_sigma=fltarr(n_ebeam,n_z,n_x,n_y)       
-    ;z_length_arr=[z_beam(1:n_z-1)-z_beam(0:n_z-2),z_beam(n_z-1)-z_beam(n_z-2)]*100.0 ;length array for attenuation integral cm
-    z_length_arr=[z_beam(1)-z_beam(0),z_beam(1:n_z-1)-z_beam(0:n_z-2)]*100.0 ;length array for attenuation integral cm
+    z_length_arr=[z_beam(1:n_z-1)-z_beam(0:n_z-2),z_beam(n_z-1)-z_beam(n_z-2)]*100.0 ;length array for attenuation integral cm
  
     for i=0, n_ebeam-1 do begin
       n0_sigma(i,*,*,*)=n0_arr*n0_stop_cross_section(i)
-      if atten_type lt 1 then ne_sigma(i,*,*,*)=n_e_arr*ne_stop_cross_section(i,*,*,*)
+      ne_sigma(i,*,*,*)=n_e_arr*ne_stop_cross_section(i,*,*,*)
       limiters_sigma(i,*,*,*)=limiters_arr
     endfor
     if atten_type eq 0 then n_tot_sigma=n0_sigma+ne_sigma+limiters_sigma
     if atten_type eq 1 then n_tot_sigma=ne_sigma
     if atten_type eq 2 then n_tot_sigma=n0_sigma
     if atten_type eq 3 then n_tot_sigma=limiters_sigma
-    if atten_type eq 4 then n_tot_sigma=limiters_sigma+n0_sigma
-
+    
     ind_magnet=locate(z_beam,tank_front_dist+tank_magnet_dist+magnet_size)
 
     e_inc=make_array(n_x,n_y,n_bml,value=0)
@@ -10110,7 +9214,7 @@ if driver_val eq 'Back to NORMAL mode' then driver_on=1
       Widget_control, status_wid, Get_Value=status_tx
       status_tx=status_tx(0:n_elements(status_tx)-2)
       if i gt 0 then begin
-        if atten_type ne 5 then begin
+        if atten_type ne 4 then begin
           all_sec=(systime_1-systime_0)*((((n_z+1-ind_magnet)^2.0)/2.0+ind_magnet)/((((i+1-ind_magnet)>0)^2.0)/2.0+((i+1)<ind_magnet))-1.0)
           rem_hours=fix(all_sec/3600.0)
           rem_min=fix((all_sec-3600*rem_hours)/60.0)
@@ -10136,19 +9240,13 @@ if driver_val eq 'Back to NORMAL mode' then driver_on=1
       dot_prod = reform((vecf_x*vecp_x+vecf_y*vecp_y+vecf_z*(vecp_z+z_beam(i)))) ; dot prod of vecf and vecp
 
       cos_angle = dot_prod/(lvecf*lvecp)<1.0 ; cosine of the angle subtended by vecf and vecp
-      ;r_traj = lvecp*sqrt(1.0-cos_angle*cos_angle) ;perp distance from the pt to the beamlet trajectory
+      r_traj = lvecp*sqrt(1.0-cos_angle*cos_angle) ;perp distance from the pt to the beamlet trajectory
       z_traj = lvecp*cos_angle ; distance along the beamlet trajectory
      
-      x_traj=vecp_x-vecf_x*z_traj/lvecf
-      y_traj=vecp_y-vecf_y*z_traj/lvecf
-     
-      r0x = z_traj*tan(x_div_bml*!pi/180.0) ;Gaussian width of beam at z_traj
-      r0y = z_traj*tan(y_div_bml*!pi/180.0) ;Gaussian width of beam at z_traj
+      r0 = z_traj*tan(div_bml*!pi/180.0) ;Gaussian width of beam at z_traj
       ;added for attenuation
       J_tot=1.0
-      ;gauss_int=J_tot/4.0*abs(erf((r_traj+x_step/2.0)/r0x)-erf((r_traj-x_step/2.0)/r0x))*(erf((y_step/2.0)/r0y)*2.0)
-      gauss_int=J_tot/4.0*abs(erf((x_traj+x_step/2.0)/r0x)-erf((x_traj-x_step/2.0)/r0x))*abs(erf((y_traj+y_step/2.0)/r0y)-erf((y_traj-y_step/2.0)/r0y))
-      
+      gauss_int=J_tot/4.0*abs(erf((r_traj+x_step/2.0)/r0)-erf((r_traj-x_step/2.0)/r0))*(erf((y_step/2.0)/r0)*2.0)
       gauss_int_iter=gauss_int
       geom_fact=lvecp/z_beam(i)
       att_fac(*,*,*,*)=0
@@ -10156,11 +9254,11 @@ if driver_val eq 'Back to NORMAL mode' then driver_on=1
       inc_coef_x=vecp_x/z_beam(i)/x_step
       inc_coef_y=vecp_y/z_beam(i)/y_step   
            
-      if atten_type ne 5 then begin
+      if atten_type ne 4 then begin
       for j=ind_magnet,i do begin
           x_inc=ind_x-fix((z_beam(i)-z_beam(j))*inc_coef_x); may be put round instead of fix
           y_inc=ind_y-fix((z_beam(i)-z_beam(j))*inc_coef_y); may be put round instead of fix
-          length_coef=z_length_arr(j)*geom_fact; changed from z-1 to z on 31 Aug 2012
+          length_coef=z_length_arr(j-1)*geom_fact
           for k=0, n_ebeam-1 do begin
             att_fac(k,*,*,*)=att_fac(k,*,*,*)+n_tot_sigma(e_inc+k,z_inc,x_inc,y_inc)*length_coef
             ;calculate distribution of lost atoms from beam (postponed)
@@ -10182,27 +9280,9 @@ if driver_val eq 'Back to NORMAL mode' then driver_on=1
       for k=0, n_ebeam-1 do begin
         if I_dens_par eq 0 then begin  ; if uniform source dens distribution
           n_beam(k,i,*,*)=total(exp(-double(reform(att_fac(k,*,*,*))))*gauss_int,3)/(x_step*y_step*1e4) ;cm-2 ;removed n_beam(k,i,*,*)
-          if vel_dis_type eq 0 then begin
-            vecp_arr(*,*,2,*)=exp(-double(reform(att_fac(k,*,*,*))))*gauss_int
-            for x_i=0,n_elements(x_beam)-1 do begin
-              for y_i=0,n_elements(y_beam)-1 do begin
-                res=sfit(reform(vecp_arr(x_i,y_i,*,*)),2,/irregular,kx=kx)
-                vecp_coef(k,i,x_i,y_i,*)=kx
-              endfor
-            endfor
-          endif
           ;if i ge ind_magnet then n_dep(k,i,*,*)=total(1.0-exp(-double(reform(n_tot_sigma(e_inc,z_inc-1,x_inc,y_inc)*length_coef)))*gauss_int,3)/(x_step*y_step*1e4) ;cm-2 ;removed n_beam(k,i,*,*)
         endif else begin
           n_beam(k,i,*,*)=total(exp(-double(reform(att_fac(k,*,*,*))))*dens_bml(k,*,*,*)*gauss_int,3)/(x_step*y_step*1e4) ;cm-2;removed n_beam(k,i,*,*)
-          if vel_dis_type eq 0 then begin
-            vecp_arr(*,*,2,*)=exp(-double(reform(att_fac(k,*,*,*))))*dens_bml(k,*,*,*)*gauss_int
-            for x_i=0,n_elements(x_beam)-1 do begin
-              for y_i=0,n_elements(y_beam)-1 do begin
-                res=sfit(reform(vecp_arr(x_i,y_i,*,*)),2,/irregular,kx=kx)
-                vecp_coef(k,i,x_i,y_i,*)=kx
-              endfor
-            endfor
-          endif
           ;if i ge ind_magnet then n_dep(k,i,*,*)=total(1.0-exp(-double(reform(n_tot_sigma(e_inc,z_inc-1,x_inc,y_inc)*length_coef)))*dens_bml(k,*,*,*)*gauss_int,3)/(x_step*y_step*1e4) ;cm-2;removed n_beam(k,i,*,*)
         endelse
       endfor
@@ -10226,23 +9306,10 @@ if driver_val eq 'Back to NORMAL mode' then driver_on=1
       endfor
     endif
     ;added on Jan 21, 2010 to account for neutralizer.
-    for i_z=0,locate(z_beam,neutr_front_dist) do begin
-      n_beam(*,i_z,*,*)=0.0
-    endfor
-    for i_z=locate(z_beam,neutr_front_dist),locate(z_beam,neutr_front_dist+neutr_size) do begin
-      if i_z ne -1 then n_beam(*,i_z,*,*)=n_beam(*,i_z,*,*)*(z_beam(i_z)-neutr_front_dist)/neutr_size
+    for i_z=0,locate(z_beam,neutr_size) do begin
+      n_beam(*,i_z,*,*)=n_beam(*,i_z,*,*)*z_beam(i_z)/neutr_size
      ; n_dep(*,i_z,*,*)=n_dep(*,i_z,*,*)*z_beam(i_z)/neutr_size
     endfor
-
-    if vel_dis_type eq 0 then begin
-      vel_vec_x=vecp_x
-      vel_vec_y=vecp_y
-      vel_vec_coef=vecp_coef 
-     endif else begin
-      vel_vec_x=0
-      vel_vec_y=0
-      vel_vec_coef=0 
-     endelse
 
     Widget_control, status_wid, Get_Value=status_tx
     status_tx=status_tx(0:n_elements(status_tx)-2)
@@ -10260,16 +9327,16 @@ Pro beam_code_interpolating, Main_Base
 ;the following commonblock contains the id of the main widget
 common main_widget,widget_id, driver_id
 ;The following common block contains some of the settings for beam attenuation and penetration calculation
-common run_settings,div_type,div_type_names,atten_type, atten_type_names, vel_dis_type, vel_dis_names
+common run_settings,div_type,div_type_names,atten_type, atten_type_names
 ;The following common block contains X,Y,Z coordinate arrays used for the beam
 ;calculation grid and output 3D arrays of the beam density and excitation fracitons
-common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
+common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
 ;The following common block contains the parameters which describe the non-geometrical
 ;parameters of the beam (particle and energy distribution) 
-common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
+common beam_param, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,div_bml_opt, div_dist_par
 ;The following common block contains 1D n_e profiles of raw and
 ;smoothed data, 3D n_e and ne_stop_cross_section arrays after they constructed
 common dens_electrons,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
@@ -10278,7 +9345,7 @@ common dens_electrons,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_
 common temp_electrons,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
 ;The following common block contains neutral gas parameters used in
 ;calculation of the beam attenuation in the gas.
-common neutral_gas,tank_pressure,torus_pressure,duct_pressure,duct_pressure_loc,n0_arr,n0_stop_cross_section
+common neutral_gas,tank_pressure,torus_pressure,n0_arr,n0_stop_cross_section
 ;The following common block contains some of the settings for construction
 ;of the arrays used for the beam attenuation and penetration
 ;calculation. 
@@ -10330,8 +9397,7 @@ if driver_val eq 'Back to NORMAL mode' then driver_on=1
     Widget_Control, status_wid, Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+$
     ' : The calculation was started ']], Set_text_top_line=n_elements(status_tx)-4 
     
-    x_grid_focus=x_grid_focus(0)
-    y_grid_focus=y_grid_focus(0)
+    grid_focus=grid_focus(0)
     n_bml=n_elements(x_bml_used)
     
    
@@ -10366,60 +9432,42 @@ if driver_val eq 'Back to NORMAL mode' then driver_on=1
     prfl_bm = make_array(n_ebeam,n_x,n_y)
 
     ;compute the beam width
-
-    ;velocity vector is defined for each beam energy
-    ; for each 3d point on beam grid
-    ; vector is defined as a 2D density function
-    ; defined within a XY cell
- 
-    x_bml_srt=x_bml(sort(x_bml))
-    y_bml_srt=y_bml(sort(y_bml))
-    n_x_bml_uniq=n_elements(uniq(x_bml_srt))
-    n_y_bml_uniq=n_elements(uniq(y_bml_srt))
-   ; vel_vec_coef=fltarr(n_ebeam,n_x,n_y,9);
-
     vecf_x = fltarr(n_x,n_y,n_bml) ; ; x coordinate of a vector from aperture to focal point (3D)
     vecf_y = fltarr(n_x,n_y,n_bml) ; ; y coordinate of a vector from aperture to focal point (3D)
     vecf_z = fltarr(n_x,n_y,n_bml) ; ; z coordinate of a vector from aperture to focal point (3D)
     vecp_x = fltarr(n_x,n_y,n_bml) ; ; x_coordinate of a vector from aperture to point of interest(3D)
     vecp_y = fltarr(n_x,n_y,n_bml) ; ; y_coordinate of a vector from aperture to point of interest(3D)
-    vecp_z = fltarr(n_x,n_y,n_bml) ; ; z_coordinate of a vector from aperture to point of interest(3D)
-    if vel_dis_type eq 0 then begin
-      vecp_arr = fltarr(n_x,n_y,3,n_bml) ;; vecp_x,vecp_y,ampl 
-      vecp_coef=fltarr(n_ebeam,n_z,n_x,n_y,9); 9 points    
-    endif
     coord_x = fltarr(n_x,n_y,n_bml) ; ; x_coordinate of a vector from aperture to point of interest(3D)
     coord_y = fltarr(n_x,n_y,n_bml) ; ; y_coordinate of a vector from aperture to point of interest(3D)
 
-
+    vecp_z = fltarr(n_x,n_y,n_bml) ; ; z_coordinate of a vector from aperture to point of interest(3D)
 
     bml_pos_x = fltarr(n_x,n_y,n_bml) ; ; x coordinate of aperture point
     bml_pos_y = fltarr(n_x,n_y,n_bml) ; ; y coordinate of aperture point
     bml_pos_ind = fltarr(n_x,n_y,n_bml) ; ; x coordinate of aperture point
 
 
-    x_div_bml = fltarr(n_x,n_y,n_bml) ; ; beamlet divergence of from a particular aperture for point of interest(3D) (X:horzontal)
-    y_div_bml = fltarr(n_x,n_y,n_bml) ; ; beamlet divergence of from a particular aperture for point of interest(3D) (Y:vertical)   
+    div_bml = fltarr(n_x,n_y,n_bml) ; ; beamlet divergence of from a particular aperture for point of interest(3D)   
+
     ;ind_x = make_array(n_x,n_y,n_bml,/uint) ; ; x coordinate of a vector from aperture to point of interest(3D)
     ;ind_y = make_array(n_x,n_y,n_bml,/uint) ; ; y coordinate of a vector from aperture to point of interest(3D)
 
     geom_fac_cone = fltarr(n_x,n_y,n_bml);geometrical factor f for coneical grid   
 
 
+ 
     for j=0, n_bml-1 do begin
-          vecf_x(*,*,j)=make_array(n_x,n_y,value=0)-x_bml_used(j)/x_grid_focus
-          vecf_y(*,*,j)=make_array(n_x,n_y,value=0)-y_bml_used(j)/y_grid_focus
-          vecf_z(*,*,j)=make_array(n_x,n_y,value=0)+1.0
+          vecf_x(*,*,j)=make_array(n_x,n_y,value=0)-x_bml_used(j)
+          vecf_y(*,*,j)=make_array(n_x,n_y,value=0)-y_bml_used(j)
+          vecf_z(*,*,j)=make_array(n_x,n_y,value=0)+grid_focus
           vecp_x(*,*,j)=make_array(n_y,value=1)## x_beam- x_bml_used(j); (without z component)
           vecp_y(*,*,j)=y_beam ## make_array(n_x,value=1) - y_bml_used(j); (without z component)
           coord_x(*,*,j)=(make_array(n_y,value=1)## x_beam)/x_step; (without z component)
           coord_y(*,*,j)=(y_beam ## make_array(n_x,value=1)/y_step); (without z component)
 
           vecp_z(*,*,j)=make_array(n_x,n_y,value=0); (without z component)
-
           
-          x_div_bml(*,*,j)=make_array(n_x,n_y,value=0)+x_div_bml_opt*(1+div_dist_par*(1.0-J_bml(j)/I_dens_opt)^2.0); (without z component)
-          y_div_bml(*,*,j)=make_array(n_x,n_y,value=0)+y_div_bml_opt*(1+div_dist_par*(1.0-J_bml(j)/I_dens_opt)^2.0); (without z component)
+          div_bml(*,*,j)=make_array(n_x,n_y,value=0)+div_bml_opt*(1+div_dist_par*(1.0-J_bml(j)/I_dens_opt)^2.0); (without z component)
           ;ind_x(*,*,j)= make_array(n_y,value=1) ## make_array(n_x,/index)
           ;ind_y(*,*,j)= make_array(n_y,/index) ## make_array(n_x,value=1)
 
@@ -10430,30 +9478,26 @@ if driver_val eq 'Back to NORMAL mode' then driver_on=1
 
     endfor
     
-    if vel_dis_type eq 0 then begin 
-      vecp_arr(*,*,0,*)=vecp_x
-      vecp_arr(*,*,1,*)=vecp_y
-    endif
     lvecf = sqrt(vecf_x^2.0+vecf_y^2.0+vecf_z^2.0) ; length of vecf
 
     n_beam=fltarr(n_ebeam,n_z,n_x,n_y)
-    ;new arrays for velocity
 
     n0_sigma=fltarr(n_ebeam,n_z,n_x,n_y)
     ne_sigma=fltarr(n_ebeam,n_z,n_x,n_y)
     limiters_sigma=fltarr(n_ebeam,n_z,n_x,n_y)
-    z_length_arr=[z_beam(1)-z_beam(0),z_beam(1:n_z-1)-z_beam(0:n_z-2)]*100.0 ;length array for attenuation integral cm
+    z_length_arr=[z_beam(1:n_z-1)-z_beam(0:n_z-2),z_beam(n_z-1)-z_beam(n_z-2)]*100.0 ;length array for attenuation integral cm
+ 
     for i=0, n_ebeam-1 do begin
       n0_sigma(i,*,*,*)=n0_arr*n0_stop_cross_section(i)
-      if atten_type le 1 then ne_sigma(i,*,*,*)=n_e_arr*ne_stop_cross_section(i,*,*,*)
+      ne_sigma(i,*,*,*)=n_e_arr*ne_stop_cross_section(i,*,*,*)
       limiters_sigma(i,*,*,*)=limiters_arr
     endfor
     if atten_type eq 0 then n_tot_sigma=n0_sigma+ne_sigma+limiters_sigma
     if atten_type eq 1 then n_tot_sigma=ne_sigma
     if atten_type eq 2 then n_tot_sigma=n0_sigma
     if atten_type eq 3 then n_tot_sigma=limiters_sigma
-    if atten_type eq 4 then n_tot_sigma=limiters_sigma+n0_sigma
 
+    ;stop,n_tot_sigma(0,*,15,15)
     ;for i=0, n_z-1 do ind_lim(i)=max(n_tot_sigma(0,i,*,*)) gt 1e5
     ind_magnet=locate(z_beam,tank_front_dist+tank_magnet_dist+magnet_size)
     ;grid_flange_dist=tank_front_dist+tank_size+tank_flange_dist
@@ -10476,7 +9520,7 @@ if driver_val eq 'Back to NORMAL mode' then driver_on=1
       Widget_control, status_wid, Get_Value=status_tx
       status_tx=status_tx(0:n_elements(status_tx)-2)
       if i gt 0 then begin
-        if atten_type ne 5 then begin
+        if atten_type ne 4 then begin
           if i le ind_magnet+1 then all_sec=(systime_1-systime_2)*(ind_magnet+1-i)+perf_fact*(n_z-1-ind_magnet) else all_sec=(systime_1-systime_2)*(n_z-i) 
           rem_hours=fix(all_sec/3600.0)
           rem_min=fix((all_sec-3600*rem_hours)/60.0)
@@ -10502,28 +9546,22 @@ if driver_val eq 'Back to NORMAL mode' then driver_on=1
       lvecp = sqrt(vecp_x^2.0+vecp_y^2.0+(vecp_z+z_beam(i))^2.0) ; length of vecp
 
       dot_prod = reform((vecf_x*vecp_x+vecf_y*vecp_y+vecf_z*(vecp_z+z_beam(i)))) ; dot prod of vecf and vecp
-      cos_angle = dot_prod/(lvecf*lvecp)<1.0 ; cosine of the angle subtended by vecf and vecp
-      ;r_traj = lvecp*sqrt(1.0-cos_angle*cos_angle) ;perp distance from the pt to the beamlet trajectory
-      z_traj = lvecp*cos_angle ; distance along the beamlet trajectory
 
-      x_traj=vecp_x-vecf_x*z_traj/lvecf
-      y_traj=vecp_y-vecf_y*z_traj/lvecf
+      cos_angle = dot_prod/(lvecf*lvecp)<1.0 ; cosine of the angle subtended by vecf and vecp
+      r_traj = lvecp*sqrt(1.0-cos_angle*cos_angle) ;perp distance from the pt to the beamlet trajectory
+      z_traj = lvecp*cos_angle ; distance along the beamlet trajectory
      
-      r0x = z_traj*tan(x_div_bml*!pi/180.0) ;Gaussian width of beam at z_traj
-      r0y = z_traj*tan(y_div_bml*!pi/180.0) ;Gaussian width of beam at z_traj
+      r0 = z_traj*tan(div_bml*!pi/180.0) ;Gaussian width of beam at z_traj
       ;added for attenuation
       J_tot=1.0
-      ;gauss_int=J_tot/4.0*abs(erf((r_traj+x_step/2.0)/r0x)-erf((r_traj-x_step/2.0)/r0x))*(erf((y_step/2.0)/r0y)*2.0)
-      gauss_int=J_tot/4.0*abs(erf((x_traj+x_step/2.0)/r0x)-erf((x_traj-x_step/2.0)/r0x))*abs(erf((y_traj+y_step/2.0)/r0y)-erf((y_traj-y_step/2.0)/r0y))
-      
+      gauss_int=J_tot/4.0*abs(erf((r_traj+x_step/2.0)/r0)-erf((r_traj-x_step/2.0)/r0))*(erf((y_step/2.0)/r0)*2.0)
       gauss_int_iter=gauss_int
-     
       ;att_fac(*,*,*,*)=0
      ; z_inc_cone(*,*,*)=i
       z_inc(*,*,*)=i
       ;inc_coef_x=vecp_x/z_beam(i)/x_step
       ;inc_coef_y=vecp_y/z_beam(i)/y_step        
-      if atten_type ne 5 and i gt ind_magnet then begin
+      if atten_type ne 4 and i gt ind_magnet then begin
       ;addition June 2010
         lvecp_prev = sqrt(vecp_x^2.0+vecp_y^2.0+(vecp_z+z_beam(i-1))^2.0) ; length of vecp (i-1) step
         geom_fact=lvecp_prev/z_beam(i-1)
@@ -10576,14 +9614,31 @@ if driver_val eq 'Back to NORMAL mode' then driver_on=1
         
       endif    
       for k=0, n_ebeam-1 do begin
-        if i gt ind_magnet and atten_type ne 5 then begin      
+        if i gt ind_magnet and atten_type ne 4 then begin      
           ;bilinear interpolation
           n_sig11=n_tot_sigma(e_inc+k,z_inc,(ind_x1+(n_x-1)/2.0)>0<(n_x-1),(ind_y1+(n_y-1)/2.0)>0<(n_y-1))
           n_sig12=n_tot_sigma(e_inc+k,z_inc,(ind_x1+(n_x-1)/2.0)>0<(n_x-1),(ind_y2+(n_y-1)/2.0)>0<(n_y-1))
           n_sig21=n_tot_sigma(e_inc+k,z_inc,(ind_x2+(n_x-1)/2.0)>0<(n_x-1),(ind_y1+(n_y-1)/2.0)>0<(n_y-1))
           n_sig22=n_tot_sigma(e_inc+k,z_inc,(ind_x2+(n_x-1)/2.0)>0<(n_x-1),(ind_y2+(n_y-1)/2.0)>0<(n_y-1))
          ; added to fix the limiters attenuation error
-        
+          ;if max(n_sig11) gt 1e3 then n_sig11(where(n_sig11 gt 1e3))=n_sig12(where(n_sig11 gt 1e3))
+          ;if max(n_sig12) gt 1e3 then n_sig12(where(n_sig12 gt 1e3))=n_sig11(where(n_sig12 gt 1e3))
+          ;if max(n_sig21) gt 1e3 then n_sig21(where(n_sig21 gt 1e3))=n_sig22(where(n_sig21 gt 1e3))
+          ;if max(n_sig22) gt 1e3 then n_sig22(where(n_sig22 gt 1e3))=n_sig21(where(n_sig22 gt 1e3))
+          ;if max(n_sig11) gt 1e3 then n_sig11(where(n_sig11 gt 1e3))=n_sig21(where(n_sig11 gt 1e3))
+          ;if max(n_sig21) gt 1e3 then n_sig21(where(n_sig21 gt 1e3))=n_sig11(where(n_sig21 gt 1e3))
+          ;if max(n_sig12) gt 1e3 then n_sig12(where(n_sig12 gt 1e3))=n_sig22(where(n_sig12 gt 1e3))
+          ;if max(n_sig22) gt 1e3 then n_sig22(where(n_sig22 gt 1e3))=n_sig12(where(n_sig22 gt 1e3))
+          ;if ind_lim(i) then begin
+          ;  if max(n_sig11) gt 1e3 then n_sig12(where(n_sig11 gt 1e3))=n_sig11(where(n_sig11 gt 1e3))
+          ;  if max(n_sig12) gt 1e3 then n_sig11(where(n_sig12 gt 1e3))=n_sig12(where(n_sig12 gt 1e3))
+          ;  if max(n_sig21) gt 1e3 then n_sig22(where(n_sig21 gt 1e3))=n_sig21(where(n_sig21 gt 1e3))
+          ;  if max(n_sig22) gt 1e3 then n_sig21(where(n_sig22 gt 1e3))=n_sig22(where(n_sig22 gt 1e3))
+          ;  if max(n_sig11) gt 1e3 then n_sig21(where(n_sig11 gt 1e3))=n_sig11(where(n_sig11 gt 1e3))
+          ;  if max(n_sig21) gt 1e3 then n_sig11(where(n_sig21 gt 1e3))=n_sig21(where(n_sig21 gt 1e3))
+          ;  if max(n_sig12) gt 1e3 then n_sig22(where(n_sig12 gt 1e3))=n_sig12(where(n_sig12 gt 1e3))
+          ;  if max(n_sig22) gt 1e3 then n_sig12(where(n_sig22 gt 1e3))=n_sig22(where(n_sig22 gt 1e3))          
+          ;endif
           ;--------------------------------------------
           att_fac1=reform(att_fac(k,*,*,*))*exp(-double(((n_sig11*div_x2+n_sig21*div_x1)/div_x12*div_y2+(n_sig12*div_x2+n_sig22*div_x1)/div_x12*div_y1)/div_y12*length_coef)) 
           ;bilinear interpolation
@@ -10593,34 +9648,35 @@ if driver_val eq 'Back to NORMAL mode' then driver_on=1
           att22=att_fac1((ind_x2_new)>0<(n_x-1),(ind_y2_new)>0<(n_y-1),bml_pos_ind)
           ; added to fix the limiters attenuation error
           ceil=1e3*z_length_arr(i)        
-        
+          ;if max(att11) gt ceil then att12(where(att11 gt ceil))=att11(where(att11 gt ceil))
+          ;if max(att12) gt ceil then att11(where(att12 gt ceil))=att12(where(att12 gt ceil))
+          ;if max(att21) gt ceil then att22(where(att21 gt ceil))=att21(where(att21 gt ceil))
+          ;if max(att22) gt ceil then att21(where(att22 gt ceil))=att22(where(att22 gt ceil))
+          ;if max(att11) gt ceil then att21(where(att11 gt ceil))=att11(where(att11 gt ceil))
+          ;if max(att21) gt ceil then att11(where(att21 gt ceil))=att21(where(att21 gt ceil))
+          ;if max(att12) gt ceil then att22(where(att12 gt ceil))=att12(where(att12 gt ceil))
+          ;if max(att22) gt ceil then att12(where(att22 gt ceil))=att22(where(att22 gt ceil))
+          ; if z_beam(i) eq 2.2 then stop
+          
+          ;if ind_lim(i) then begin
+          ;  if max(att11) gt ceil then att11(where(att11 gt ceil))=att12(where(att11 gt ceil))
+          ;  if max(att12) gt ceil then att12(where(att12 gt ceil))=att11(where(att12 gt ceil))
+          ;  if max(att21) gt ceil then att21(where(att21 gt ceil))=att22(where(att21 gt ceil))
+          ;  if max(att22) gt ceil then att22(where(att22 gt ceil))=att21(where(att22 gt ceil))
+          ;  if max(att11) gt ceil then att11(where(att11 gt ceil))=att21(where(att11 gt ceil))
+          ;  if max(att21) gt ceil then att21(where(att21 gt ceil))=att11(where(att21 gt ceil))
+          ;  if max(att12) gt ceil then att12(where(att12 gt ceil))=att22(where(att12 gt ceil))
+          ;  if max(att22) gt ceil then att22(where(att22 gt ceil))=att12(where(att22 gt ceil))
+          ;endif
           ;--------------------------------------------
           att_fac(k,*,*,*)=((att11*div_x2_new+att21*div_x1_new)/div_x12_new*div_y2_new+(att12*div_x2_new+att22*div_x1_new)/div_x12_new*div_y1_new)/div_y12_new         
-       ; if k eq 0 then print,total(att_fac(0,*,*,*))
-       ; if i eq 41 then stop
         endif 
         if I_dens_par eq 0 then begin  ; if uniform source dens distribution
           n_beam(k,i,*,*)=total(reform(att_fac(k,*,*,*))*gauss_int,3)/(x_step*y_step*1e4) ;cm-2 ;removed n_beam(k,i,*,*)
-          if vel_dis_type eq 0 then begin
-            vecp_arr(*,*,2,*)=att_fac(k,*,*,*)*gauss_int
-            for x_i=0,n_elements(x_beam)-1 do begin
-              for y_i=0,n_elements(y_beam)-1 do begin
-                res=sfit(reform(vecp_arr(x_i,y_i,*,*)),2,/irregular,kx=kx)
-                vecp_coef(k,i,x_i,y_i,*)=kx
-              endfor
-            endfor
-          endif
+          ;if z_beam(i) eq 1.9  then stop,systime(/seconds)-systime_0
+
         endif else begin
           n_beam(k,i,*,*)=total(reform(att_fac(k,*,*,*))*dens_bml(k,*,*,*)*gauss_int,3)/(x_step*y_step*1e4) ;cm-2;removed n_beam(k,i,*,*)
-          if vel_dis_type eq 0 then begin
-            vecp_arr(*,*,2,*)=att_fac(k,*,*,*)*dens_bml(k,*,*,*)*gauss_int
-            for x_i=0,n_elements(x_beam)-1 do begin
-              for y_i=0,n_elements(y_beam)-1 do begin
-                res=sfit(reform(vecp_arr(x_i,y_i,*,*)),2,/irregular,kx=kx)
-                vecp_coef(k,i,x_i,y_i,*)=kx
-              endfor
-             endfor
-          endif
         endelse
       endfor
         
@@ -10646,29 +9702,14 @@ if driver_val eq 'Back to NORMAL mode' then driver_on=1
       endfor
     endif
     ;added on Jan 21, 2010 to account for neutralizer.
-    for i_z=0,locate(z_beam,neutr_front_dist) do begin
-      n_beam(*,i_z,*,*)=0.0
+    for i_z=0,locate(z_beam,neutr_size) do begin
+      n_beam(*,i_z,*,*)=n_beam(*,i_z,*,*)*z_beam(i_z)/neutr_size
     endfor
-    for i_z=locate(z_beam,neutr_front_dist),locate(z_beam,neutr_front_dist+neutr_size) do begin
-      if i_z ne -1 then n_beam(*,i_z,*,*)=n_beam(*,i_z,*,*)*(z_beam(i_z)-neutr_front_dist)/neutr_size
-    endfor
-   
-    if vel_dis_type eq 0 then begin
-      vel_vec_x=vecp_x
-      vel_vec_y=vecp_y
-      vel_vec_coef=vecp_coef 
-    endif else begin
-      vel_vec_x=0
-      vel_vec_y=0
-      vel_vec_coef=0 
-    endelse
 
     Widget_control, status_wid, Get_Value=status_tx
     status_tx=status_tx(0:n_elements(status_tx)-2)
     Widget_Control, status_wid,Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+$
   ' : The calculation was finished']], Set_text_top_line=n_elements(status_tx)-4 
-
-
 
 end
 ;-------------------------------------------------------------------------------------------------------------------------
@@ -10680,7 +9721,7 @@ end
 Pro prepare_sliders,Main_base
 ;The following common block contains X,Y,Z coordinate arrays used for the beam
 ;calculation grid and output 3D arrays of the beam density and excitation fracitons
-common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
+common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac
 ;The following common block is used to transfer the pointer to the status window and availability states of each data set
 common status, status_wid,error_catch,st_err
 
@@ -10781,7 +9822,7 @@ end
 Pro sens_control,Main_base
 ;The following common block contains X,Y,Z coordinate arrays used for the beam
 ;calculation grid and output 3D arrays of the beam density and excitation fracitons
-common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
+common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac
 ;The following common block is used to transfer the pointer to the status window and availability states of each data set
 common status, status_wid,error_catch,st_err
 
@@ -10803,18 +9844,6 @@ if error_catch then begin
  plot_val=Widget_Info(Widget_Info(Main_base, FIND_BY_UNAME='Plot_Choice_Droplist'), /Droplist_Select)
  case plot_val of
  0: begin
-      Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Z_B_Slider'),Sensitive=0
-      Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='X_B_Slider'),Sensitive=0
-      Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Y_B_Slider'),Sensitive=0
-      Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Label_top'),Sensitive=1
-      Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='exc_B_Label_top'),Sensitive=1   
-      Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='exc_B_Check'),Sensitive=1
-      for i=0, n_elements(e_beam)-1 do begin
-        Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Label_'+strtrim(string(i+1),2)) ,Sensitive=1
-        Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),Sensitive=1
-      endfor 
-    end 
- 1: begin
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Z_B_Slider'),Sensitive=1
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='X_B_Slider'),Sensitive=0
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Y_B_Slider'),Sensitive=0
@@ -10826,7 +9855,7 @@ if error_catch then begin
         Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),Sensitive=1
       endfor 
     end  
- 2: begin
+ 1: begin
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Z_B_Slider'),Sensitive=0
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='X_B_Slider'),Sensitive=0
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Y_B_Slider'),Sensitive=0
@@ -10838,7 +9867,7 @@ if error_catch then begin
         Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),Sensitive=1
       endfor 
     end
- 3: begin
+ 2: begin
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Z_B_Slider'),Sensitive=0
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='X_B_Slider'),Sensitive=0
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Y_B_Slider'),Sensitive=0
@@ -10850,7 +9879,7 @@ if error_catch then begin
         Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),Sensitive=1
       endfor 
    end
- 4: begin
+3: begin
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Z_B_Slider'),Sensitive=0
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='X_B_Slider'),Sensitive=0
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Y_B_Slider'),Sensitive=0
@@ -10862,7 +9891,7 @@ if error_catch then begin
         Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),Sensitive=1
       endfor 
    end
- 5: begin
+4: begin
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Z_B_Slider'),Sensitive=0
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='X_B_Slider'),Sensitive=0
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Y_B_Slider'),Sensitive=0
@@ -10875,6 +9904,18 @@ if error_catch then begin
         Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),Sensitive=0
       endfor 
    end 
+5: begin
+      Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Z_B_Slider'),Sensitive=0
+      Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='X_B_Slider'),Sensitive=0
+      Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Y_B_Slider'),Sensitive=0
+      Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Label_top'),Sensitive=1
+      Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='exc_B_Label_top'),Sensitive=1   
+      Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='exc_B_Check'),Sensitive=1
+      for i=0, n_elements(e_beam)-1 do begin
+        Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Label_'+strtrim(string(i+1),2)) ,Sensitive=1
+        Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),Sensitive=1
+      endfor 
+    end  
  6: begin
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Z_B_Slider'),Sensitive=0
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='X_B_Slider'),Sensitive=0
@@ -10889,8 +9930,8 @@ if error_catch then begin
     end  
  7: begin
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Z_B_Slider'),Sensitive=0
-      Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='X_B_Slider'),Sensitive=0
-      Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Y_B_Slider'),Sensitive=0
+      Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='X_B_Slider'),Sensitive=1
+      Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Y_B_Slider'),Sensitive=1
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Label_top'),Sensitive=1
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='exc_B_Label_top'),Sensitive=1   
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='exc_B_Check'),Sensitive=1
@@ -10910,20 +9951,8 @@ if error_catch then begin
         Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Label_'+strtrim(string(i+1),2)) ,Sensitive=1
         Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),Sensitive=1
       endfor 
-    end  
- 9: begin
-      Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Z_B_Slider'),Sensitive=0
-      Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='X_B_Slider'),Sensitive=1
-      Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Y_B_Slider'),Sensitive=1
-      Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Label_top'),Sensitive=1
-      Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='exc_B_Label_top'),Sensitive=1   
-      Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='exc_B_Check'),Sensitive=1
-      for i=0, n_elements(e_beam)-1 do begin
-        Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Label_'+strtrim(string(i+1),2)) ,Sensitive=1
-        Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),Sensitive=1
-      endfor 
     end 
- 10: begin
+9: begin
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Z_B_Slider'),Sensitive=1
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='X_B_Slider'),Sensitive=0
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Y_B_Slider'),Sensitive=1
@@ -10935,7 +9964,7 @@ if error_catch then begin
         Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),Sensitive=1
       endfor 
     end 
- 11: begin
+ 10: begin
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Z_B_Slider'),Sensitive=1
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='X_B_Slider'),Sensitive=1
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Y_B_Slider'),Sensitive=0
@@ -10947,7 +9976,7 @@ if error_catch then begin
         Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),Sensitive=1
       endfor 
     end
- 12: begin
+ 11: begin
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Z_B_Slider'),Sensitive=0
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='X_B_Slider'),Sensitive=0
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Y_B_Slider'),Sensitive=0
@@ -10960,7 +9989,7 @@ if error_catch then begin
         Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),Sensitive=1
       endfor 
     end
- 13: begin
+ 12: begin
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Z_B_Slider'),Sensitive=0
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='X_B_Slider'),Sensitive=0
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Y_B_Slider'),Sensitive=0
@@ -10971,19 +10000,6 @@ if error_catch then begin
       for i=0, n_elements(e_beam)-1 do begin
         Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Label_'+strtrim(string(i+1),2)) ,Sensitive=0
         Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),Sensitive=0
-      endfor 
-   end
-   14: begin
-      Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Z_B_Slider'),Sensitive=1
-      Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='X_B_Slider'),Sensitive=1
-      Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Y_B_Slider'),Sensitive=1
-      Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Label_top'),Sensitive=1
-      Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='exc_B_Label_top'),Sensitive=0   
-      Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='exc_B_Check'),Sensitive=0
-      Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='exc_B_Check'),Set_value=0
-      for i=0, n_elements(e_beam)-1 do begin
-        Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Label_'+strtrim(string(i+1),2)) ,Sensitive=1
-        Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),Sensitive=1
       endfor 
     end
 endcase
@@ -11016,13 +10032,13 @@ common dens_electrons,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_
 common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
 ;The following common block contains X,Y,Z coordinate arrays used for the beam
 ;calculation grid and output 3D arrays of the beam density and excitation fraciton
-common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
+common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac
 ;The following common block contains the parameters which describe the non-geometrical
 ;parameters of the beam (particle and energy distribution) 
-common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
+common beam_param, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,div_bml_opt, div_dist_par
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
 ;The following common block is used to transfer the pointer to the
 ;status window and availability states of each data set
 common status, status_wid,error_catch,st_err 
@@ -11042,11 +10058,6 @@ common status, status_wid,error_catch,st_err
    endif
  endif
  ;-----------------------------------------------------
-    ;beam atom
-    beam_atom_table=['H','D','T']
-    beam_atom_mass=[1.0,2.0,3.0]
-    m_atom=(beam_atom_mass(where(beam_atom_table eq beam_atom)))(0)
- 
  if export_flag and export_sel eq 1 then begin
    close,3
    openw,3,export_file
@@ -11058,6 +10069,7 @@ common status, status_wid,error_catch,st_err
    printf,3,';File is created by:'
    printf,3, 'ALCBEAM (ver. '+alcbeam_ver+')'
  endif 
+
  draw_req=2
  sens_control,Main_Base
  plot_val=Widget_Info(Widget_Info(Main_base, FIND_BY_UNAME='Plot_Choice_Droplist'), /Droplist_Select)
@@ -11066,7 +10078,6 @@ common status, status_wid,error_catch,st_err
  Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Scale_Check'),get_value=scale_check
  WIDGET_CONTROL,Widget_Info(Main_base, FIND_BY_UNAME='Result_Plot') , GET_VALUE=drawID
  wset, drawID
-
  Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='exc_B_Check'),get_value=exc_B_check
  case exc_B_check of
    0: begin 
@@ -11086,123 +10097,7 @@ common status, status_wid,error_catch,st_err
         exc_titl=' (n=3: 2nd excited)'
       end
  endcase
-if plot_val eq 0 then begin
-   e_check=make_array(n_elements(e_beam))
-   for i=0, n_elements(e_beam)-1 do begin
-     Widget_control,Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),get_value=dum
-     e_check(i)=dum
-   endfor
-   if total(e_check) eq 0 then begin
-     Widget_control, status_wid, Get_Value=status_tx
-     Widget_Control, status_wid,$
-     Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Please choose energy component to plot.']], Set_text_top_line=n_elements(status_tx)-4
-     erase
-     st_err=1
-     return
-   endif
-   if total(e_check) gt 1 then begin
-     Widget_control, status_wid, Get_Value=status_tx
-     Widget_Control, status_wid,$
-     Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+$
-' : Several beam energy components are selected. Volume of the component with maximal energy is plotted.']], Set_text_top_line=n_elements(status_tx)-4
-   endif
-   E_B_Val=(where(e_check gt 0))(0)
-   Widget_Control, Widget_Info(Main_Base, FIND_BY_UNAME='Z_B_Slider'),Get_Value=Z_B_Slider_val
-   !X.Margin=[9,9]
-   !Y.Margin=[3,2]
-   n_beam_linear=fltarr(n_elements(z_beam));1/cm
-   for j=0,n_elements(z_beam)-1 do n_beam_linear(j)=total(n_beam_val(e_b_val,j,*,*))*(x_beam(1)-x_beam(0))*(y_beam(1)-y_beam(0))*1e4 ;1/cm
-   max_val=max(n_beam_linear)
-   min_val=min(n_beam_linear)
-   cont_val=max(n_beam_val(e_b_val,*,*,*))/30.0
-   scale_coef=fix(alog10(max_val))
-   if e_b_val eq 0 then e_str='(E!Dfull!N energy)' else e_str='(E/'+strtrim(string(round(1.0/e_frac(e_b_val)),format='(I2)'),2)+' energy)'
-   titl='Line density and shape of '+e_str+exc_titl
-   xtitl='Z beam, m'
-   ytitl='X beam, m'
-   ztitl='Y beam, m'
- 
-   n_beam1=reform(n_beam_val(e_b_val,*,*,*))*10.0^(-scale_coef)
-   z_beam1=reverse(z_beam)
-   n_beam1=reverse(n_beam1,1)
-   n_beam_linear=reverse(n_beam_linear)
-   xrange=[max(z_beam1),min(z_beam1)]
-   yrange=[min(x_beam),max(x_beam)]
-   zrange=[min(y_beam),max(y_beam)]
-   Set_Plot, 'Z'
-   erase
-   geom=Widget_Info(Widget_Info(Main_base, FIND_BY_UNAME='Result_Plot'),/Geometry)
-   xsize=geom.xsize
-   ysize=geom.ysize
-   Device,Set_resolution=[xsize,ysize]
-   SCALE3, XRANGE=xrange, YRANGE=yrange, ZRANGE=zrange,az=35,ax=35
-   shad=n_beam1
-   for i=0,n_elements(z_beam1)-1 do shad(i,*,*)=n_beam_linear(i)
-   shad1=bytscl(exp(shad/max(shad)),top=208-16)+16
-   set_shading,reject=0
-   shade_volume,n_beam1,cont_val*10.0^(-scale_coef),v,p,shades=shad1,/low
-   x_vert=interpol(z_beam1,make_array(n_elements(z_beam1),/index),reform(v(0,*)),/spline)
-   y_vert=interpol(x_beam,make_array(n_elements(x_beam),/index),reform(v(1,*)),/spline)
-   z_vert=interpol(y_beam,make_array(n_elements(y_beam),/index),reform(v(2,*)),/spline)
-   tv,make_array(xsize,ysize,value=255)
-   !x.margin=[0,1]
-   !z.margin=[3,1]
-   !y.margin=[1,1]
-   surface,dist(30),/nodata,XRANGE=xrange, YRANGE=yrange, ZRANGE=zrange,/noerase,xstyle=1,ystyle=1,zstyle=1,/t3d,color=-1,$
-   charsize=3,/save
-   axis,min(z_beam1),min(x_beam),min(y_beam),/t3d,xaxis=0,charsize=2.5,xstyle=1,color=0,xtitle=xtitl
-   axis,min(z_beam1),max(x_beam),min(y_beam),/t3d,xaxis=1,charsize=2,xstyle=1,color=0,xtickname=replicate(' ',30)
-   axis,min(z_beam1),max(x_beam),max(y_beam),/t3d,xaxis=1,charsize=2,xstyle=1,color=0,xtickname=replicate(' ',30)
-   axis,min(z_beam1),min(x_beam),max(y_beam),/t3d,xaxis=1,charsize=2,xstyle=1,color=0,xtickname=replicate(' ',30)
-   axis,max(z_beam1),min(x_beam),min(y_beam),/t3d,yaxis=0,charsize=2.5,ystyle=1,color=0,ytitle=ytitl
-   axis,min(z_beam1),min(x_beam),min(y_beam),/t3d,yaxis=0,charsize=2,ystyle=1,color=0,ytickname=replicate(' ',30)
-   axis,max(z_beam1),min(x_beam),max(y_beam),/t3d,yaxis=0,charsize=2,ystyle=1,color=0,ytickname=replicate(' ',30)
-   axis,min(z_beam1),min(x_beam),max(y_beam),/t3d,yaxis=0,charsize=2,ystyle=1,color=0,ytickname=replicate(' ',30)
-   axis,max(z_beam1),max(x_beam),min(y_beam),/t3d,zaxis=0,charsize=2,zstyle=1,color=0,ztickname=replicate(' ',30)
-   axis,max(z_beam1),min(x_beam),min(y_beam),/t3d,zaxis=0,charsize=2,zstyle=1,color=0,ztickname=replicate(' ',30)
-   axis,min(z_beam1),max(x_beam),max(y_beam),/t3d,zaxis=0,charsize=2,zstyle=1,color=0,ztickname=replicate(' ',30)
-   axis,min(z_beam1),min(x_beam),min(y_beam),/t3d,zaxis=0,charsize=2.5,zstyle=1,color=0,ztitle=ztitl
-
-   a=polyshade(x_vert,y_vert,z_vert,p,/t3d,shades=shad1)
-   snap=tvrd()
-   set_plot,'X'
-   TV,snap
-   xyouts,20,300,'Beam: '+beam,/device,color=-1,charsize=1.3,charthick=6 
-   xyouts,20,300,'Beam: '+beam,/device,color=0,charsize=1.3,charthick=1
-   xyouts,20,280,'Shot: '+strtrim(string(shot),2),/device,color=-1,charsize=1.3,charthick=6
-   xyouts,20,280,'Shot: '+strtrim(string(shot),2),/device,color=0,charsize=1.3,charthick=1
-   xyouts,20,260,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec',/device,color=-1,charsize=1.3,charthick=6
-   xyouts,20,260,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec',/device,color=0,charsize=1.3,charthick=1
-   xyouts,20,240,'Beam atom: '+strtrim(beam_atom),/device,color=-1,charsize=1.3,charthick=6
-   xyouts,20,240,'Beam atom: '+strtrim(beam_atom),/device,color=0,charsize=1.3,charthick=1
-   xyouts,20,220,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=-1,charsize=1.3,charthick=6
-   xyouts,20,220,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=0,charsize=1.3,charthick=1  
-   xyouts,xsize/2.0,395,titl,alignment=0.5,color=0,charsize=1.6,/device
-   ;horizontal colorbar--------------------------------------------------------------------------------------------------------------------------
-   w_x_size=!D.X_Vsize & w_y_size=!D.Y_Vsize
-   pos=[0.08,0.85,0.83,0.92] & n_ticks=7 & col_min=16 & col_max=208 & n_colors=255
-   bar_pos_x=pos(0)*w_x_size & bar_pos_y=pos(1)*w_y_size & bar_size_x= (pos(2)-pos(0))*w_x_size & bar_size_y=(pos(3)-pos(1))*w_y_size
-   bar = transpose(interpol([col_min,col_max],n_colors) ## replicate(1,10))
-   TV, CONGRID(bar, bar_size_x, bar_size_y), bar_pos_x+1, bar_pos_y+1
-   plot,[0,bar_size_x],[0,bar_size_y],/nodata,yticks=1,xticks=n_ticks-1,xstyle=1,ystyle=1,position=pos,color=0,charsize=1.4,/noerase,ytickformat='(A1)',$
-   xminor=2,xtickname=string(interpol([min_val,max_val]*10.0^(-scale_coef),n_ticks),format='(F4.2)'),xticklen=0.2
-   xyouts,436,360,'x10!U '+strtrim(string(scale_coef,format='(I2)'),2)+'!Ncm!U-1!N',color=0,charsize=1.4,/device
-   ;----------------------------------------------------------------------------------------------------------------------------------
-   if export_flag then begin
-     if export_sel eq 0 then begin
-       a_img=tvrd(true=1) 
-       tvlct,r_img,g_img,b_img,/get 
-       write_png,export_file,a_img,r_img,g_img,b_img 
-     endif else begin
-      Widget_control, status_wid, Get_Value=status_tx
-      Widget_Control, status_wid,$
-      Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+$
-      ' : No file export is supported for this type of graph.']], Set_text_top_line=n_elements(status_tx)-4
-     st_err=1      
-     endelse
-   endif    
- endif 
-if plot_val eq 1 then begin
+ if plot_val eq 0 then begin
    e_check=make_array(n_elements(e_beam))
    for i=0, n_elements(e_beam)-1 do begin
      Widget_control,Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),get_value=dum
@@ -11251,10 +10146,8 @@ if plot_val eq 1 then begin
    xyouts,90,340,'Shot: '+strtrim(string(shot),2),/device,color=-1,charsize=1.3,charthick=1
    xyouts,90,320,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec',/device,color=0,charsize=1.3,charthick=3
    xyouts,90,320,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec',/device,color=-1,charsize=1.3,charthick=1
-   xyouts,90,300,'Beam atom: '+strtrim(beam_atom),/device,color=0,charsize=1.3,charthick=3
-   xyouts,90,300,'Beam atom: '+strtrim(beam_atom),/device,color=-1,charsize=1.3,charthick=1
-   xyouts,90,280,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=0,charsize=1.3,charthick=3
-   xyouts,90,280,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=-1,charsize=1.3,charthick=1
+   xyouts,90,300,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=0,charsize=1.3,charthick=3
+   xyouts,90,300,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=-1,charsize=1.3,charthick=1
    ;colorbar--------------------------------------------------------------------------------------------------------------------------
    w_x_size=!D.X_Vsize & w_y_size=!D.Y_Vsize
    pos=[0.95,0.11,0.99,0.85] & n_ticks=7 & col_min=16 & col_max=208 & n_colors=255
@@ -11294,9 +10187,6 @@ if plot_val eq 1 then begin
        printf,3,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec'
        printf,3,''
        printf,3,';Text'
-       printf,3,'Beam atom: '+strtrim(beam_atom)       
-       printf,3,''
-       printf,3,';Text'
        printf,3,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV'
        printf,3,''
        printf,3,';Text'
@@ -11315,7 +10205,7 @@ if plot_val eq 1 then begin
      endelse
    endif    
  endif
-if plot_val eq 2 then begin
+if plot_val eq 1 then begin
    e_check=make_array(n_elements(e_beam))
    for i=0, n_elements(e_beam)-1 do begin
      Widget_control,Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),get_value=dum
@@ -11359,8 +10249,7 @@ if plot_val eq 2 then begin
    xyouts,70,360,'Beam: '+beam,/device,color=0,charsize=1.3
    xyouts,70,340,'Shot: '+strtrim(string(shot),2),/device,color=0,charsize=1.3
    xyouts,70,320,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec',/device,color=0,charsize=1.3
-   xyouts,70,300,'Beam atom: '+strtrim(beam_atom),/device,color=0,charsize=1.3
-   xyouts,70,280,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=0,charsize=1.3
+   xyouts,70,300,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=0,charsize=1.3
    if export_flag then begin
      if export_sel eq 0 then begin
        a_img=tvrd(true=1) 
@@ -11390,9 +10279,6 @@ if plot_val eq 2 then begin
        printf,3,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec'
        printf,3,''
        printf,3,';Text'
-       printf,3,'Beam atom: '+strtrim(beam_atom)       
-       printf,3,''
-       printf,3,';Text'
        printf,3,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV'
        printf,3,''
        for i=0, n_energy_sel-1 do begin
@@ -11412,7 +10298,7 @@ if plot_val eq 2 then begin
      endelse
    endif 
  endif 
- if plot_val eq 3 then begin
+ if plot_val eq 2 then begin
    e_check=make_array(n_elements(e_beam))
    for i=0, n_elements(e_beam)-1 do begin
      Widget_control,Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),get_value=dum
@@ -11483,8 +10369,7 @@ if plot_val eq 2 then begin
    xyouts,70,360,'Beam: '+beam,/device,color=0,charsize=1.3
    xyouts,70,340,'Shot: '+strtrim(string(shot),2),/device,color=0,charsize=1.3
    xyouts,70,320,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec',/device,color=0,charsize=1.3
-   xyouts,70,300,'Beam atom: '+strtrim(beam_atom),/device,color=0,charsize=1.3
-   xyouts,70,280,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=0,charsize=1.3
+   xyouts,70,300,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=0,charsize=1.3
    if export_flag then begin
      if export_sel eq 0 then begin
        a_img=tvrd(true=1) 
@@ -11514,9 +10399,6 @@ if plot_val eq 2 then begin
        printf,3,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec'
        printf,3,''
        printf,3,';Text'
-       printf,3,'Beam atom: '+strtrim(beam_atom)       
-       printf,3,''
-       printf,3,';Text'
        printf,3,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV'
        printf,3,''
        for i=0, n_energy_sel-1 do begin
@@ -11536,7 +10418,7 @@ if plot_val eq 2 then begin
      endelse
    endif 
  endif 
-  if plot_val eq 4 then begin
+  if plot_val eq 3 then begin
    e_check=make_array(n_elements(e_beam))
    for i=0, n_elements(e_beam)-1 do begin
      Widget_control,Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),get_value=dum
@@ -11561,7 +10443,7 @@ if plot_val eq 2 then begin
    if n_elements(rho_arr_beam_coord) eq 0 then begin
      Widget_control, status_wid, Get_Value=status_tx
      Widget_Control, status_wid,$
-     Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : This plot is only available just after recent ALCBEAM run.']], Set_text_top_line=n_elements(status_tx)-4    
+     Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : This plot is only available just after recent ALCBEAM run.']], Set_text_top_line=n_elements(status_tx)    
      return
    endif
    
@@ -11570,18 +10452,14 @@ if plot_val eq 2 then begin
       ne_sigma(i,*,*,*)=n_e_arr*ne_stop_cross_section(i,*,*,*)
    endfor
    r_sort_ind=sort(rho_arr_beam_coord)
-   ;z_length_arr=[z_beam(1:n_z-1)-z_beam(0:n_z-2),z_beam(n_z-1)-z_beam(n_z-2)]*100.0 ;length array; cm
-   z_length_arr=[z_beam(1)-z_beam(0),z_beam(1:n_z-1)-z_beam(0:n_z-2)]*100.0 ;length array for attenuation integral cm
+   z_length_arr=[z_beam(1:n_z-1)-z_beam(0:n_z-2),z_beam(n_z-1)-z_beam(n_z-2)]*100.0 ;length array; cm
 
-   
    n_dep_5=n_beam
    for p=0, n_elements(z_length_arr)-1 do begin
      ;n_dep_5(*,p,*,*)=n_beam(*,p,*,*)*(1.0-exp(-double(ne_sigma(*,p,*,*)*z_length_arr(p))));same step
      ;n_dep_5(*,p,*,*)=n_beam(*,p,*,*)*(exp(double(ne_sigma(*,p,*,*)*z_length_arr(p)))-1);previous step
      n_dep_5(*,p,*,*)=n_beam(*,p,*,*)*((1.0-exp(-double(ne_sigma(*,p,*,*)*z_length_arr(p))))+(exp(double(ne_sigma(*,p,*,*)*z_length_arr(p)))-1))/2.0 ; mean
    endfor
-  ; save,n_dep_5,e_beam,z_beam,y_beam,x_beam,filename='/home/bespam/transp/n_dep_5.dat'
-  ; stop
    n_dep_sort=fltarr(n_elements(e_beam),n_elements(z_beam)*n_elements(x_beam)*n_elements(y_beam))
    for p=0, n_elements(e_beam)-1 do n_dep_sort(p,*)=(n_dep_5(p,*,*,*))(r_sort_ind)
 
@@ -11594,24 +10472,74 @@ if plot_val eq 2 then begin
     rho_sort_uniq=rho_sort_round(uniq(rho_sort_round))
    
     rho=rho_sort_uniq(where(rho_sort_uniq lt 1.0)); ceters of the flux zones
+    ;rho_b1=rho-rho(0); left boundaries of the flux zones
+    ;rho_b2=rho+rho(0); right_boundaries of the flux zones
 
     n_dep=fltarr(n_elements(e_beam),n_elements(rho))
     n_dep_rate=fltarr(n_elements(e_beam),n_elements(rho))
     p_dep=fltarr(n_elements(e_beam))
     p_inj=fltarr(n_elements(e_beam))
  
+    ;mdsopen,'analysis',shot
+    ;efit_rmid_t=mdsvalue('\efit_rmid')
+    ;efit_vol_t=mdsvalue('\efit_fitout:volp');m3
+    ;efit_times=mdsvalue('dim_of(\efit_rmid)');
+    ;t_ind1=locate(efit_times,t1)
+    ;t_ind2=locate(efit_times,t2)
+    ;efit_rmid=reform(mean2d(transpose(efit_rmid_t(t_ind1:t_ind2,*))))
+    ;efit_vol=reform(mean2d(transpose(efit_vol_t(t_ind1:t_ind2,*))))
+    ;efit_rho=efit_rz2rho(efit_rmid,efit_rmid*0.0,(t1+t2)/2.0,shot=shot,/phinorm,/sqrt)
+    ;efit_rho(0)=0   
 
-    vel=SQRT(2.0*1.602E-19*E_beam*1000.0/1.673E-27/m_atom) ; m/sec
+    ;flux_vol=fltarr(n_elements(rho))
+    vel=SQRT(2.0*1.602E-19*E_beam*1000.0/1.673E-27) ; m/sec
+    ;poly fit to efit_vol to better interpol
+    ;a=poly_fit(efit_rho,efit_vol,6)
     for p=0, n_elements(e_beam)-1 do begin
     for i=0, n_elements(rho)-1 do begin
-         n_dep(p,i)=total(n_dep_sort(p,where(rho_sort_round eq rho(i))))
+
+      ;vol_b2=a(0)+rho_b2(i)*a(1)+rho_b2(i)^2.0*a(2)+rho_b2(i)^3.0*a(3)+rho_b2(i)^4.0*a(4)+rho_b2(i)^5.0*a(5)+rho_b2(i)^6.0*a(6)
+      ;vol_b1=a(0)+rho_b1(i)*a(1)+rho_b1(i)^2.0*a(2)+rho_b1(i)^3.0*a(3)+rho_b1(i)^4.0*a(4)+rho_b1(i)^5.0*a(5)+rho_b1(i)^6.0*a(6)
+      ;flux_vol(i)=vol_b2-vol_b1
+     
+      n_dep(p,i)=total(n_dep_sort(p,where(rho_sort_round eq rho(i))))
     endfor
     endfor
     
      
-   for p=0, n_elements(e_beam)-1 do  n_dep_rate(p,*)=n_dep(p,*)*x_step*y_step*vel(p)*1e6;/flux_vol/1e6
+     for p=0, n_elements(e_beam)-1 do  n_dep_rate(p,*)=n_dep(p,*)*x_step*y_step*vel(p)*1e6;/flux_vol/1e6
 
+     
+     ;q_el=1.602e-19
+     ;for p=0, n_elements(e_beam)-1 do  p_dep(p)=total(n_dep_rate(p,*)*1e6*e_beam(p)*q_el)*1e3
+     
+     ;z_ind=locate(z_beam,4.3)
+     ;for p=0, n_elements(e_beam)-1 do  p_inj(p)=total(n_beam(p,z_ind,*,*))*x_step*1e2*y_step*1e2*e_beam(p)*1e3*q_el*vel(p)*1e2
+  
+     ;print,'total injected power:',string(total(p_inj))+' Watt'
+     ;print,'total deposited power:',string(total(p_dep))+' Watt'
+  
+    ;transp_run=86745
+    ;nubeam_comp,shot,transp_run,t1,t2,phi,rmaj,dep1,dep2,dep3,vol,pinj,einj,n_el,t_el
+    ;window,0,xsize=1000,ysize=600
+    ;plot,rho,n_dep_rate(0,*),yrange=[0,3e18],color=0,background=-1,charsize=2.0,title='DNB deposition, ptcl/sec',psym=2,symsize=2,xtitle='sqrt(normalized tor flux)'
+    ;oplot, rho,n_dep_rate(0,*),psym=2,symsize=2,color=0
+    ;oplot, rho,n_dep_rate(1,*),psym=2,symsize=2,color=0
+    ;oplot, rho,n_dep_rate(2,*),psym=2,symsize=2,color=0
+    ;oplot, phi,dep1*flux_vol*1e6,color=48,thick=2
+    ;oplot, phi,dep2*flux_vol*1e6,color=80,thick=2
+    ;oplot, phi,dep3*flux_vol*1e6,color=112,thick=2
+    ;xyouts,120,530,'E_full', color=48,/device,charsize=2
+    ;xyouts,120,490,'E/2', color=80,/device,charsize=2
+    ;xyouts,120,450,'E/3', color=112,/device,charsize=2
+    ;xyouts,120,380,'ALCBEAM (*)', color=0,/device,charsize=2
+    ;xyouts,120,340,'NUBEAM (solid)', color=0,/device,charsize=2
+  
+    ;window,1,xsize=1000,ysize=600
+    ;plot,rgrid_midplane,rho_grid_midplane,xrange=[0.69,0.90],color=0,background=-1,charsize=2.0,title='sqrt(normalized tor flux)',xtitle='major radius',xstyle=1,thick=2
+    ;oplot,rmaj*1e-2,phi,color=120,thick=2
     wset, drawID
+;    stop
    !X.Margin=[7,3]
    !Y.Margin=[3,2]
    max_val=max(n_dep_rate(e_b_val,*))
@@ -11631,8 +10559,7 @@ if plot_val eq 2 then begin
    xyouts,70,360,'Beam: '+beam,/device,color=0,charsize=1.3
    xyouts,70,340,'Shot: '+strtrim(string(shot),2),/device,color=0,charsize=1.3
    xyouts,70,320,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec',/device,color=0,charsize=1.3
-   xyouts,70,300,'Beam atom: '+strtrim(beam_atom),/device,color=0,charsize=1.3
-   xyouts,70,280,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=0,charsize=1.3
+   xyouts,70,300,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=0,charsize=1.3
    if export_flag then begin
      if export_sel eq 0 then begin
        a_img=tvrd(true=1) 
@@ -11662,9 +10589,6 @@ if plot_val eq 2 then begin
        printf,3,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec'
        printf,3,''
        printf,3,';Text'
-       printf,3,'Beam atom: '+strtrim(beam_atom)       
-       printf,3,''
-       printf,3,';Text'
        printf,3,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV'
        printf,3,''
        for i=0, n_energy_sel-1 do begin
@@ -11684,13 +10608,13 @@ if plot_val eq 2 then begin
      endelse
    endif 
  endif 
- if plot_val eq 5 then begin
+ if plot_val eq 4 then begin
    n_z=n_elements(z_beam)
    n_x=n_elements(x_beam)
    n_y=n_elements(y_beam)
    n_ebeam=n_elements(e_beam)
    n_beam_linear=fltarr(n_ebeam,n_z);1/cm
-   vel=SQRT(2.0*1.602E-19*E_beam*1000.0/1.673E-27/m_atom)*100.0 ; cm/sec
+   vel=SQRT(2.0*1.602E-19*E_beam*1000.0/1.673E-27)*100.0 ; cm/sec
    beam_power=fltarr(n_z);1/cm
    for i=0,n_ebeam-1 do begin
     for j=0,n_z-1 do begin
@@ -11714,8 +10638,7 @@ if plot_val eq 2 then begin
    xyouts,70,360,'Beam: '+beam,/device,color=0,charsize=1.3
    xyouts,70,340,'Shot: '+strtrim(string(shot),2),/device,color=0,charsize=1.3
    xyouts,70,320,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec',/device,color=0,charsize=1.3
-   xyouts,70,300,'Beam atom: '+strtrim(beam_atom),/device,color=0,charsize=1.3
-   xyouts,70,280,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=0,charsize=1.3
+   xyouts,70,300,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=0,charsize=1.3
    if export_flag then begin
      if export_sel eq 0 then begin
        a_img=tvrd(true=1) 
@@ -11745,9 +10668,6 @@ if plot_val eq 2 then begin
        printf,3,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec'
        printf,3,''
        printf,3,';Text'
-       printf,3,'Beam atom: '+strtrim(beam_atom)       
-       printf,3,''
-       printf,3,';Text'
        printf,3,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV'
        printf,3,''
        printf,3,';Plotx'
@@ -11760,7 +10680,7 @@ if plot_val eq 2 then begin
      endelse
    endif  
  endif 
- if plot_val eq 6 then begin
+ if plot_val eq 5 then begin
    e_check=make_array(n_elements(e_beam))
    for i=0, n_elements(e_beam)-1 do begin
      Widget_control,Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),get_value=dum
@@ -11785,27 +10705,23 @@ if plot_val eq 2 then begin
    for i=0,n_energy_sel-1 do begin
     for j=0,n_z-1 do begin
       prof=n_beam_val(e_b_val(i),j,*,n_y/2)
-      if mean(prof) ne 0.0 then begin
-        n_int=2000
-        x_beam_int=interpol([x_beam(0),x_beam(n_x-1)],n_int)
-        prof_int=interpol(prof,x_beam,x_beam_int,/spline)
-        prof_int_max=max(prof_int)
-        ind=where(prof_int-prof_int_max/2.0 gt 0)
-        ind1=ind(0)
-        ind2=ind(n_elements(ind)-1)
-        x_fwhm(i,j)=(x_beam_int(ind2)-x_beam_int(ind1))*100.0 ;cm
-     endif else begin
-        x_fwhm(i,j)=!Values.F_NAN
-     endelse
+      n_int=2000
+      x_beam_int=interpol([x_beam(0),x_beam(n_x-1)],n_int)
+      prof_int=interpol(prof,x_beam,x_beam_int,/spline)
+      prof_int_max=max(prof_int)
+      ind=where(prof_int-prof_int_max/2.0 gt 0)
+      ind1=ind(0)
+      ind2=ind(n_elements(ind)-1)
+      x_fwhm(i,j)=(x_beam_int(ind2)-x_beam_int(ind1))*100.0 ;cm
     endfor
    endfor
-   x_fwhm1=z_beam*2.0*sqrt(alog(2.0))*x_div_bml_opt*!PI/180.0*100.0 ;cm
-   grid_size=max(x_bml)*100.0*2.0; cm
-   x_fwhm2=-z_beam*grid_size/x_grid_focus+grid_size;)*100.0 ;cm
+   x_fwhm1=z_beam*2.0*sqrt(alog(2.0))*div_bml_opt*!PI/180.0*100.0 ;cm
+   grid_size=max([x_bml,y_bml])*100.0*2.0; cm
+   x_fwhm2=-z_beam*grid_size/grid_focus+grid_size;)*100.0 ;cm
    ;stop,grid_size, grid_focus
    !X.Margin=[7,3]
    !Y.Margin=[3,2]
-   max_val=max(x_fwhm,/NAN)
+   max_val=max(x_fwhm)
    color_ind=[0,48,64,112,160]
    titl='Beam X_FWHM, cm'+exc_titl
    xtitl='Distance from accelerating grids, m'
@@ -11827,8 +10743,7 @@ if plot_val eq 2 then begin
    xyouts,70,360,'Beam: '+beam,/device,color=0,charsize=1.3
    xyouts,70,340,'Shot: '+strtrim(string(shot),2),/device,color=0,charsize=1.3
    xyouts,70,320,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec',/device,color=0,charsize=1.3
-   xyouts,70,300,'Beam atom: '+strtrim(beam_atom),/device,color=0,charsize=1.3
-   xyouts,70,280,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=0,charsize=1.3
+   xyouts,70,300,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=0,charsize=1.3
    if export_flag then begin
      if export_sel eq 0 then begin
        a_img=tvrd(true=1) 
@@ -11856,9 +10771,6 @@ if plot_val eq 2 then begin
        printf,3,''
        printf,3,';Text'
        printf,3,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec'
-       printf,3,''
-       printf,3,';Text'
-       printf,3,'Beam atom: '+strtrim(beam_atom)       
        printf,3,''
        printf,3,';Text'
        printf,3,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV'
@@ -11883,7 +10795,7 @@ if plot_val eq 2 then begin
      endelse
    endif
  endif
- if plot_val eq 7 then begin
+ if plot_val eq 6 then begin
    e_check=make_array(n_elements(e_beam))
    for i=0, n_elements(e_beam)-1 do begin
      Widget_control,Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),get_value=dum
@@ -11908,26 +10820,22 @@ if plot_val eq 2 then begin
    for i=0,n_energy_sel-1 do begin
     for j=0,n_z-1 do begin
       prof=n_beam_val(e_b_val(i),j,n_x/2,*)
-      if mean(prof) ne 0 then begin 
-        n_int=2000
-        y_beam_int=interpol([y_beam(0),y_beam(n_y-1)],n_int)
-        prof_int=interpol(prof,y_beam,y_beam_int,/spline)
-        prof_int_max=max(prof_int)
-        ind=where(prof_int-prof_int_max/2.0 gt 0)
-        ind1=ind(0)
-        ind2=ind(n_elements(ind)-1)
-        y_fwhm(i,j)=(y_beam_int(ind2)-y_beam_int(ind1))*100.0 ;cm
-      endif else begin
-        y_fwhm(i,j)=!Values.F_NAN
-      endelse
+      n_int=2000
+      y_beam_int=interpol([y_beam(0),y_beam(n_y-1)],n_int)
+      prof_int=interpol(prof,y_beam,y_beam_int,/spline)
+      prof_int_max=max(prof_int)
+      ind=where(prof_int-prof_int_max/2.0 gt 0)
+      ind1=ind(0)
+      ind2=ind(n_elements(ind)-1)
+      y_fwhm(i,j)=(y_beam_int(ind2)-y_beam_int(ind1))*100.0 ;cm
     endfor
    endfor
-   y_fwhm1=z_beam*2.0*sqrt(alog(2.0))*y_div_bml_opt*!PI/180.0*100.0 ;cm
-   grid_size=max(y_bml)*100.0*2.0; cm
-   y_fwhm2=-z_beam*grid_size/y_grid_focus+grid_size;)*100.0 ;cm
+   y_fwhm1=z_beam*2.0*sqrt(alog(2.0))*div_bml_opt*!PI/180.0*100.0 ;cm
+   grid_size=max([x_bml,y_bml])*100.0*2.0; cm
+   y_fwhm2=-z_beam*grid_size/grid_focus+grid_size;)*100.0 ;cm
    !X.Margin=[7,3]
    !Y.Margin=[3,2]
-   max_val=max(y_fwhm,/NAN)
+   max_val=max(y_fwhm)
    color_ind=[0,48,64,112,160]
    titl='Beam Y_FWHM, cm'+exc_titl
    xtitl='Distance from accelerating grids, m'
@@ -11949,8 +10857,7 @@ if plot_val eq 2 then begin
    xyouts,70,360,'Beam: '+beam,/device,color=0,charsize=1.3
    xyouts,70,340,'Shot: '+strtrim(string(shot),2),/device,color=0,charsize=1.3
    xyouts,70,320,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec',/device,color=0,charsize=1.3
-   xyouts,70,300,'Beam atom: '+strtrim(beam_atom),/device,color=0,charsize=1.3
-   xyouts,70,280,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=0,charsize=1.3
+   xyouts,70,300,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=0,charsize=1.3
    if export_flag then begin
      if export_sel eq 0 then begin
        a_img=tvrd(true=1) 
@@ -11980,9 +10887,6 @@ if plot_val eq 2 then begin
        printf,3,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec'
        printf,3,''
        printf,3,';Text'
-       printf,3,'Beam atom: '+strtrim(beam_atom)       
-       printf,3,''
-       printf,3,';Text'
        printf,3,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV'
        printf,3,''
        printf,3,';Text'
@@ -12005,7 +10909,7 @@ if plot_val eq 2 then begin
      endelse
    endif
  endif
- if plot_val eq 8 then begin
+ if plot_val eq 7 then begin
    e_check=make_array(n_elements(e_beam))
    for i=0, n_elements(e_beam)-1 do begin
      Widget_control,Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),get_value=dum
@@ -12044,8 +10948,7 @@ if plot_val eq 2 then begin
    xyouts,70,360,'Beam: '+beam,/device,color=0,charsize=1.3
    xyouts,70,340,'Shot: '+strtrim(string(shot),2),/device,color=0,charsize=1.3
    xyouts,70,320,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec',/device,color=0,charsize=1.3
-   xyouts,70,300,'Beam atom: '+strtrim(beam_atom),/device,color=0,charsize=1.3
-   xyouts,70,280,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=0,charsize=1.3
+   xyouts,70,300,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=0,charsize=1.3
    if export_flag then begin
      if export_sel eq 0 then begin
        a_img=tvrd(true=1) 
@@ -12075,9 +10978,6 @@ if plot_val eq 2 then begin
        printf,3,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec'
        printf,3,''
        printf,3,';Text'
-       printf,3,'Beam atom: '+strtrim(beam_atom)       
-       printf,3,''
-       printf,3,';Text'
        printf,3,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV'
        printf,3,''
        printf,3,';Text'
@@ -12103,7 +11003,7 @@ if plot_val eq 2 then begin
      endelse
    endif
  endif
-if plot_val eq 9 then begin
+if plot_val eq 8 then begin
    e_check=make_array(n_elements(e_beam))
    for i=0, n_elements(e_beam)-1 do begin
      Widget_control,Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),get_value=dum
@@ -12171,8 +11071,7 @@ if plot_val eq 9 then begin
    xyouts,70,360,'Beam: '+beam,/device,color=0,charsize=1.3
    xyouts,70,340,'Shot: '+strtrim(string(shot),2),/device,color=0,charsize=1.3
    xyouts,70,320,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec',/device,color=0,charsize=1.3
-   xyouts,70,300,'Beam atom: '+strtrim(beam_atom),/device,color=0,charsize=1.3
-   xyouts,70,280,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=0,charsize=1.3
+   xyouts,70,300,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=0,charsize=1.3
    if export_flag then begin
      if export_sel eq 0 then begin
        a_img=tvrd(true=1) 
@@ -12202,9 +11101,6 @@ if plot_val eq 9 then begin
        printf,3,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec'
        printf,3,''
        printf,3,';Text'
-       printf,3,'Beam atom: '+strtrim(beam_atom)       
-       printf,3,''
-       printf,3,';Text'
        printf,3,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV'
        printf,3,''
        printf,3,';Text'
@@ -12230,7 +11126,7 @@ if plot_val eq 9 then begin
      endelse
    endif
  endif 
- if plot_val eq 10 then begin
+ if plot_val eq 9 then begin
    e_check=make_array(n_elements(e_beam))
    for i=0, n_elements(e_beam)-1 do begin
      Widget_control,Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),get_value=dum
@@ -12277,8 +11173,7 @@ if plot_val eq 9 then begin
    xyouts,70,360,'Beam: '+beam,/device,color=0,charsize=1.3
    xyouts,70,340,'Shot: '+strtrim(string(shot),2),/device,color=0,charsize=1.3
    xyouts,70,320,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec',/device,color=0,charsize=1.3
-   xyouts,70,300,'Beam atom: '+strtrim(beam_atom),/device,color=0,charsize=1.3
-   xyouts,70,280,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=0,charsize=1.3
+   xyouts,70,300,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=0,charsize=1.3
    if export_flag then begin
      if export_sel eq 0 then begin
        a_img=tvrd(true=1) 
@@ -12308,9 +11203,6 @@ if plot_val eq 9 then begin
        printf,3,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec'
        printf,3,''
        printf,3,';Text'
-       printf,3,'Beam atom: '+strtrim(beam_atom)       
-       printf,3,''
-       printf,3,';Text'
        printf,3,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV'
        printf,3,''
        printf,3,';Text'
@@ -12336,7 +11228,7 @@ if plot_val eq 9 then begin
      endelse
    endif
  endif
- if plot_val eq 11 then begin
+ if plot_val eq 10 then begin
    e_check=make_array(n_elements(e_beam))
    for i=0, n_elements(e_beam)-1 do begin
      Widget_control,Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),get_value=dum
@@ -12384,8 +11276,7 @@ if plot_val eq 9 then begin
    xyouts,70,360,'Beam: '+beam,/device,color=0,charsize=1.3
    xyouts,70,340,'Shot: '+strtrim(string(shot),2),/device,color=0,charsize=1.3
    xyouts,70,320,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec',/device,color=0,charsize=1.3
-   xyouts,70,300,'Beam atom: '+strtrim(beam_atom),/device,color=0,charsize=1.3
-   xyouts,70,280,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=0,charsize=1.3
+   xyouts,70,300,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=0,charsize=1.3
    if export_flag then begin
      if export_sel eq 0 then begin
        a_img=tvrd(true=1) 
@@ -12415,9 +11306,6 @@ if plot_val eq 9 then begin
        printf,3,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec'
        printf,3,''
        printf,3,';Text'
-       printf,3,'Beam atom: '+strtrim(beam_atom)       
-       printf,3,''
-       printf,3,';Text'
        printf,3,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV'
        printf,3,''
        printf,3,';Text'
@@ -12443,7 +11331,7 @@ if plot_val eq 9 then begin
      endelse
    endif
  endif
- if plot_val eq 12 then begin
+ if plot_val eq 11 then begin
    e_check=make_array(n_elements(e_beam))
    for i=0, n_elements(e_beam)-1 do begin
      Widget_control,Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),get_value=dum
@@ -12491,8 +11379,7 @@ if plot_val eq 9 then begin
    xyouts,70,360,'Beam: '+beam,/device,color=0,charsize=1.3
    xyouts,70,340,'Shot: '+strtrim(string(shot),2),/device,color=0,charsize=1.3
    xyouts,70,320,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec',/device,color=0,charsize=1.3
-   xyouts,70,300,'Beam atom: '+strtrim(beam_atom),/device,color=0,charsize=1.3
-   xyouts,70,280,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=0,charsize=1.3
+   xyouts,70,300,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=0,charsize=1.3
    if export_flag then begin
      if export_sel eq 0 then begin
        a_img=tvrd(true=1) 
@@ -12522,9 +11409,6 @@ if plot_val eq 9 then begin
        printf,3,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec'
        printf,3,''
        printf,3,';Text'
-       printf,3,'Beam atom: '+strtrim(beam_atom)       
-       printf,3,''
-       printf,3,';Text'
        printf,3,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV'
        printf,3,''
        for i=0, n_energy_sel-1 do begin
@@ -12544,13 +11428,13 @@ if plot_val eq 9 then begin
      endelse
    endif
  endif 
- if plot_val eq 13 then begin
+ if plot_val eq 12 then begin
    n_z=n_elements(z_beam)
    n_x=n_elements(x_beam)
    n_y=n_elements(y_beam)
    n_ebeam=n_elements(e_beam)
    n_beam_linear=fltarr(n_ebeam,n_z);1/cm
-   vel=SQRT(2.0*1.602E-19*E_beam*1000.0/1.673E-27/m_atom)*100.0 ; cm/sec
+   vel=SQRT(2.0*1.602E-19*E_beam*1000.0/1.673E-27)*100.0 ; cm/sec
    beam_power_lost=fltarr(n_z);1/cm
    for i=0,n_ebeam-1 do begin
     for j=0,n_z-1 do begin
@@ -12574,8 +11458,7 @@ if plot_val eq 9 then begin
    xyouts,70,360,'Beam: '+beam,/device,color=0,charsize=1.3
    xyouts,70,340,'Shot: '+strtrim(string(shot),2),/device,color=0,charsize=1.3
    xyouts,70,320,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec',/device,color=0,charsize=1.3
-   xyouts,70,300,'Beam atom: '+strtrim(beam_atom),/device,color=0,charsize=1.3
-   xyouts,70,280,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=0,charsize=1.3
+   xyouts,70,300,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=0,charsize=1.3
    if export_flag then begin
      if export_sel eq 0 then begin
        a_img=tvrd(true=1) 
@@ -12605,9 +11488,6 @@ if plot_val eq 9 then begin
        printf,3,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec'
        printf,3,''
        printf,3,';Text'
-       printf,3,'Beam atom: '+strtrim(beam_atom)       
-       printf,3,''
-       printf,3,';Text'
        printf,3,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV'
        printf,3,''
        printf,3,';Plotx'
@@ -12619,154 +11499,7 @@ if plot_val eq 9 then begin
        close,3      
      endelse
    endif  
- endif
- if plot_val eq 14 then begin
-   e_check=make_array(n_elements(e_beam))
-   if n_elements(vel_vec_x) lt  3 then begin
-     Widget_control, status_wid, Get_Value=status_tx
-     Widget_Control, status_wid,$
-     Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : There are no velocity distribution data available']], Set_text_top_line=n_elements(status_tx)-4
-     erase
-     st_err=1
-     return
-   endif
-   for i=0, n_elements(e_beam)-1 do begin
-     Widget_control,Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),get_value=dum
-     e_check(i)=dum
-   endfor
-   if total(e_check) eq 0 then begin
-     Widget_control, status_wid, Get_Value=status_tx
-     Widget_Control, status_wid,$
-     Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Please choose energy component to plot.']], Set_text_top_line=n_elements(status_tx)-4
-     erase
-     st_err=1
-     return
-   endif
-   if total(e_check) gt 1 then begin
-     Widget_control, status_wid, Get_Value=status_tx
-     Widget_Control, status_wid,$
-     Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+$
-' : Several beam energy components are selected. Contour of the component with maximal energy is plotted.']], Set_text_top_line=n_elements(status_tx)-4
-   endif
-   E_B_Val=(where(e_check gt 0))(0)
-   Widget_Control, Widget_Info(Main_Base, FIND_BY_UNAME='Z_B_Slider'),Get_Value=Z_B_Slider_val
-   Widget_Control, Widget_Info(Main_Base, FIND_BY_UNAME='X_B_Slider'),Get_Value=X_B_Slider_val
-   Widget_Control, Widget_Info(Main_Base, FIND_BY_UNAME='Y_B_Slider'),Get_Value=Y_B_Slider_val
-   !X.Margin=[9,9]
-   !Y.Margin=[3,2]
-   coef_arr=fltarr(n_elements(x_beam),n_elements(y_beam),9,n_elements(x_bml));define a coef array
-   for j=0,n_elements(x_bml)-1 do coef_arr(*,*,*,j)=reform(vel_vec_coef(e_b_val,z_b_Slider_val,*,*,*))
-   x_coord=reform(vel_vec_x(x_b_slider_val,y_b_slider_val,*))
-   y_coord=reform(vel_vec_y(x_b_slider_val,y_b_slider_val,*))
-   z_val_arr=reform(coef_arr(*,*,0,*))+reform(coef_arr(*,*,1,*))*vel_vec_y+reform(coef_arr(*,*,2,*))*vel_vec_y^2+reform(coef_arr(*,*,3,*))*vel_vec_x+reform(coef_arr(*,*,4,*))*vel_vec_x*vel_vec_y+$
-   reform(coef_arr(*,*,5,*))*vel_vec_x*vel_vec_y^2.0+reform(coef_arr(*,*,6,*))*vel_vec_x^2.0+reform(coef_arr(*,*,7,*))*vel_vec_x^2*vel_vec_y+reform(coef_arr(*,*,8,*))*vel_vec_x^2*vel_vec_y^2
-   coef=reform(coef_arr(x_b_slider_val,y_b_slider_val,*,0))
-   z_val=coef(0)+coef(1)*y_coord+coef(2)*y_coord^2+coef(3)*x_coord+coef(4)*x_coord*y_coord+coef(5)*x_coord*y_coord^2.0+coef(6)*x_coord^2.0+coef(7)*x_coord^2*y_coord+coef(8)*x_coord^2*y_coord^2
-   ;correct distribution, since it can't be negative
-   z_val=z_val>0
-   z_val_arr=z_val_arr>0
-   if scale_check eq 1 then begin
-      max_val=max(z_val_arr)
-      min_val=min(z_val_arr)
-   endif else begin
-      max_val=max(z_val)
-      min_val=min(z_val)
-   endelse
-   if max_val ne 0 then scale_coef=round(alog10(max_val)) else scale_coef=0
-   if min_val eq max_val then max_val=min_val+1
-   if e_b_val eq 0 then e_str='(E!Dfull!N energy)' else e_str='(E/'+strtrim(string(round(1.0/e_frac(e_b_val)),format='(I2)'),2)+' energy)'
-   titl='Beam velocity distribution of '+e_str
-   xtitl='Velocity X coordinate, m'
-   ytitl='Velocity Y coordinate, m'
-   
-   contour, [[0,0],[0,0]],[min(x_coord),max(x_coord)],[min(y_coord),max(y_coord)],color=0,background=-1,ystyle=1,xstyle=1,xtitle=xtitl,ytitle=ytitl,$
-   levels=[0,1],C_COLORS = [0,-1], /FILL,title=titl,Charsize=1.5
-   contour, z_val*10.0^(-scale_coef),x_coord,y_coord,/irregular,/overplot,$
-   levels=interpol([min_val*10.0^(-scale_coef),max_val*10.0^(-scale_coef)],255),C_COLORS = interpol([16,208],255), /FILL
-   oplot,[0,0],[-max(y_beam),max(y_beam)],color=-1,linestyle=2
-   oplot,[-max(x_beam),max(x_beam)],[0,0],color=-1,linestyle=2
-   xyouts,280,360,'Z distance  : '+strtrim(string(z_beam(Z_B_Slider_val),format='(F10.3)'),1)+' m',/device,color=0,charsize=1.3,charthick=3
-   xyouts,280,360,'Z distance  : '+strtrim(string(z_beam(Z_B_Slider_val),format='(F10.3)'),1)+' m',/device,color=-1,charsize=1.3,charthick=1
-   xyouts,280,340,'X distance  : '+strtrim(string(x_beam(X_B_Slider_val),format='(F10.3)'),1)+' m',/device,color=0,charsize=1.3,charthick=3
-   xyouts,280,340,'X distance  : '+strtrim(string(x_beam(X_B_Slider_val),format='(F10.3)'),1)+' m',/device,color=-1,charsize=1.3,charthick=1
-   xyouts,280,320,'Y distance  : '+strtrim(string(y_beam(Y_B_Slider_val),format='(F10.3)'),1)+' m',/device,color=0,charsize=1.3,charthick=3
-   xyouts,280,320,'Y distance  : '+strtrim(string(y_beam(Y_B_Slider_val),format='(F10.3)'),1)+' m',/device,color=-1,charsize=1.3,charthick=1
-   xyouts,90,360,'Beam: '+beam,/device,color=0,charsize=1.3,charthick=3
-   xyouts,90,360,'Beam: '+beam,/device,color=-1,charsize=1.3,charthick=1
-   xyouts,90,340,'Shot: '+strtrim(string(shot),2),/device,color=0,charsize=1.3,charthick=3
-   xyouts,90,340,'Shot: '+strtrim(string(shot),2),/device,color=-1,charsize=1.3,charthick=1
-   xyouts,90,320,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec',/device,color=0,charsize=1.3,charthick=3
-   xyouts,90,320,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec',/device,color=-1,charsize=1.3,charthick=1
-   xyouts,90,300,'Beam atom: '+strtrim(beam_atom),/device,color=0,charsize=1.3,charthick=3
-   xyouts,90,300,'Beam atom: '+strtrim(beam_atom),/device,color=-1,charsize=1.3,charthick=1
-   xyouts,90,280,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=0,charsize=1.3,charthick=3
-   xyouts,90,280,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=-1,charsize=1.3,charthick=1
-   ;colorbar--------------------------------------------------------------------------------------------------------------------------
-   w_x_size=!D.X_Vsize & w_y_size=!D.Y_Vsize
-   pos=[0.95,0.11,0.99,0.85] & n_ticks=7 & col_min=16 & col_max=208 & n_colors=255
-   bar_pos_x=pos(0)*w_x_size & bar_pos_y=pos(1)*w_y_size & bar_size_x= (pos(2)-pos(0))*w_x_size & bar_size_y=(pos(3)-pos(1))*w_y_size
-   bar = interpol([col_min,col_max],n_colors) ## replicate(1,10)
-   TV, CONGRID(bar, bar_size_x, bar_size_y), bar_pos_x+1, bar_pos_y+1
-   plot,[0,bar_size_x],[0,bar_size_y],/nodata,xticks=1,yticks=n_ticks-1,xstyle=1,ystyle=1,position=pos,color=0,charsize=1.4,/noerase,xtickformat='(A1)',$
-   yminor=2,ytickname=string(interpol([min_val*10.0^(-scale_coef),max_val*10.0^(-scale_coef)],n_ticks),format='(F4.2)'),yticklen=0.2
-   xyouts,458,370,'x10!U '+strtrim(string(scale_coef,format='(I2)'),2),color=0,charsize=1.4,/device
-   ;----------------------------------------------------------------------------------------------------------------------------------
-   if export_flag then begin
-     if export_sel eq 0 then begin
-       a_img=tvrd(true=1) 
-       tvlct,r_img,g_img,b_img,/get 
-       write_png,export_file,a_img,r_img,g_img,b_img 
-     endif else begin
-       printf,3,''
-       printf,3,';Plot type'      
-       printf,3,plot_text
-       printf,3,''
-       printf,3,';Title'
-       printf,3,titl+' x10!U '+strtrim(string(scale_coef,format='(I2)'),2)
-       printf,3,''
-       printf,3,';Xtitle'
-       printf,3,xtitl
-       printf,3,''
-       printf,3,';Ytitle'
-       printf,3,ytitl
-       printf,3,''
-       printf,3,';Text'
-       printf,3,'Beam: '+beam
-       printf,3,''
-       printf,3,';Text'
-       printf,3,'Shot: '+strtrim(string(shot),2)
-       printf,3,''
-       printf,3,';Text'
-       printf,3,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec'
-       printf,3,''
-       printf,3,';Text'
-       printf,3,'Beam atom: '+strtrim(beam_atom)       
-       printf,3,''
-       printf,3,';Text'
-       printf,3,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV'
-       printf,3,''
-       printf,3,';Text'
-       printf,3,'Z distance  : '+strtrim(string(z_beam(Z_B_Slider_val),format='(F10.3)'),1)+' m'
-       printf,3,''
-       printf,3,';Text'
-       printf,3,'X distance  : '+strtrim(string(x_beam(X_B_Slider_val),format='(F10.3)'),1)+' m'
-       printf,3,''
-       printf,3,';Text'
-       printf,3,'Y distance  : '+strtrim(string(y_beam(Y_B_Slider_val),format='(F10.3)'),1)+' m'
-       printf,3,''
-       printf,3,';Contourz'
-       printf,3,z_val
-       printf,3,''
-       printf,3,';Contourx'
-       printf,3,x_coord
-       printf,3,''
-       printf,3,';Contoury'
-       printf,3,y_coord
-       printf,3,''
-       close,3      
-     endelse
-   endif    
- endif
+ endif 
 end
 ;-------------------------------------------------------------------------------------------------------------------------
 
@@ -12789,7 +11522,7 @@ common temp_electrons,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_
 common effective_charge, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_eff_r,z_eff_arr,z_eff_err_arr
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
 ;The following common block contains the parameter which data is
 ;curently plotted
 common draw_request,draw_req
@@ -12798,7 +11531,7 @@ common draw_request,draw_req
 common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
 ;The following common block contains the parameters which describe the non-geometrical
 ;parameters of the beam (particle and energy distribution) 
-common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
+common beam_param, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,div_bml_opt, div_dist_par
 ;The following common block is used to transfer the pointer to the
 ;status window and availability states of each data set
 common status, status_wid,error_catch,st_err 
@@ -12851,21 +11584,15 @@ if error_catch then begin
    Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='exc_B_Check'),Sensitive=0
    !X.Margin=[10,6]
    !Y.Margin=[3,2]
-  
+   ;plot circles----------
+   ang=make_array(45,/index)*2.0*!Pi/45.0
+   usersym,1.4*sin(ang),1.4*cos(ang)
    titl='Apertures in the accelerating grid'
    xtitl='Beam X coordinate, cm'
    ytitl='Beam Y coordinate, cm'
    ;---------------------
-   XY_scale=(max(y_bml)-min(y_bml))/(max(x_bml)-min(x_bml))
-   x_scale=1.2>XY_scale
-   y_scale=1.2>1.0/XY_scale
-   ;plot circles----------
-   ang=make_array(45,/index)*2.0*!Pi/45.0
-   rad=grid_ap_diam/((max(y_bml)-min(y_bml))*1e2*y_scale)*5.65
-   usersym,rad*sin(ang),rad*cos(ang)
-   ;-------------------------------
-   plot, x_bml*100.0, y_bml*100.0,color=0,background=-1,ystyle=1,xstyle=1,psym=8,yrange=[min(y_bml)*1e2*y_scale,max(y_bml)*1e2*y_scale],$
-   xrange=[min(x_bml)*1e2*x_scale,max(x_bml)*1e2*x_scale],Thick=1, Charsize=1.5, ticklen=0,ytitle=ytitl,xtitle=xtitl, Title=titl
+   plot, x_bml*100.0, y_bml*100.0,color=0,background=-1,ystyle=1,xstyle=1,psym=8,yrange=[min(y_bml)*120,max(y_bml)*120],$
+   xrange=[min(x_bml)*120,max(x_bml)*120],Thick=1, Charsize=1.5, ticklen=0,ytitle=ytitl,xtitle=xtitl, Title=titl
    xyouts,95,368,'Beam: '+beam,/device,color=0,charsize=1.3,charthick=1
    xyouts,95,348,'Shot: '+strtrim(string(shot),2),/device,color=0,charsize=1.3,charthick=1
    if export_flag then begin
@@ -12916,19 +11643,15 @@ if preview_val eq 1 then begin
    Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='exc_B_Check'),Sensitive=0
    !X.Margin=[10,9]
    !Y.Margin=[3,2]
-   ;---------------------
-   XY_scale=(max(y_bml)-min(y_bml))/(max(x_bml)-min(x_bml))
-   x_scale=1.2>XY_scale
-   y_scale=1.2>1.0/XY_scale
    ;plot circles----------
    ang=make_array(45,/index)*2.0*!Pi/45.0
-   rad=grid_ap_diam/((max(y_bml)-min(y_bml))*1e2*y_scale)*5.65
-   usersym,rad*sin(ang),rad*cos(ang)
-   ;-------------------------------
+   usersym,1.4*sin(ang),1.4*cos(ang)
+   ;---------------------
    x_b=interpol([min(x_bml)*120,max(x_bml)*120],100) & y_b=interpol([min(y_bml)*120,max(y_bml)*120],100)
    a=max([x_bml,y_bml])*100.0
    n_bml=n_elements(x_bml)
    ; source density formula
+   ;grid_ap_diam=4 ;mm added temporary for EAST run
    J_coef=I_beam*1e3/(!Pi*(grid_ap_diam/10.0/2.0)^2.0*total(1.0-I_dens_par*(x_bml^2+y_bml^2)/a^2))
    j_bml=J_coef*(1-I_dens_par*((y_b^2.0 ## make_array(n_elements(x_b),value=1))+(make_array(n_elements(x_b),value=1) ## y_b^2.0))/a^2.0)   
    j_bml=j_bml>0
@@ -12938,8 +11661,7 @@ if preview_val eq 1 then begin
    xtitl='Beam X coordinate, cm'
    ytitl='Beam Y coordinate, cm'
    contour,j_bml ,x_b,y_b,color=0,background=-1,ystyle=1,xstyle=1,xtitle=xtitl,ytitle=ytitl,$
-   levels=interpol([min_val,max_val],255),C_COLORS = interpol([16,208],255), /FILL,title=titl,Charsize=1.5,yrange=[min(y_bml)*1e2*y_scale,max(y_bml)*1e2*y_scale],$
-   xrange=[min(x_bml)*1e2*x_scale,max(x_bml)*1e2*x_scale]
+   levels=interpol([min_val,max_val],255),C_COLORS = interpol([16,208],255), /FILL,title=titl,Charsize=1.5
    oplot, x_bml*100.0, y_bml*100.0,color=0,psym=8
    oplot,[0,0],[-max(y_b),max(y_b)],color=0,linestyle=2
    oplot,[-max(x_b),max(x_b)],[0,0],color=0,linestyle=2
@@ -13014,12 +11736,11 @@ if preview_val eq 2 then begin
    !X.Margin=[7,3]
    !Y.Margin=[3,2]
    max_val=max(n_e_raw)
-   max_range=max(n_e_raw+n_e_err)
    scale_coef=fix(alog10(max_val))
    titl='Electron density'
    xtitl='Major radius, m'
    ytitl='Electron density, x10!U'+strtrim(string(scale_coef,format='(I2)'),1)+'!N cm!U-3!N'
-   plot, n_e_raw_r, n_e_raw*10.0^(-scale_coef),color=0,background=-1,xstyle=0,ystyle=0,psym=6,yrange=[0,max_range*10.0^(-scale_coef)],$
+   plot, n_e_raw_r, n_e_raw*10.0^(-scale_coef),color=0,background=-1,xstyle=0,ystyle=0,psym=6,yrange=[0,max_val*10.0^(-scale_coef)],$
    Thick=1, Charsize=1.5, ticklen=1,xtitle=xtitl,ytitle=ytitl,title=titl
    !P.Color=0
    if n_elements(n_e_raw_err) lt 50 then oploterr, n_e_raw_r, n_e_raw*10.0^(-scale_coef),n_e_raw_err*10.0^(-scale_coef)
@@ -13094,11 +11815,10 @@ if preview_val eq 3 then begin
    !X.Margin=[7,3]
    !Y.Margin=[3,2]
    max_val=max(t_e_raw)
-   max_range=max(t_e_raw+t_e_err)
    titl='Electron temperature'
    xtitl='Major radius, m'
    ytitl='Electron temperature, keV'
-   plot, t_e_raw_r, t_e_raw,color=0,background=-1,xstyle=0,ystyle=0,psym=6,yrange=[0,max_range],$
+   plot, t_e_raw_r, t_e_raw,color=0,background=-1,xstyle=0,ystyle=0,psym=6,yrange=[0,max_val],$
    Thick=1, Charsize=1.5, ticklen=1,xtitle=xtitl,ytitle=ytitl,title=titl
    !P.Color=0
    if n_elements(t_e_raw_err) lt 50 then oploterr, t_e_raw_r, t_e_raw,t_e_raw_err
@@ -13173,11 +11893,10 @@ if preview_val eq 4 then begin
    !X.Margin=[7,3]
    !Y.Margin=[3,2]
    max_val=max(z_eff_raw)
-   max_range=max(z_eff_raw+z_eff_err)
    titl='Effective charge (Z!Deff!N)'
    xtitl='Major radius, m'
    ytitl='Z!Deff!N'
-   plot, z_eff_raw_r, z_eff_raw,color=0,background=-1,xstyle=0,ystyle=0,psym=6,yrange=[0,max_range*1.1],$
+   plot, z_eff_raw_r, z_eff_raw,color=0,background=-1,xstyle=0,ystyle=0,psym=6,yrange=[0,max_val*1.1],$
    Thick=1, Charsize=1.5, ticklen=1,xtitle=xtitl,ytitle=ytitl,$
    title=titl
    !P.Color=0
@@ -13263,7 +11982,7 @@ common export_file, export_file,export_sel,export_flag
  common effective_charge, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_eff_r,z_eff_arr,z_eff_err_arr
  ;The following common block contains the parameters which describe the geometry
  ;and position of the beam tank and all components needed for calculation.
- common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+ common beam_geometry, x_bml,y_bml,grid_ap_diam,grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
 ;The following common block contains the parameters which describe the geometry
 ;and position of the tokamak plasma
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
@@ -13284,13 +12003,13 @@ common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
 exc_plasma_type_names,gas_arr_type,stop_gas_type,lim_arr_type,grid_aper_names,grid_aper_type
  ;The following common block contains X,Y,Z coordinate arrays used for the beam
  ;calculation grid and output 3D arrays of the beam density and excitation fracitons
- common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
+ common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac
 ;The following common block contains the parameters which describe the non-geometrical
 ;parameters of the beam (particle and energy distribution) 
-common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
+common beam_param, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,div_bml_opt, div_dist_par
  ;The following common block contains neutral gas parameters used in
  ;calculation of the beam attenuation in the gas.
- common neutral_gas,tank_pressure,torus_pressure,duct_pressure,duct_pressure_loc,n0_arr,n0_stop_cross_section
+ common neutral_gas,tank_pressure,torus_pressure,n0_arr,n0_stop_cross_section
  ;The following common block contains the parameters which describe the
  ;positions and sizes of the beam limiters. 
  common beam_limiters, n_limiters, limiters_table,limiters_arr
@@ -14933,10 +13652,8 @@ if preview_val eq 17 then begin
    xyouts,90,340,'Shot: '+strtrim(string(shot),2),/device,color=-1,charsize=1.3,charthick=1
    xyouts,90,320,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec',/device,color=0,charsize=1.3,charthick=3
    xyouts,90,320,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec',/device,color=-1,charsize=1.3,charthick=1
-   xyouts,90,300,'Beam atom: '+strtrim(beam_atom),/device,color=0,charsize=1.3,charthick=3
-   xyouts,90,300,'Beam atom: '+strtrim(beam_atom),/device,color=-1,charsize=1.3,charthick=1
-   xyouts,90,280,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=0,charsize=1.3,charthick=3
-   xyouts,90,280,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=-1,charsize=1.3,charthick=1
+   xyouts,90,300,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=0,charsize=1.3,charthick=3
+   xyouts,90,300,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=-1,charsize=1.3,charthick=1
    ;colorbar--------------------------------------------------------------------------------------------------------------------------
    w_x_size=!D.X_Vsize & w_y_size=!D.Y_Vsize
    pos=[0.95,0.11,0.99,0.85] & n_ticks=7 & col_min=16 & col_max=208 & n_colors=255
@@ -14974,9 +13691,6 @@ if preview_val eq 17 then begin
        printf,3,''
        printf,3,';Text'
        printf,3,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec'
-       printf,3,''
-       printf,3,';Text'
-       printf,3,'Beam atom: '+strtrim(beam_atom)       
        printf,3,''
        printf,3,';Text'
        printf,3,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV'
@@ -15045,8 +13759,7 @@ if preview_val eq 17 then begin
    xyouts,70,360,'Beam: '+beam,/device,color=0,charsize=1.3
    xyouts,70,340,'Shot: '+strtrim(string(shot),2),/device,color=0,charsize=1.3
    xyouts,70,320,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec',/device,color=0,charsize=1.3
-   xyouts,70,300,'Beam atom: '+strtrim(beam_atom),/device,color=0,charsize=1.3,charthick=1
-   ;xyouts,90,280,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=-1,charsize=1.3,charthick=1
+   xyouts,90,300,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=-1,charsize=1.3,charthick=1
    if export_flag then begin
      if export_sel eq 0 then begin
        a_img=tvrd(true=1) 
@@ -15074,9 +13787,6 @@ if preview_val eq 17 then begin
        printf,3,''
        printf,3,';Text'
        printf,3,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec'
-       printf,3,''
-       printf,3,';Text'
-       printf,3,'Beam atom: '+strtrim(beam_atom)       
        printf,3,''
        printf,3,';Text'
        printf,3,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV'
@@ -15178,8 +13888,7 @@ if preview_val eq 17 then begin
    xyouts,70,360,'Beam: '+beam,/device,color=0,charsize=1.3
    xyouts,70,340,'Shot: '+strtrim(string(shot),2),/device,color=0,charsize=1.3
    xyouts,70,320,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec',/device,color=0,charsize=1.3
-   xyouts,70,300,'Beam atom: '+strtrim(beam_atom),/device,color=0,charsize=1.3,charthick=1
-   ;xyouts,70,280,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=-1,charsize=1.3,charthick=1
+   xyouts,90,300,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=-1,charsize=1.3,charthick=1
    if export_flag then begin
      if export_sel eq 0 then begin
        a_img=tvrd(true=1) 
@@ -15207,9 +13916,6 @@ if preview_val eq 17 then begin
        printf,3,''
        printf,3,';Text'
        printf,3,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec'
-       printf,3,''
-       printf,3,';Text'
-       printf,3,'Beam atom: '+strtrim(beam_atom)       
        printf,3,''
        printf,3,';Text'
        printf,3,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV'
@@ -15284,8 +13990,7 @@ if preview_val eq 17 then begin
    xyouts,70,360,'Beam: '+beam,/device,color=0,charsize=1.3
    xyouts,70,340,'Shot: '+strtrim(string(shot),2),/device,color=0,charsize=1.3
    xyouts,70,320,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec',/device,color=0,charsize=1.3
-   xyouts,70,300,'Beam atom: '+strtrim(beam_atom),/device,color=0,charsize=1.3,charthick=1
-   ;xyouts,70,280,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=-1,charsize=1.3,charthick=1
+   xyouts,90,300,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=-1,charsize=1.3,charthick=1
    if export_flag then begin
      if export_sel eq 0 then begin
        a_img=tvrd(true=1) 
@@ -15313,9 +14018,6 @@ if preview_val eq 17 then begin
        printf,3,''
        printf,3,';Text'
        printf,3,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec'
-       printf,3,''
-       printf,3,';Text'
-       printf,3,'Beam atom: '+strtrim(beam_atom)       
        printf,3,''
        printf,3,';Text'
        printf,3,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV'
@@ -15390,8 +14092,7 @@ if preview_val eq 17 then begin
    xyouts,70,360,'Beam: '+beam,/device,color=0,charsize=1.3
    xyouts,70,340,'Shot: '+strtrim(string(shot),2),/device,color=0,charsize=1.3
    xyouts,70,320,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec',/device,color=0,charsize=1.3
-   xyouts,70,300,'Beam atom: '+strtrim(beam_atom),/device,color=0,charsize=1.3,charthick=1
-   ;xyouts,70,280,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=-1,charsize=1.3,charthick=1
+   xyouts,90,300,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=-1,charsize=1.3,charthick=1
    if export_flag then begin
      if export_sel eq 0 then begin
        a_img=tvrd(true=1) 
@@ -15419,9 +14120,6 @@ if preview_val eq 17 then begin
        printf,3,''
        printf,3,';Text'
        printf,3,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec'
-       printf,3,''
-       printf,3,';Text'
-       printf,3,'Beam atom: '+strtrim(beam_atom)       
        printf,3,''
        printf,3,';Text'
        printf,3,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV'
@@ -15506,10 +14204,8 @@ if preview_val eq 17 then begin
    xyouts,90,340,'Shot: '+strtrim(string(shot),2),/device,color=-1,charsize=1.3,charthick=1
    xyouts,90,320,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec',/device,color=0,charsize=1.3,charthick=3
    xyouts,90,320,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec',/device,color=-1,charsize=1.3,charthick=1
-   xyouts,90,300,'Beam atom: '+strtrim(beam_atom),/device,color=0,charsize=1.3,charthick=3
-   xyouts,90,300,'Beam atom: '+strtrim(beam_atom),/device,color=-1,charsize=1.3,charthick=1
-   xyouts,90,280,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=0,charsize=1.3,charthick=3
-   xyouts,90,280,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=-1,charsize=1.3,charthick=1
+   xyouts,90,300,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=0,charsize=1.3,charthick=3
+   xyouts,90,300,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=-1,charsize=1.3,charthick=1
    ;colorbar--------------------------------------------------------------------------------------------------------------------------
    w_x_size=!D.X_Vsize & w_y_size=!D.Y_Vsize
    pos=[0.95,0.11,0.99,0.85] & n_ticks=7 & col_min=16 & col_max=208 & n_colors=255
@@ -15547,9 +14243,6 @@ if preview_val eq 17 then begin
        printf,3,''
        printf,3,';Text'
        printf,3,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec'
-       printf,3,''
-       printf,3,';Text'
-       printf,3,'Beam atom: '+strtrim(beam_atom)       
        printf,3,''
        printf,3,';Text'
        printf,3,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV'
@@ -15617,8 +14310,7 @@ if preview_val eq 17 then begin
    xyouts,70,360,'Beam: '+beam,/device,color=0,charsize=1.3
    xyouts,70,340,'Shot: '+strtrim(string(shot),2),/device,color=0,charsize=1.3
    xyouts,70,320,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec',/device,color=0,charsize=1.3
-   xyouts,70,300,'Beam atom: '+strtrim(beam_atom),/device,color=0,charsize=1.3,charthick=1
- ;  xyouts,70,280,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=-1,charsize=1.3,charthick=1
+   xyouts,90,300,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=-1,charsize=1.3,charthick=1
  if export_flag then begin
      if export_sel eq 0 then begin
        a_img=tvrd(true=1) 
@@ -15646,9 +14338,6 @@ if preview_val eq 17 then begin
        printf,3,''
        printf,3,';Text'
        printf,3,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec'
-       printf,3,''
-       printf,3,';Text'
-       printf,3,'Beam atom: '+strtrim(beam_atom)       
        printf,3,''
        printf,3,';Text'
        printf,3,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV'
@@ -15750,8 +14439,7 @@ if preview_val eq 17 then begin
    xyouts,70,360,'Beam: '+beam,/device,color=0,charsize=1.3
    xyouts,70,340,'Shot: '+strtrim(string(shot),2),/device,color=0,charsize=1.3
    xyouts,70,320,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec',/device,color=0,charsize=1.3
-   xyouts,70,300,'Beam atom: '+strtrim(beam_atom),/device,color=0,charsize=1.3,charthick=1
-   ;xyouts,70,280,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=-1,charsize=1.3,charthick=1
+   xyouts,90,300,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=-1,charsize=1.3,charthick=1
    if export_flag then begin
      if export_sel eq 0 then begin
        a_img=tvrd(true=1) 
@@ -15779,9 +14467,6 @@ if preview_val eq 17 then begin
        printf,3,''
        printf,3,';Text'
        printf,3,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec'
-       printf,3,''
-       printf,3,';Text'
-       printf,3,'Beam atom: '+strtrim(beam_atom)       
        printf,3,''
        printf,3,';Text'
        printf,3,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV'
@@ -15856,8 +14541,7 @@ if preview_val eq 17 then begin
    xyouts,70,360,'Beam: '+beam,/device,color=0,charsize=1.3
    xyouts,70,340,'Shot: '+strtrim(string(shot),2),/device,color=0,charsize=1.3
    xyouts,70,320,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec',/device,color=0,charsize=1.3
-   xyouts,70,300,'Beam atom: '+strtrim(beam_atom),/device,color=0,charsize=1.3,charthick=1
-   ;xyouts,70,280,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=-1,charsize=1.3,charthick=1
+   xyouts,90,300,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=-1,charsize=1.3,charthick=1
    if export_flag then begin
      if export_sel eq 0 then begin
        a_img=tvrd(true=1) 
@@ -15885,9 +14569,6 @@ if preview_val eq 17 then begin
        printf,3,''
        printf,3,';Text'
        printf,3,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec'
-       printf,3,''
-       printf,3,';Text'
-       printf,3,'Beam atom: '+strtrim(beam_atom)       
        printf,3,''
        printf,3,';Text'
        printf,3,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV'
@@ -15962,8 +14643,7 @@ if preview_val eq 17 then begin
    xyouts,70,360,'Beam: '+beam,/device,color=0,charsize=1.3
    xyouts,70,340,'Shot: '+strtrim(string(shot),2),/device,color=0,charsize=1.3
    xyouts,70,320,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec',/device,color=0,charsize=1.3
-   xyouts,70,300,'Beam atom: '+strtrim(beam_atom),/device,color=0,charsize=1.3,charthick=1
-  ; xyouts,70,280,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=-1,charsize=1.3,charthick=1
+   xyouts,90,300,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=-1,charsize=1.3,charthick=1
    if export_flag then begin
      if export_sel eq 0 then begin
        a_img=tvrd(true=1) 
@@ -15991,9 +14671,6 @@ if preview_val eq 17 then begin
        printf,3,''
        printf,3,';Text'
        printf,3,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec'
-       printf,3,''
-       printf,3,';Text'
-       printf,3,'Beam atom: '+strtrim(beam_atom)       
        printf,3,''
        printf,3,';Text'
        printf,3,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV'
@@ -16371,7 +15048,7 @@ case ev.id of
    Widget_Info(ev.id, FIND_BY_UNAME='Code_Save_Grid_Button'): begin
     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Code_Grid_Table1'),Get_value=code_grid_arr1
     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Code_Grid_Table2'),Get_value=code_grid_arr2
-    code_grid_arr={z:float(code_grid_arr1),x:float(code_grid_arr2(*,0)),y:float(code_grid_arr2(*,1))}
+    code_grid_arr={z:code_grid_arr1,x:code_grid_arr2(*,0),y:code_grid_arr2(*,1)}
     Widget_control, status_wid, Get_Value=status_tx
     Widget_Control, status_wid,$
     Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Code Grid/Mesh were saved']], Set_text_top_line=n_elements(status_tx)-4
@@ -16388,7 +15065,7 @@ end
 Pro Neutral_Gas_Widget_event, ev
 ;The following common block contains neutral gas parameters used in
 ;calculation of the beam attenuation in the gas.
-common neutral_gas,tank_pressure,torus_pressure,duct_pressure,duct_pressure_loc,n0_arr,n0_stop_cross_section
+common neutral_gas,tank_pressure,torus_pressure,n0_arr,n0_stop_cross_section
 ;The following common block is used to transfer the pointer to the status window and availability states of each data set
 common status, status_wid,error_catch,st_err
 ; The following common block contains general parameters: which user,
@@ -16427,10 +15104,6 @@ case ev.id of
       tank_pressure=float(tank_pressure_txt(0))
       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='P_Torus_Text'),Get_value=torus_pressure_txt
       torus_pressure=float(torus_pressure_txt(0))
-      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='P_Duct_Text'),Get_value=duct_pressure_txt
-      duct_pressure=float(duct_pressure_txt(0))
-      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Z_Duct_Text'),Get_value=duct_pressure_loc_txt
-      duct_pressure_loc=float(duct_pressure_loc_txt(0))
       Widget_control, status_wid, Get_Value=status_tx
       Widget_Control, status_wid,$
       Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Neutral gas parameters were saved']], Set_text_top_line=n_elements(status_tx)-4
@@ -16533,7 +15206,7 @@ end
 Pro Calc_Settings_Widget_event, ev
 ;The following common block contains some of the settings of how to
 ;run the beam attenuation and penetration calculation.
-common run_settings,div_type,div_type_names,atten_type, atten_type_names, vel_dis_type,vel_dis_names,save_output_type,save_output_file
+common run_settings,div_type,div_type_names,atten_type, atten_type_names,save_output_type,save_output_file
 ; The following common block contains general parameters: which user,
 ; what beam, what shot and time interval
 common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
@@ -16570,7 +15243,6 @@ case ev.id of
    Widget_Info(ev.id, FIND_BY_UNAME='Calc_Settings_Save_Button'): begin
       div_type=Widget_Info(Widget_Info(ev.top, FIND_BY_UNAME='Div_Type_Droplist'), /Droplist_Select)
       atten_type=Widget_Info(Widget_Info(ev.top, FIND_BY_UNAME='Atten_Type_Droplist'), /Droplist_Select)
-      vel_dis_type=Widget_Info(Widget_Info(ev.top, FIND_BY_UNAME='Vel_Dis_Droplist'), /Droplist_Select)
       save_output_type=Widget_Info(Widget_Info(ev.top, FIND_BY_UNAME='Save_Output_Type_Droplist'), /Droplist_Select)
       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Save_Output_File_Text'),Get_value=save_output_file
       Widget_control, status_wid, Get_Value=status_tx
@@ -16593,17 +15265,13 @@ case ev.id of
       div_type_1=Widget_Info(Widget_Info(ev.id, FIND_BY_UNAME='Div_Type_Droplist'), /Droplist_Select)
       if div_type_1 eq 0 then begin
         Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Atten_Type_Droplist'),Sensitive=1
-        Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Vel_Dis_Droplist'),Sensitive=1
       endif  
       if div_type_1 eq 1 then begin
         Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Atten_Type_Droplist'),Sensitive=1
-        Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Vel_Dis_Droplist'),Sensitive=1
       endif   
       if div_type_1 eq 2 then begin
-        Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Atten_Type_Droplist'),Set_Droplist_Select=5
+        Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Atten_Type_Droplist'),Set_Droplist_Select=4
         Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Atten_Type_Droplist'),Sensitive=0
-        Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Vel_Dis_Droplist'),Set_Droplist_Select=1
-        Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Vel_Dis_Droplist'),Sensitive=0        
       endif
    end
  else:
@@ -16629,7 +15297,7 @@ ne_type,ne_file,te_type,te_file,z_eff_type,z_eff_file,plasma_geom_type,plasma_ge
 common save_param, save_param_file
 ;The following common block contains some of the settings of how to
 ;run the beam attenuation and penetration calculation.
-common run_settings, div_type,div_type_names,atten_type, atten_type_names, vel_dis_type,vel_dis_names,save_output_type,save_output_file
+common run_settings, div_type,div_type_names,atten_type, atten_type_names,save_output_type,save_output_file
 ;The following common block is used to transfer the pointer to the status window and availability states of each data set
 common status, status_wid,error_catch,st_err
 
@@ -16725,7 +15393,7 @@ case ev.id of
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Beam_Lim_Type_Droplist'),Timer=0.01  
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Beam_Param_Type_Droplist'), Set_Droplist_Select=1
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Beam_Param_Type_Droplist'),Timer=0.01
-        Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_Type_Droplist'), Set_Droplist_Select=2
+        Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_Type_Droplist'), Set_Droplist_Select=1
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_Type_Droplist'),Timer=0.01
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Param_Type_Droplist'), Set_Droplist_Select=1
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Param_Type_Droplist'),Timer=0.01          
@@ -16733,7 +15401,7 @@ case ev.id of
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Ne_Type_Droplist'),Timer=0.01
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Te_Type_Droplist'), Set_Droplist_Select=4
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Te_Type_Droplist'),Timer=0.01
-        Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Z_Eff_Type_Droplist'), Set_Droplist_Select=4
+        Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Z_Eff_Type_Droplist'), Set_Droplist_Select=3
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Z_Eff_Type_Droplist'),Timer=0.01
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Gas_Type_Droplist'), Set_Droplist_Select=1
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Gas_Type_Droplist'),Timer=0.01       
@@ -16749,7 +15417,7 @@ case ev.id of
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Beam_Lim_Type_Droplist'),Timer=0.01  
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Beam_Param_Type_Droplist'), Set_Droplist_Select=2
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Beam_Param_Type_Droplist'),Timer=0.01
-        Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_Type_Droplist'), Set_Droplist_Select=3
+        Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_Type_Droplist'), Set_Droplist_Select=2
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_Type_Droplist'),Timer=0.01
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Param_Type_Droplist'), Set_Droplist_Select=2
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Param_Type_Droplist'),Timer=0.01         
@@ -16757,7 +15425,7 @@ case ev.id of
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Ne_Type_Droplist'),Timer=0.01
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Te_Type_Droplist'), Set_Droplist_Select=5
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Te_Type_Droplist'),Timer=0.01
-        Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Z_Eff_Type_Droplist'), Set_Droplist_Select=5
+        Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Z_Eff_Type_Droplist'), Set_Droplist_Select=4
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Z_Eff_Type_Droplist'),Timer=0.01
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Gas_Type_Droplist'), Set_Droplist_Select=2
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Gas_Type_Droplist'),Timer=0.01       
@@ -16887,15 +15555,10 @@ case ev.id of
       endif
       if z_eff_type_1 eq 3 then begin
         Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Z_Eff_File_Text'),Sensitive=1
-        z_eff_file_1=file_dir+'/z_neo_ave_'+shot+'.sav'
-        Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Z_Eff_File_Text'),Set_value=z_eff_file_1
-      endif  
-      if z_eff_type_1 eq 4 then begin
-        Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Z_Eff_File_Text'),Sensitive=1
         z_eff_file_1=file_dir+'/'+beam+'.abi'
         Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Z_Eff_File_Text'),Set_value=z_eff_file_1
       endif      
-      if z_eff_type_1 eq 5 then begin
+      if z_eff_type_1 eq 4 then begin
          Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Z_Eff_File_Text'),Sensitive=0
       endif    
     end
@@ -16905,17 +15568,12 @@ case ev.id of
       if plasma_geom_type_1 eq 0 then begin
         Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_File_Text'),Sensitive=0
       endif
-      if plasma_geom_type_1 eq 2 then begin
+      if plasma_geom_type_1 eq 1 then begin
         Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_File_Text'),Sensitive=1
         plasma_geom_file_1=file_dir+'/'+beam+'.abi'
         Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_File_Text'),Set_value=plasma_geom_file_1
-      endif
-      if plasma_geom_type_1 eq 1 then begin
-        Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_File_Text'),Sensitive=1
-        plasma_geom_file_1=file_dir+'/efit/*.*'
-        Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_File_Text'),Set_value=plasma_geom_file_1
-      endif
-      if plasma_geom_type_1 eq 3 then begin
+      endif      
+      if plasma_geom_type_1 eq 2 then begin
          Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_File_Text'),Sensitive=0
       endif     
     end
@@ -16976,7 +15634,7 @@ end
 Pro Beam_Geometry_Widget_event, ev
  ;The following common block contains the parameters which describe the geometry
  ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
 ;The following common block contains the parameters which describe the geometry
 ;and position of the tokamak plasma
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
@@ -16988,6 +15646,7 @@ common beam_limiters, n_limiters, limiters_table,limiters_arr
 common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
 ;The following common block is used to transfer the pointer to the status window and availability states of each data set
 common status, status_wid,error_catch,st_err
+
 ;Error handler---------------------------------------
 if error_catch then begin
    Catch,error_status
@@ -17024,28 +15683,18 @@ case ev.id of
       y_bml=float(strsplit(y_bml_txt,', ',/extract))/1e3
       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Grid_Ap_Diam_Text'),Get_value=grid_ap_diam_txt
       grid_ap_diam=float(grid_ap_diam_txt(0))      
-      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='X_Grids_Focus_Text'),Get_value=x_grid_focus_txt
-      x_grid_focus=float(x_grid_focus_txt(0)) 
-      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Y_Grids_Focus_Text'),Get_value=y_grid_focus_txt
-      y_grid_focus=float(y_grid_focus_txt(0))
+      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Grids_Focus_Text'),Get_value=grid_focus_txt
+      grid_focus=float(grid_focus_txt(0)) 
       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Tank_Front_Text'),Get_value=tank_front_dist_txt
       tank_front_dist=float(tank_front_dist_txt(0))
       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Tank_Size_Text'),Get_value=tank_size_txt
       tank_size=float(tank_size_txt(0))
-      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Tank_Diam_Text'),Get_value=tank_diam_txt
-      tank_diam=float(tank_diam_txt(0))
-      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Neutr_Front_Text'),Get_value=neutr_front_dist_txt
-      neutr_front_dist=float(neutr_front_dist_txt(0))
       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Neutr_Size_Text'),Get_value=neutr_size_txt
       neutr_size=float(neutr_size_txt(0))
-      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Neutr_Diam_Text'),Get_value=neutr_diam_txt
-      neutr_diam=float(neutr_diam_txt(0))
       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Tank_Magnet_Text'),Get_value=tank_magnet_dist_txt
       tank_magnet_dist=float(tank_magnet_dist_txt(0))
       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Magnet_Size_Text'),Get_value=magnet_size_txt
       magnet_size=float(magnet_size_txt(0))
-      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Magnet_Diam_Text'),Get_value=magnet_diam_txt
-      magnet_diam=float(magnet_diam_txt(0))
       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Tank_Calorim_Text'),Get_value=tank_cal_dist_txt
       tank_cal_dist=float(tank_cal_dist_txt(0)) 
       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='R_Wall_Text'),Get_value=r_wall_txt
@@ -17071,39 +15720,21 @@ case ev.id of
       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Beam_Geometry_View'),Get_value=beam_view
       if beam_port ne '?' then begin
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Geometry_Plot'),get_value=drawID1
-        cal_diam=neutr_diam*1.5 ; m
-        cal_size=0.2*tank_size ;m
-        x_marg=r_minor
-        y_marg=r_minor
+        tank_width=1.0 ; m
+        magnet_width=0.3 ;m
+        cal_width=0.3 ; m
+        cal_size=0.05 ;m
+        x_marg=0.1
+        y_marg=0.25
         wset, drawID1
-        !X.Margin=[4,2]
-        !Y.Margin=[2,7]
-        ;geometrical factors
-        grid_cent_x=-r_grid*cos(phi_grid)
-        grid_cent_y=-r_grid*sin(phi_grid)
-        wall_cent_x=-r_wall*cos(phi_wall)
-        wall_cent_y=-r_wall*sin(phi_wall)
-        grid_cent_z=z_grid
-        wall_cent_z=z_wall
-       
-        dist_all_XY=sqrt((r_wall*cos(phi_wall)-r_grid*cos(phi_grid))^2.0+(r_wall*sin(phi_wall)-r_grid*sin(phi_grid))^2.0)
-        cos_pivot_XY=(wall_cent_x-grid_cent_x)/dist_all_XY
-        sin_pivot_XY=-(wall_cent_y-grid_cent_y)/dist_all_XY
-        ;dist_all_XYZ=sqrt((r_wall*cos(phi_wall)-r_grid*cos(phi_grid))^2.0+(r_wall*sin(phi_wall)-r_grid*sin(phi_grid))^2.0+(z_wall-z_grid)^2.0)
-        dist_all_XZ=sqrt((r_wall*cos(phi_wall)-r_grid*cos(phi_grid))^2.0+(z_wall-z_grid)^2.0)
-        sin_pivot_XZ=-(wall_cent_z-grid_cent_z)/dist_all_XZ
-        cos_pivot_XZ=(wall_cent_x-grid_cent_x)/dist_all_XZ
-
+        !X.Margin=[5,5]
+        !Y.Margin=[1.5,0.1]
         if beam_view eq 0 then begin
-        tank_front_x=grid_cent_x+(tank_front_dist)*cos_pivot_XY*cos_pivot_XZ
-        tank_front_y=grid_cent_y-(tank_front_dist)*sin_pivot_XY*cos_pivot_XZ      
-   
-  
-        wx0=min([grid_cent_x-neutr_diam/2.0*sin_pivot_XY,-(r_major+r_minor*1.2),tank_front_x-tank_diam/2.0*sin_pivot_XY,tank_front_x-tank_diam/2.0*cos_pivot_XY])-x_marg
-        wx1=max([-r_wall*cos(phi_grid),-(r_major-r_minor*1.2),tank_front_x+tank_diam/2.0*sin_pivot_XY,tank_front_x+tank_diam/2.0*cos_pivot_XY])+x_marg
-        wy0=min([grid_cent_y-neutr_diam/2.0*cos_pivot_XY,-(r_minor*2.0),tank_front_y-tank_diam/2.0*cos_pivot_XY,tank_front_y-tank_diam/2.0*sin_pivot_XY])-y_marg
-        wy1=max([grid_cent_y+neutr_diam/2.0*cos_pivot_XY,(r_minor*2.0),tank_front_y+tank_diam/2.0*cos_pivot_XY,tank_front_y+tank_diam/2.0*sin_pivot_XY])+y_marg        
-                
+        wx_size=r_grid*cos(phi_grid)+0.2+2.0*x_marg 
+        wy_size=tank_width*1.3+2.0*y_marg+abs(r_grid*sin(phi_grid)-r_wall*sin(phi_wall))   
+        wx0=-wx_size & wx1=x_marg
+        wy0=-tank_width/2.0-y_marg-max([r_grid*sin(phi_grid),r_wall*sin(phi_wall)])
+        wy1=wy0+wy_size
         plot,[0,0],[1,1],color=0,background=-1,xrange=[wx0,wx1],yrange=[wy0,wy1],/nodata,ystyle=1,xstyle=1
         angl_arr=interpol([-!Pi,!Pi],200)
         oplot,[wx0,wx1],[0,0],color=0,linestyle=2
@@ -17112,344 +15743,209 @@ case ev.id of
         oplot,(r_major-r_minor)*cos(angl_arr),(r_major-r_minor)*sin(angl_arr),thick=1,color=120,linestyle=2
         oplot,r_major*cos(angl_arr),r_major*sin(angl_arr),thick=2,color=120              
         oplot,(r_major+r_minor*1.4)*cos(angl_arr),(r_major+r_minor*1.2)*sin(angl_arr),thick=3,color=0
-        xyouts, 630,380,'Tokamak torus',color=0,/device,charsize=1.5
-        xyouts, 630,360,'Plasma center, inner and outer SOL',color=120,/device,charsize=1.5
+        xyouts, 630,280,'Tokamak torus',color=0,/device,charsize=1.5
+        xyouts, 630,260,'Plasma center, inner and outer SOL',color=120,/device,charsize=1.5
         ;plot beam port
         xyouts,-r_minor*3.0-r_major,-0.2,beam_port+' port',color=0,charsize=1.5
 
         ;plot focal point
-        F_diam=(wx1-wx0)/500.0
-        F_shift=(wx1-wx0)/100.0
-        oplot,grid_cent_x+x_grid_focus*cos_pivot_XY*cos_pivot_XZ+F_diam*cos(angl_arr),$
-        grid_cent_y-x_grid_focus*sin_pivot_XY*cos_pivot_XZ+F_diam*sin(angl_arr),thick=2,color=112
-        oplot,grid_cent_x+y_grid_focus*cos_pivot_XY*cos_pivot_XZ+F_diam*cos(angl_arr),$
-        grid_cent_y-y_grid_focus*sin_pivot_XY*cos_pivot_XZ+F_diam*sin(angl_arr),thick=2,color=112       
-
-        if x_grid_focus eq y_grid_focus then begin
-          xyouts,grid_cent_x+x_grid_focus*cos_pivot_XY*cos_pivot_XZ+F_shift,$
-          grid_cent_y-x_grid_focus*sin_pivot_XY*cos_pivot_XZ,'F', color=112,charsize=2
-          xyouts, 400,380,'Grids focal radius (F)',color=112,/device,charsize=1.5
-        endif else begin
-          xyouts,grid_cent_x+x_grid_focus*cos_pivot_XY*cos_pivot_XZ+F_shift,$
-          grid_cent_y-x_grid_focus*sin_pivot_XY*cos_pivot_XZ,'Fx', color=112,charsize=2
-          xyouts, 400,380,'Grids focal radii (Fx, Fy)',color=112,/device,charsize=1.5 
-          xyouts,grid_cent_x+y_grid_focus*cos_pivot_XY*cos_pivot_XZ+F_shift,$
-          grid_cent_y-y_grid_focus*sin_pivot_XY*cos_pivot_XZ,'Fy', color=112,charsize=2    
-        endelse 
+        dist_all=sqrt((r_wall*cos(phi_wall)-r_grid*cos(phi_grid))^2.0+(r_wall*sin(phi_wall)-r_grid*sin(phi_grid))^2.0)
+        cos_b=(r_grid^2.0+dist_all^2.0-r_wall^2.0)/(2.0*r_grid*dist_all)
+        r_F=sqrt(r_grid^2.0+grid_focus^2.0-2.0*r_grid*grid_focus*cos_b)
+        phi_F=phi_grid-acos((r_F^2.0+r_grid^2.0-grid_focus^2.0)/(2.0*r_F*r_grid))*sign(phi_grid-phi_wall)
+       
+        oplot,-r_F*cos(phi_F)+0.01*cos(angl_arr),0.01*sin(angl_arr)-r_F*sin(phi_F),thick=2,color=112
+        
+        xyouts,-r_F*cos(phi_F)+0.05,-r_F*sin(Phi_F),'F', color=112,charsize=2
+        xyouts, 400,240,'Grids focal point (F)',color=112,/device,charsize=1.5
         
         ;plot beam centerline and grids
-      
-        oplot,[grid_cent_x,wall_cent_x],[grid_cent_y,wall_cent_y],color=0,linestyle=2
+        grid_cent_x=-r_grid*cos(phi_grid)
+        grid_cent_y=-r_grid*sin(phi_grid)
+        wall_cent_x=-r_wall*cos(phi_wall)
+        wall_cent_y=-r_wall*sin(phi_wall)
+        sin_pivot=-(wall_cent_y-grid_cent_y)/dist_all
+        cos_pivot=(wall_cent_x-grid_cent_x)/dist_all
 
-       ; oplot,[grid_cent_x-max(x_bml)*sin_pivot_XY,grid_cent_x+max(x_bml)*sin_pivot_XY],$
-       ; [grid_cent_y-max(x_bml)*cos_pivot_XY,grid_cent_y+max(x_bml)*cos_pivot_XY],color=112,thick=6
-        oplot,grid_cent_x+x_bml*sin_pivot_XY-y_bml*cos_pivot_XY*sin_pivot_XZ,grid_cent_y+x_bml*cos_pivot_XY+y_bml*sin_pivot_XY*sin_pivot_XZ,color=112,psym=3
+        oplot,[grid_cent_x,wall_cent_x],[grid_cent_y,wall_cent_y],color=0,linestyle=2
+        oplot,[grid_cent_x-max(x_bml)*sin_pivot,grid_cent_x+max(x_bml)*sin_pivot],$
+        [grid_cent_y-max(x_bml)*cos_pivot,grid_cent_y+max(x_bml)*cos_pivot],color=112,thick=6
         
-        xyouts, 60,380,'Accelerating grids',color=112,/device,charsize=1.5
-        x_c=neutr_diam/2.0*cos(angl_arr)
-        y_c=neutr_diam/2.0*sin(angl_arr)
-        neutr_front_x= grid_cent_x+neutr_front_dist*cos_pivot_XY*cos_pivot_XZ
-        neutr_front_y= grid_cent_y-neutr_front_dist*sin_pivot_XY*cos_pivot_XZ
-        oplot,neutr_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,neutr_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=96 ,thick=2
-        oplot,neutr_front_x+neutr_size*cos_pivot_XY*cos_pivot_XZ+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,$
-        neutr_front_y-neutr_size*sin_pivot_XY*cos_pivot_XZ+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=96,thick=2     
-        oplot,[neutr_front_x-neutr_diam/2.0*sin_pivot_XY,neutr_front_x-neutr_diam/2.0*sin_pivot_XY+neutr_size*cos_pivot_XY*cos_pivot_XZ],$
-        [neutr_front_y-neutr_diam/2.0*cos_pivot_XY,neutr_front_y-neutr_diam/2.0*cos_pivot_XY-neutr_size*sin_pivot_XY*cos_pivot_XZ],color=96,thick=2            
-        oplot,[neutr_front_x+neutr_diam/2.0*sin_pivot_XY,neutr_front_x+neutr_diam/2.0*sin_pivot_XY+neutr_size*cos_pivot_XY*cos_pivot_XZ],$
-        [neutr_front_y+neutr_diam/2.0*cos_pivot_XY,neutr_front_y+neutr_diam/2.0*cos_pivot_XY-neutr_size*sin_pivot_XY*cos_pivot_XZ],color=96,thick=2
-   
-        xyouts, 60,360,'Neutralizer tube',color=96,/device,charsize=1.5
+        xyouts, 60,280,'Accelerating grids',color=112,/device,charsize=1.5
+        oplot,[grid_cent_x-max(x_bml)*sin_pivot,grid_cent_x-max(x_bml)*sin_pivot+neutr_size*cos_pivot],$
+        [grid_cent_y-max(x_bml)*cos_pivot,grid_cent_y-max(x_bml)*cos_pivot-neutr_size*sin_pivot],color=96,thick=2       
+        oplot,[grid_cent_x+max(x_bml)*sin_pivot,grid_cent_x+max(x_bml)*sin_pivot+neutr_size*cos_pivot],$
+        [grid_cent_y+max(x_bml)*cos_pivot,grid_cent_y+max(x_bml)*cos_pivot-neutr_size*sin_pivot],color=96,thick=2
+        oplot,[grid_cent_x-max(x_bml)*sin_pivot+neutr_size*cos_pivot,grid_cent_x+max(x_bml)*sin_pivot+neutr_size*cos_pivot],$
+        [grid_cent_y-max(x_bml)*cos_pivot-neutr_size*sin_pivot,grid_cent_y+max(x_bml)*cos_pivot-neutr_size*sin_pivot],color=96,thick=2
+        xyouts, 60,260,'Neutralizer tube',color=96,/device,charsize=1.5
         ;plot tank
-        x_c=tank_diam/2.0*cos(angl_arr)
-        y_c=tank_diam/2.0*sin(angl_arr)      
-        tank_front_x=grid_cent_x+(tank_front_dist)*cos_pivot_XY*cos_pivot_XZ
-        tank_front_y=grid_cent_y-(tank_front_dist)*sin_pivot_XY*cos_pivot_XZ     
-        oplot,tank_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,tank_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=0 ,thick=2
-        oplot,tank_front_x+tank_size*cos_pivot_XY*cos_pivot_XZ+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,$
-        tank_front_y-tank_size*sin_pivot_XY*cos_pivot_XZ+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=0,thick=2 
-        oplot,[tank_front_x-tank_diam/2.0*sin_pivot_XY,tank_front_x-tank_diam/2.0*sin_pivot_XY+tank_size*cos_pivot_XY*cos_pivot_XZ],$
-        [tank_front_y-tank_diam/2.0*cos_pivot_XY,tank_front_y-tank_diam/2.0*cos_pivot_XY-tank_size*sin_pivot_XY*cos_pivot_XZ],color=0,thick=2       
-        oplot,[tank_front_x+tank_diam/2.0*sin_pivot_XY,tank_front_x+tank_diam/2.0*sin_pivot_XY+tank_size*cos_pivot_XY*cos_pivot_XZ],$
-        [tank_front_y+tank_diam/2.0*cos_pivot_XY,tank_front_y+tank_diam/2.0*cos_pivot_XY-tank_size*sin_pivot_XY*cos_pivot_XZ],color=0,thick=2
- 
-        xyouts, 230,380,'Beam tank',color=0,/device,charsize=1.5
+        tank_front_x=grid_cent_x+(tank_front_dist)*cos_pivot
+        tank_front_y=grid_cent_y-(tank_front_dist)*sin_pivot      
+        oplot,[tank_front_x-tank_width/2.0*sin_pivot,tank_front_x+tank_width/2.0*sin_pivot],$
+        [tank_front_y-tank_width/2.0*cos_pivot,tank_front_y+tank_width/2.0*cos_pivot],color=0,thick=2
+        oplot,[tank_front_x-tank_width/2.0*sin_pivot,tank_front_x-tank_width/2.0*sin_pivot+tank_size*cos_pivot],$
+        [tank_front_y-tank_width/2.0*cos_pivot,tank_front_y-tank_width/2.0*cos_pivot-tank_size*sin_pivot],color=0,thick=2       
+        oplot,[tank_front_x+tank_width/2.0*sin_pivot,tank_front_x+tank_width/2.0*sin_pivot+tank_size*cos_pivot],$
+        [tank_front_y+tank_width/2.0*cos_pivot,tank_front_y+tank_width/2.0*cos_pivot-tank_size*sin_pivot],color=0,thick=2
+        oplot,[tank_front_x-tank_width/2.0*sin_pivot+tank_size*cos_pivot,tank_front_x+tank_width/2.0*sin_pivot+tank_size*cos_pivot],$
+        [tank_front_y-tank_width/2.0*cos_pivot-tank_size*sin_pivot,tank_front_y+tank_width/2.0*cos_pivot-tank_size*sin_pivot],color=0,thick=2
+        xyouts, 230,280,'Beam tank',color=0,/device,charsize=1.5
        ;plot deflection magnet
-        if magnet_size ne 0.0 then begin
-          x_c=magnet_diam/2.0*cos(angl_arr)
-          y_c=magnet_diam/2.0*sin(angl_arr)    
-          magnet_front_x=grid_cent_x+(tank_front_dist+tank_magnet_dist)*cos_pivot_XY*cos_pivot_XZ
-          magnet_front_y=grid_cent_y-(tank_front_dist+tank_magnet_dist)*sin_pivot_XY*cos_pivot_XZ
-          oplot,magnet_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,magnet_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=64 ,thick=2
-          oplot,magnet_front_x+magnet_size*cos_pivot_XY*cos_pivot_XZ+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,$
-          magnet_front_y-magnet_size*sin_pivot_XY*cos_pivot_XZ+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=64,thick=2       
-          oplot,[magnet_front_x-magnet_diam/2.0*sin_pivot_XY,magnet_front_x-magnet_diam/2.0*sin_pivot_XY+magnet_size*cos_pivot_XY*cos_pivot_XZ],$
-          [magnet_front_y-magnet_diam/2.0*cos_pivot_XY,magnet_front_y-magnet_diam/2.0*cos_pivot_XY-magnet_size*sin_pivot_XY*cos_pivot_XZ],color=64 ,thick=2      
-          oplot,[magnet_front_x+magnet_diam/2.0*sin_pivot_XY,magnet_front_x+magnet_diam/2.0*sin_pivot_XY+magnet_size*cos_pivot_XY*cos_pivot_XZ],$
-          [magnet_front_y+magnet_diam/2.0*cos_pivot_XY,magnet_front_y+magnet_diam/2.0*cos_pivot_XY-magnet_size*sin_pivot_XY*cos_pivot_XZ],color=64,thick=2
-          xyouts, 230,360,'Deflection magnet',color=64,/device,charsize=1.5
-        endif
+        magnet_front_x=grid_cent_x+(tank_front_dist+tank_magnet_dist)*cos_pivot
+        magnet_front_y=grid_cent_y-(tank_front_dist+tank_magnet_dist)*sin_pivot      
+        oplot,[magnet_front_x-magnet_width/2.0*sin_pivot,magnet_front_x+magnet_width/2.0*sin_pivot],$
+        [magnet_front_y-magnet_width/2.0*cos_pivot,magnet_front_y+magnet_width/2.0*cos_pivot],color=64,thick=2
+        oplot,[magnet_front_x-magnet_width/2.0*sin_pivot,magnet_front_x-magnet_width/2.0*sin_pivot+magnet_size*cos_pivot],$
+        [magnet_front_y-magnet_width/2.0*cos_pivot,magnet_front_y-magnet_width/2.0*cos_pivot-magnet_size*sin_pivot],color=64 ,thick=2      
+        oplot,[magnet_front_x+magnet_width/2.0*sin_pivot,magnet_front_x+magnet_width/2.0*sin_pivot+magnet_size*cos_pivot],$
+        [magnet_front_y+magnet_width/2.0*cos_pivot,magnet_front_y+magnet_width/2.0*cos_pivot-magnet_size*sin_pivot],color=64,thick=2
+        oplot,[magnet_front_x-magnet_width/2.0*sin_pivot+magnet_size*cos_pivot,magnet_front_x+magnet_width/2.0*sin_pivot+magnet_size*cos_pivot],$
+        [magnet_front_y-magnet_width/2.0*cos_pivot-magnet_size*sin_pivot,magnet_front_y+magnet_width/2.0*cos_pivot-magnet_size*sin_pivot],color=64,thick=2
+        xyouts, 230,260,'Deflection magnet',color=64,/device,charsize=1.5
         ;plot calorimeter
-        if tank_cal_dist ne 0.0 then begin
-          x_c=cal_diam/2.0*cos(angl_arr)
-          y_c=cal_diam/2.0*sin(angl_arr)    
-          cal_front_x=grid_cent_x+(tank_front_dist+tank_size+tank_cal_dist)*cos_pivot_XY*cos_pivot_XZ
-          cal_front_y=grid_cent_y-(tank_front_dist+tank_size+tank_cal_dist)*sin_pivot_XY*cos_pivot_XZ
-          oplot,cal_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,cal_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=160 ,thick=2
-          oplot,cal_front_x+cal_size*cos_pivot_XY*cos_pivot_XZ+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,$
-          cal_front_y-cal_size*sin_pivot_XY*cos_pivot_XZ+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=160,thick=2     
-          oplot,[cal_front_x-cal_diam/2.0*sin_pivot_XY,cal_front_x-cal_diam/2.0*sin_pivot_XY+cal_size*cos_pivot_XY*cos_pivot_XZ],$
-          [cal_front_y-cal_diam/2.0*cos_pivot_XY,cal_front_y-cal_diam/2.0*cos_pivot_XY-cal_size*sin_pivot_XY*cos_pivot_XZ],color=160 ,thick=2     
-          oplot,[cal_front_x+cal_diam/2.0*sin_pivot_XY,cal_front_x+cal_diam/2.0*sin_pivot_XY+cal_size*cos_pivot_XY*cos_pivot_XZ],$
-          [cal_front_y+cal_diam/2.0*cos_pivot_XY,cal_front_y+cal_diam/2.0*cos_pivot_XY-cal_size*sin_pivot_XY*cos_pivot_XZ],color=160,thick=2
-          xyouts, 400,340,'Calorimeter',color=160,/device,charsize=1.5                    
-        endif
+        cal_front_x=grid_cent_x+(tank_front_dist+tank_size+tank_cal_dist)*cos_pivot
+        cal_front_y=grid_cent_y-(tank_front_dist+tank_size+tank_cal_dist)*sin_pivot      
+        oplot,[cal_front_x-cal_width/2.0*sin_pivot,cal_front_x+cal_width/2.0*sin_pivot],$
+        [cal_front_y-cal_width/2.0*cos_pivot,cal_front_y+cal_width/2.0*cos_pivot],color=0,thick=1,linestyle=3
+        oplot,[cal_front_x-cal_width/2.0*sin_pivot,cal_front_x-cal_width/2.0*sin_pivot+cal_size*cos_pivot],$
+        [cal_front_y-cal_width/2.0*cos_pivot,cal_front_y-cal_width/2.0*cos_pivot-cal_size*sin_pivot],color=160 ,thick=8     
+        oplot,[cal_front_x+cal_width/2.0*sin_pivot,cal_front_x+cal_width/2.0*sin_pivot+cal_size*cos_pivot],$
+        [cal_front_y+cal_width/2.0*cos_pivot,cal_front_y+cal_width/2.0*cos_pivot-cal_size*sin_pivot],color=160,thick=8
+        oplot,[cal_front_x-cal_width/2.0*sin_pivot+cal_size*cos_pivot,cal_front_x+cal_width/2.0*sin_pivot+cal_size*cos_pivot],$
+        [cal_front_y-cal_width/2.0*cos_pivot-cal_size*sin_pivot,cal_front_y+cal_width/2.0*cos_pivot-cal_size*sin_pivot],color=0,thick=1,linestyle=3
+        xyouts, 400,280,'Calorimeter',color=160,/device,charsize=1.5                    
         ;plot limiters
         for i=0,n_limiters-1 do begin
           z_pos=float(limiters_table(1,i))
-          lim_size=float(limiters_table(2,i))
-          lim_diam=float(limiters_table(3,i))
-          x_size=float(limiters_table(4,i))/2.0
-          y_size=float(limiters_table(5,i))/2.0
-          r_lim =float(limiters_table(6,i)) 
-          if finite(r_lim) then begin
-            oplot,r_lim*cos(angl_arr),r_lim*sin(angl_arr),color=48,thick=2
-          endif else begin
-            lim_front_x=grid_cent_x+(z_pos)*cos_pivot_XY*cos_pivot_XZ
-            lim_front_y=grid_cent_y-(z_pos)*sin_pivot_XY*cos_pivot_XZ
-            lim_back_x=lim_front_x+lim_size*cos_pivot_XY*cos_pivot_XZ
-            lim_back_y=lim_front_y-lim_size*sin_pivot_XY*cos_pivot_XZ     
-            if finite(lim_diam) then begin
-              x_c=lim_diam/2.0*cos(angl_arr)
-              y_c=lim_diam/2.0*sin(angl_arr)
-              oplot,lim_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,lim_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=48 ,thick=2
-              oplot,lim_front_x+lim_size*cos_pivot_XY*cos_pivot_XZ+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,$
-              lim_front_y-lim_size*sin_pivot_XY*cos_pivot_XZ+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=48,thick=2 
-              oplot,[lim_front_x+lim_diam/2.0*sin_pivot_XY,lim_back_x+lim_diam/2.0*sin_pivot_XY],$
-              [lim_front_y+lim_diam/2.0*cos_pivot_XY,lim_back_y+lim_diam/2.0*cos_pivot_XY],color=48,thick=2
-              oplot,[lim_front_x-lim_diam/2.0*sin_pivot_XY,lim_back_x-lim_diam/2.0*sin_pivot_XY],$
-              [lim_front_y-lim_diam/2.0*cos_pivot_XY,lim_back_y-lim_diam/2.0*cos_pivot_XY],color=48,thick=2
-            endif else begin 
-              oplot,[lim_front_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_front_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_front_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_front_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_front_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_front_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_front_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_front_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_front_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ,lim_front_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_front_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ,lim_front_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_front_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ,lim_front_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_front_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ,lim_front_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_front_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ,lim_front_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_front_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ,lim_front_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_front_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ,lim_front_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_front_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ,lim_front_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_back_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_back_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_back_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_back_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_back_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_back_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_back_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_back_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-            endelse
-         endelse
+          z_size=float(limiters_table(2,i))
+          diam=float(limiters_table(3,i))
+          x_size=float(limiters_table(4,i))
+          y_size=float(limiters_table(5,i))
+          lim_front_x=grid_cent_x+(z_pos)*cos_pivot
+          lim_front_y=grid_cent_y-(z_pos)*sin_pivot      
+          if finite(diam) then lim_width=diam else lim_width=x_size 
+          oplot,[lim_front_x+lim_width/2.0*sin_pivot,lim_front_x+lim_width/2.0*sin_pivot+z_size*cos_pivot],$
+          [lim_front_y+lim_width/2.0*cos_pivot,lim_front_y+lim_width/2.0*cos_pivot-z_size*sin_pivot],color=48,thick=2
+          oplot,[lim_front_x-lim_width/2.0*sin_pivot,lim_front_x-lim_width/2.0*sin_pivot+z_size*cos_pivot],$
+          [lim_front_y-lim_width/2.0*cos_pivot,lim_front_y-lim_width/2.0*cos_pivot-z_size*sin_pivot],color=48,thick=2
        endfor
-       xyouts, 400,360,'Beam limiters (beam duct)',color=48,/device,charsize=1.5       
+       xyouts, 400,260,'Beam limiters (beam duct)',color=48,/device,charsize=1.5
        endif
        if beam_view eq 1 then begin
-
-        tank_front_x=grid_cent_x+(tank_front_dist)*cos_pivot_XY*cos_pivot_XZ
-        tank_front_z=grid_cent_z-(tank_front_dist)*sin_pivot_XY*cos_pivot_XZ      
-   
-        wx0=min([grid_cent_x-neutr_diam/2.0*sin_pivot_XZ,-(r_major+r_minor*1.2),tank_front_x-tank_diam/2.0*sin_pivot_XZ,tank_front_x-tank_diam/2.0*cos_pivot_XZ])-x_marg
-        wx1=max([-r_wall*cos(phi_grid),-(r_major-r_minor*1.2),tank_front_x+tank_diam/2.0*sin_pivot_XZ,tank_front_x+tank_diam/2.0*cos_pivot_XZ])+x_marg
-        wy0=min([grid_cent_z-neutr_diam/2.0*cos_pivot_XZ,-(r_minor*elong*1.4),tank_front_z-tank_diam/2.0*cos_pivot_XZ,tank_front_z-tank_diam/2.0*sin_pivot_XZ])-y_marg
-        wy1=max([grid_cent_z+neutr_diam/2.0*cos_pivot_XZ,(r_minor*elong*1.4),tank_front_z+tank_diam/2.0*cos_pivot_XZ,tank_front_z+tank_diam/2.0*sin_pivot_XZ])+y_marg        
-            
+        
+        wx_size=r_grid*cos(phi_grid)+0.2+2.0*x_marg 
+        wy_size=tank_width*1.3+2.0*y_marg+abs(z_grid-z_wall)   
+        wx0=-wx_size & wx1=x_marg
+        wy0=-tank_width/2.0-y_marg+min([z_grid,z_wall])
+        wy1=wy0+wy_size
         plot,[0,0],[1,1],color=0,background=-1,xrange=[wx0,wx1],yrange=[wy0,wy1],/nodata,ystyle=1,xstyle=1
         angl_arr=interpol([-!Pi,!Pi],200)
         oplot,[wx0,wx1],[0,0],color=0,linestyle=2
         ;plot plasma and tokamak
-        n_z_int=200
-        n_r_int=1000
-        rgrid1=r_major-r_minor*1.1
-        rgrid2=r_major+r_minor*1.1
-        zgrid1=-r_minor*elong*1.1+z_major
-        zgrid2=r_minor*elong*1.1+z_major    
-        rgrid_arr = interpol([rgrid1,rgrid2],n_r_int)
-        zgrid_arr = interpol([zgrid1,zgrid2],n_z_int)
-        rgrid_arr_1 = make_array(n_r_int,/index)
-        zgrid_arr_1 = make_array(n_z_int,/index)       
-        rho_grid=fltarr(n_r_int,n_z_int)
-        rho_grid(*,*)=1.1
-        n_r_minor=5
-        r_minor_arr=interpol([0.0,r_minor],n_r_minor)
-        n_theta=500
-        theta_arr=interpol([-!Pi,!Pi],n_theta)    
-        triang=fltarr(n_theta)
-        triang(where(theta_arr gt 0))=triang_upper
-        triang(where(theta_arr le 0))=triang_lower
-        for i=0,n_r_minor-1 do begin 
-          r_new=r_major+r_minor_arr(i)*cos(theta_arr+sin(theta_arr)*asin(triang))
-          z_new=elong*r_minor_arr(i)*sin(theta_arr)+z_major
-          rho_grid(locate(rgrid_arr,r_new),locate(zgrid_arr,z_new))=r_minor_arr(i)/r_minor
-          oplot,-r_new,z_new,thick=1,color=0,linestyle=2
-          if i eq 0 then oplot,-r_new,z_new,thick=2,color=120,linestyle=1
-          if i eq n_r_minor-1 then oplot,-r_new,z_new,thick=2,color=120,linestyle=0      
-        endfor
+        oplot,-r_major+r_minor*cos(angl_arr),r_minor*sin(angl_arr),thick=2,color=120,linestyle=0      
+        oplot,-r_major+r_minor*0.6*cos(angl_arr),r_minor*0.6*sin(angl_arr),thick=2,color=120,linestyle=0        
+        oplot,-r_major+r_minor*0.2*cos(angl_arr),r_minor*0.2*sin(angl_arr),thick=2,color=120,linestyle=0
                    
         oplot,[-r_major-r_minor*1.4,-r_major-r_minor*1.4,-r_major+r_minor*1.2,-r_major+r_minor*1.2,-r_major-r_minor*1.4],$
-        [-r_minor*elong*1.4,r_minor*elong*1.4,r_minor*elong*1.4,-r_minor*elong*1.4,-r_minor*elong*1.4],thick=3,color=0
-         oplot,[-r_major+r_minor*1.2,0.0,0.0,-r_major-r_minor*1.4],$
-        [-r_minor*elong*1.4,-r_minor*elong*1.4,r_minor*elong*1.4,r_minor*elong*1.4],thick=2,color=0,linestyle=2
+        [-r_minor*2.6,r_minor*2.6,r_minor*2.6,-r_minor*2.6,-r_minor*2.6],thick=3,color=0
+        oplot,[-r_major,0.0,0.0,-r_major            ],$
+        [-r_minor,-r_minor,r_minor,r_minor],thick=2,color=120,linestyle=2  
+        oplot,[-r_major+r_minor*1.2,0.0,0.0,-r_major-r_minor*1.4],$
+        [-r_minor*2.6,-r_minor*2.6,r_minor*2.6,r_minor*2.6],thick=2,color=0,linestyle=2
               
 
-        xyouts, 630,380,'Tokamak torus',color=0,/device,charsize=1.5
-        xyouts, 630,360,'Plasma center, inner and outer SOL',color=120,/device,charsize=1.5
+        xyouts, 630,280,'Tokamak torus',color=0,/device,charsize=1.5
+        xyouts, 630,260,'Plasma center, inner and outer SOL',color=120,/device,charsize=1.5
         ;plot beam port
         xyouts,-r_minor*3.0-r_major,-0.2,beam_port+' port',color=0,charsize=1.5
- 
-        F_diam=(wx1-wx0)/500.0
-        F_shift=(wx1-wx0)/100.0
-        oplot,grid_cent_x+x_grid_focus*cos_pivot_XZ*cos_pivot_XY+F_diam*cos(angl_arr),$
-        grid_cent_z-x_grid_focus*sin_pivot_XZ*cos_pivot_XY+F_diam*sin(angl_arr),thick=2,color=112
-        oplot,grid_cent_x+y_grid_focus*cos_pivot_XZ*cos_pivot_XY+F_diam*cos(angl_arr),$
-        grid_cent_z-y_grid_focus*sin_pivot_XZ*cos_pivot_XY+F_diam*sin(angl_arr),thick=2,color=112       
 
-        if x_grid_focus eq y_grid_focus then begin
-          xyouts,grid_cent_x+x_grid_focus*cos_pivot_XZ*cos_pivot_XY+F_shift,$
-          grid_cent_z-x_grid_focus*sin_pivot_XZ*cos_pivot_XY,'F', color=112,charsize=2
-          xyouts, 400,380,'Grids focal radius (F)',color=112,/device,charsize=1.5
-        endif else begin
-          xyouts,grid_cent_x+x_grid_focus*cos_pivot_XZ*cos_pivot_XY+F_shift,$
-          grid_cent_z-x_grid_focus*sin_pivot_XZ*cos_pivot_XY,'Fx', color=112,charsize=2
-          xyouts, 400,380,'Grids focal radii (Fx, Fy)',color=112,/device,charsize=1.5 
-          xyouts,grid_cent_x+y_grid_focus*cos_pivot_XZ*cos_pivot_XY+F_shift,$
-          grid_cent_z-y_grid_focus*sin_pivot_XZ*cos_pivot_XY,'Fy', color=112,charsize=2    
-        endelse 
-      
-        ;plot beam centerline and grids
-     
-        oplot,[grid_cent_x,wall_cent_x],[grid_cent_z,wall_cent_z],color=0,linestyle=2
+        ;plot focal point
+        dist_all_XY=sqrt((r_wall*cos(phi_wall)-r_grid*cos(phi_grid))^2.0+(r_wall*sin(phi_wall)-r_grid*sin(phi_grid))^2.0)
+        cos_b=(r_grid^2.0+dist_all_XY^2.0-r_wall^2.0)/(2.0*r_grid*dist_all_XY)
+        r_F=sqrt(r_grid^2.0+grid_focus^2.0-2.0*r_grid*grid_focus*cos_b)
+        z_F=(Z_wall-Z_grid)*grid_focus/dist_all_XY+z_grid
 
-       ; oplot,[grid_cent_x-max(x_bml)*sin_pivot_XZ,grid_cent_x+max(x_bml)*sin_pivot_XZ],$
-       ; [grid_cent_z-max(x_bml)*cos_pivot_XZ,grid_cent_z+max(x_bml)*cos_pivot_XZ],color=112,thick=6
-        oplot,grid_cent_x+x_bml*sin_pivot_XZ-y_bml*cos_pivot_XZ*sin_pivot_XY,grid_cent_z+x_bml*cos_pivot_XZ+y_bml*sin_pivot_XZ*sin_pivot_XY,color=112,psym=3
-        
-        xyouts, 60,380,'Accelerating grids',color=112,/device,charsize=1.5
-        x_c=neutr_diam/2.0*cos(angl_arr)
-        y_c=neutr_diam/2.0*sin(angl_arr)
-        neutr_front_x= grid_cent_x+neutr_front_dist*cos_pivot_XZ*cos_pivot_XY
-        neutr_front_z= grid_cent_z-neutr_front_dist*sin_pivot_XZ*cos_pivot_XY
-        oplot,neutr_front_x+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_XY,neutr_front_z+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_XY,color=96 ,thick=2
-        oplot,neutr_front_x+neutr_size*cos_pivot_XZ*cos_pivot_XY+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_XY,$
-        neutr_front_z-neutr_size*sin_pivot_XZ*cos_pivot_XY+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_XY,color=96,thick=2     
-        oplot,[neutr_front_x-neutr_diam/2.0*sin_pivot_XZ,neutr_front_x-neutr_diam/2.0*sin_pivot_XZ+neutr_size*cos_pivot_XZ*cos_pivot_XY],$
-        [neutr_front_z-neutr_diam/2.0*cos_pivot_XZ,neutr_front_z-neutr_diam/2.0*cos_pivot_XZ-neutr_size*sin_pivot_XZ*cos_pivot_XY],color=96,thick=2            
-        oplot,[neutr_front_x+neutr_diam/2.0*sin_pivot_XZ,neutr_front_x+neutr_diam/2.0*sin_pivot_XZ+neutr_size*cos_pivot_XZ*cos_pivot_XY],$
-        [neutr_front_z+neutr_diam/2.0*cos_pivot_XZ,neutr_front_z+neutr_diam/2.0*cos_pivot_XZ-neutr_size*sin_pivot_XZ*cos_pivot_XY],color=96,thick=2
+        phi_F=phi_grid-acos((r_F^2.0+r_grid^2.0-grid_focus^2.0)/(2.0*r_F*r_grid))*sign(phi_grid-phi_wall)
        
-        xyouts, 60,360,'Neutralizer tube',color=96,/device,charsize=1.5
+        oplot,-r_F*cos(phi_F)+0.01*cos(angl_arr),0.01*sin(angl_arr)+z_F,thick=2,color=112
+        
+        xyouts,-r_F*cos(phi_F)+0.05,Z_f,'F', color=112,charsize=2
+        xyouts, 400,240,'Grids focal point (F)',color=112,/device,charsize=1.5
+        
+        ;plot beam centerline and grids
+        grid_cent_x=-r_grid*cos(phi_grid)
+        grid_cent_y=z_grid
+        wall_cent_x=-r_wall*cos(phi_wall)
+        wall_cent_y=z_wall
+        dist_all_XZ=sqrt((wall_cent_x-grid_cent_x)^2.0+(wall_cent_y-grid_cent_y)^2.0)
+        sin_pivot=-(wall_cent_y-grid_cent_y)/dist_all_XZ
+        cos_pivot=(wall_cent_x-grid_cent_x)/dist_all_XZ
+
+        oplot,[grid_cent_x,wall_cent_x],[grid_cent_y,wall_cent_y],color=0,linestyle=2
+        oplot,[grid_cent_x-max(x_bml)*sin_pivot,grid_cent_x+max(x_bml)*sin_pivot],$
+        [grid_cent_y-max(x_bml)*cos_pivot,grid_cent_y+max(x_bml)*cos_pivot],color=112,thick=6
+        
+        xyouts, 60,280,'Accelerating grids',color=112,/device,charsize=1.5
+        oplot,[grid_cent_x-max(x_bml)*sin_pivot,grid_cent_x-max(x_bml)*sin_pivot+neutr_size*cos_pivot],$
+        [grid_cent_y-max(x_bml)*cos_pivot,grid_cent_y-max(x_bml)*cos_pivot-neutr_size*sin_pivot],color=96,thick=2       
+        oplot,[grid_cent_x+max(x_bml)*sin_pivot,grid_cent_x+max(x_bml)*sin_pivot+neutr_size*cos_pivot],$
+        [grid_cent_y+max(x_bml)*cos_pivot,grid_cent_y+max(x_bml)*cos_pivot-neutr_size*sin_pivot],color=96,thick=2
+        oplot,[grid_cent_x-max(x_bml)*sin_pivot+neutr_size*cos_pivot,grid_cent_x+max(x_bml)*sin_pivot+neutr_size*cos_pivot],$
+        [grid_cent_y-max(x_bml)*cos_pivot-neutr_size*sin_pivot,grid_cent_y+max(x_bml)*cos_pivot-neutr_size*sin_pivot],color=96,thick=2
+        xyouts, 60,260,'Neutralizer tube',color=96,/device,charsize=1.5
         ;plot tank
-        x_c=tank_diam/2.0*cos(angl_arr)
-        y_c=tank_diam/2.0*sin(angl_arr)     
-        tank_front_x=grid_cent_x+(tank_front_dist)*cos_pivot_XZ*cos_pivot_XY
-        tank_front_z=grid_cent_z-(tank_front_dist)*sin_pivot_XZ*cos_pivot_XY     
-        oplot,tank_front_x+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_XY,tank_front_z+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_XY,color=0 ,thick=2
-        oplot,tank_front_x+tank_size*cos_pivot_XZ*cos_pivot_XY+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_XY,$
-        tank_front_z-tank_size*sin_pivot_XZ*cos_pivot_XY+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_XY,color=0,thick=2 
-        oplot,[tank_front_x-tank_diam/2.0*sin_pivot_XZ,tank_front_x-tank_diam/2.0*sin_pivot_XZ+tank_size*cos_pivot_XZ*cos_pivot_XY],$
-        [tank_front_z-tank_diam/2.0*cos_pivot_XZ,tank_front_z-tank_diam/2.0*cos_pivot_XZ-tank_size*sin_pivot_XZ*cos_pivot_XY],color=0,thick=2       
-        oplot,[tank_front_x+tank_diam/2.0*sin_pivot_XZ,tank_front_x+tank_diam/2.0*sin_pivot_XZ+tank_size*cos_pivot_XZ*cos_pivot_XY],$
-        [tank_front_z+tank_diam/2.0*cos_pivot_XZ,tank_front_z+tank_diam/2.0*cos_pivot_XZ-tank_size*sin_pivot_XZ*cos_pivot_XY],color=0,thick=2
- 
-        xyouts, 230,380,'Beam tank',color=0,/device,charsize=1.5
+        tank_front_x=grid_cent_x+(tank_front_dist)*cos_pivot
+        tank_front_y=grid_cent_y-(tank_front_dist)*sin_pivot      
+        oplot,[tank_front_x-tank_width/2.0*sin_pivot,tank_front_x+tank_width/2.0*sin_pivot],$
+        [tank_front_y-tank_width/2.0*cos_pivot,tank_front_y+tank_width/2.0*cos_pivot],color=0,thick=2
+        oplot,[tank_front_x-tank_width/2.0*sin_pivot,tank_front_x-tank_width/2.0*sin_pivot+tank_size*cos_pivot],$
+        [tank_front_y-tank_width/2.0*cos_pivot,tank_front_y-tank_width/2.0*cos_pivot-tank_size*sin_pivot],color=0,thick=2       
+        oplot,[tank_front_x+tank_width/2.0*sin_pivot,tank_front_x+tank_width/2.0*sin_pivot+tank_size*cos_pivot],$
+        [tank_front_y+tank_width/2.0*cos_pivot,tank_front_y+tank_width/2.0*cos_pivot-tank_size*sin_pivot],color=0,thick=2
+        oplot,[tank_front_x-tank_width/2.0*sin_pivot+tank_size*cos_pivot,tank_front_x+tank_width/2.0*sin_pivot+tank_size*cos_pivot],$
+        [tank_front_y-tank_width/2.0*cos_pivot-tank_size*sin_pivot,tank_front_y+tank_width/2.0*cos_pivot-tank_size*sin_pivot],color=0,thick=2
+        xyouts, 230,280,'Beam tank',color=0,/device,charsize=1.5
        ;plot deflection magnet
-        if magnet_size ne 0.0 then begin
-          x_c=magnet_diam/2.0*cos(angl_arr)
-          y_c=magnet_diam/2.0*sin(angl_arr)    
-          magnet_front_x=grid_cent_x+(tank_front_dist+tank_magnet_dist)*cos_pivot_XZ*cos_pivot_XY
-          magnet_front_z=grid_cent_z-(tank_front_dist+tank_magnet_dist)*sin_pivot_XZ*cos_pivot_XY
-          oplot,magnet_front_x+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_XY,magnet_front_z+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_XY,color=64 ,thick=2
-          oplot,magnet_front_x+magnet_size*cos_pivot_XZ*cos_pivot_XY+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_XY,$
-          magnet_front_z-magnet_size*sin_pivot_XZ*cos_pivot_XY+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_XY,color=64,thick=2       
-          oplot,[magnet_front_x-magnet_diam/2.0*sin_pivot_XZ,magnet_front_x-magnet_diam/2.0*sin_pivot_XZ+magnet_size*cos_pivot_XZ*cos_pivot_XY],$
-          [magnet_front_z-magnet_diam/2.0*cos_pivot_XZ,magnet_front_z-magnet_diam/2.0*cos_pivot_XZ-magnet_size*sin_pivot_XZ*cos_pivot_XY],color=64 ,thick=2      
-          oplot,[magnet_front_x+magnet_diam/2.0*sin_pivot_XZ,magnet_front_x+magnet_diam/2.0*sin_pivot_XZ+magnet_size*cos_pivot_XZ*cos_pivot_XY],$
-          [magnet_front_z+magnet_diam/2.0*cos_pivot_XZ,magnet_front_z+magnet_diam/2.0*cos_pivot_XZ-magnet_size*sin_pivot_XZ*cos_pivot_XY],color=64,thick=2
-          xyouts, 230,360,'Deflection magnet',color=64,/device,charsize=1.5
-        endif
+        magnet_front_x=grid_cent_x+(tank_front_dist+tank_magnet_dist)*cos_pivot
+        magnet_front_y=grid_cent_y-(tank_front_dist+tank_magnet_dist)*sin_pivot      
+        oplot,[magnet_front_x-magnet_width/2.0*sin_pivot,magnet_front_x+magnet_width/2.0*sin_pivot],$
+        [magnet_front_y-magnet_width/2.0*cos_pivot,magnet_front_y+magnet_width/2.0*cos_pivot],color=64,thick=2
+        oplot,[magnet_front_x-magnet_width/2.0*sin_pivot,magnet_front_x-magnet_width/2.0*sin_pivot+magnet_size*cos_pivot],$
+        [magnet_front_y-magnet_width/2.0*cos_pivot,magnet_front_y-magnet_width/2.0*cos_pivot-magnet_size*sin_pivot],color=64 ,thick=2      
+        oplot,[magnet_front_x+magnet_width/2.0*sin_pivot,magnet_front_x+magnet_width/2.0*sin_pivot+magnet_size*cos_pivot],$
+        [magnet_front_y+magnet_width/2.0*cos_pivot,magnet_front_y+magnet_width/2.0*cos_pivot-magnet_size*sin_pivot],color=64,thick=2
+        oplot,[magnet_front_x-magnet_width/2.0*sin_pivot+magnet_size*cos_pivot,magnet_front_x+magnet_width/2.0*sin_pivot+magnet_size*cos_pivot],$
+        [magnet_front_y-magnet_width/2.0*cos_pivot-magnet_size*sin_pivot,magnet_front_y+magnet_width/2.0*cos_pivot-magnet_size*sin_pivot],color=64,thick=2
+        xyouts, 230,260,'Deflection magnet',color=64,/device,charsize=1.5
         ;plot calorimeter
-        if tank_cal_dist ne 0.0 then begin
-          x_c=cal_diam/2.0*cos(angl_arr)
-          y_c=cal_diam/2.0*sin(angl_arr)    
-          cal_front_x=grid_cent_x+(tank_front_dist+tank_size+tank_cal_dist)*cos_pivot_XZ*cos_pivot_XY
-          cal_front_z=grid_cent_z-(tank_front_dist+tank_size+tank_cal_dist)*sin_pivot_XZ*cos_pivot_XY
-          oplot,cal_front_x+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_XY,cal_front_z+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_XY,color=160 ,thick=2
-          oplot,cal_front_x+cal_size*cos_pivot_XZ*cos_pivot_XY+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_XY,$
-          cal_front_z-cal_size*sin_pivot_XZ*cos_pivot_XY+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_XY,color=160,thick=2     
-          oplot,[cal_front_x-cal_diam/2.0*sin_pivot_XZ,cal_front_x-cal_diam/2.0*sin_pivot_XZ+cal_size*cos_pivot_XZ*cos_pivot_XY],$
-          [cal_front_z-cal_diam/2.0*cos_pivot_XZ,cal_front_z-cal_diam/2.0*cos_pivot_XZ-cal_size*sin_pivot_XZ*cos_pivot_XY],color=160 ,thick=2     
-          oplot,[cal_front_x+cal_diam/2.0*sin_pivot_XZ,cal_front_x+cal_diam/2.0*sin_pivot_XZ+cal_size*cos_pivot_XZ*cos_pivot_XY],$
-          [cal_front_z+cal_diam/2.0*cos_pivot_XZ,cal_front_z+cal_diam/2.0*cos_pivot_XZ-cal_size*sin_pivot_XZ*cos_pivot_XY],color=160,thick=2
-          xyouts, 400,340,'Calorimeter',color=160,/device,charsize=1.5                    
-        endif
+        cal_front_x=grid_cent_x+(tank_front_dist+tank_size+tank_cal_dist)*cos_pivot
+        cal_front_y=grid_cent_y-(tank_front_dist+tank_size+tank_cal_dist)*sin_pivot      
+        oplot,[cal_front_x-cal_width/2.0*sin_pivot,cal_front_x+cal_width/2.0*sin_pivot],$
+        [cal_front_y-cal_width/2.0*cos_pivot,cal_front_y+cal_width/2.0*cos_pivot],color=0,thick=1,linestyle=3
+        oplot,[cal_front_x-cal_width/2.0*sin_pivot,cal_front_x-cal_width/2.0*sin_pivot+cal_size*cos_pivot],$
+        [cal_front_y-cal_width/2.0*cos_pivot,cal_front_y-cal_width/2.0*cos_pivot-cal_size*sin_pivot],color=160 ,thick=8     
+        oplot,[cal_front_x+cal_width/2.0*sin_pivot,cal_front_x+cal_width/2.0*sin_pivot+cal_size*cos_pivot],$
+        [cal_front_y+cal_width/2.0*cos_pivot,cal_front_y+cal_width/2.0*cos_pivot-cal_size*sin_pivot],color=160,thick=8
+        oplot,[cal_front_x-cal_width/2.0*sin_pivot+cal_size*cos_pivot,cal_front_x+cal_width/2.0*sin_pivot+cal_size*cos_pivot],$
+        [cal_front_y-cal_width/2.0*cos_pivot-cal_size*sin_pivot,cal_front_y+cal_width/2.0*cos_pivot-cal_size*sin_pivot],color=0,thick=1,linestyle=3
+        xyouts, 400,280,'Calorimeter',color=160,/device,charsize=1.5                    
         ;plot limiters
         for i=0,n_limiters-1 do begin
           z_pos=float(limiters_table(1,i))
-          lim_size=float(limiters_table(2,i))
-          lim_diam=float(limiters_table(3,i))
-          x_size=float(limiters_table(4,i))/2.0
-          y_size=float(limiters_table(5,i))/2.0
-          r_lim =float(limiters_table(6,i)) 
-          if finite(r_lim) then begin
-            oplot,[-r_lim,-r_lim],[-r_minor*elong*1.4,r_minor*elong*1.4],color=48,thick=2
-          endif else begin
-            lim_front_x=grid_cent_x+(z_pos)*cos_pivot_XZ*cos_pivot_XY
-            lim_front_z=grid_cent_z-(z_pos)*sin_pivot_XZ*cos_pivot_XY
-            lim_back_x=lim_front_x+lim_size*cos_pivot_XZ*cos_pivot_XY
-            lim_back_z=lim_front_z-lim_size*sin_pivot_XZ*cos_pivot_XY     
-            if finite(lim_diam) then begin
-              x_c=lim_diam/2.0*cos(angl_arr)
-              y_c=lim_diam/2.0*sin(angl_arr)
-              oplot,lim_front_x+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_XY,lim_front_z+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_XY,color=48 ,thick=2
-              oplot,lim_front_x+lim_size*cos_pivot_XZ*cos_pivot_XY+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_XY,$
-              lim_front_z-lim_size*sin_pivot_XZ*cos_pivot_XY+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_XY,color=48,thick=2 
-              oplot,[lim_front_x+lim_diam/2.0*sin_pivot_XZ,lim_back_x+lim_diam/2.0*sin_pivot_XZ],$
-              [lim_front_z+lim_diam/2.0*cos_pivot_XZ,lim_back_z+lim_diam/2.0*cos_pivot_XZ],color=48,thick=2
-              oplot,[lim_front_x-lim_diam/2.0*sin_pivot_XZ,lim_back_x-lim_diam/2.0*sin_pivot_XZ],$
-              [lim_front_z-lim_diam/2.0*cos_pivot_XZ,lim_back_z-lim_diam/2.0*cos_pivot_XZ],color=48,thick=2
-            endif else begin 
-              oplot,[lim_front_x-y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_XY,lim_back_x-y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_XY],$
-              [lim_front_z-y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_XY,lim_back_z-y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_XY],color=48,thick=2
-              oplot,[lim_front_x-y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_XY,lim_back_x-y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_XY],$
-              [lim_front_z-y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_XY,lim_back_z-y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_XY],color=48,thick=2
-              oplot,[lim_front_x+y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_XY,lim_back_x+y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_XY],$
-              [lim_front_z+y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_XY,lim_back_z+y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_XY],color=48,thick=2
-              oplot,[lim_front_x+y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_XY,lim_back_x+y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_XY],$
-              [lim_front_z+y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_XY,lim_back_z+y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_XY],color=48,thick=2
-              oplot,[lim_front_x-y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_XY,lim_front_x-y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_XY],$
-              [lim_front_z-y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_XY,lim_front_z-y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_XY],color=48,thick=2
-              oplot,[lim_front_x-y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_XY,lim_front_x+y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_XY],$
-              [lim_front_z-y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_XY,lim_front_z+y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_XY],color=48,thick=2
-              oplot,[lim_front_x+y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_XY,lim_front_x+y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_XY],$
-              [lim_front_z+y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_XY,lim_front_z+y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_XY],color=48,thick=2
-              oplot,[lim_front_x+y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_XY,lim_front_x-y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_XY],$
-              [lim_front_z+y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_XY,lim_front_z-y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_XY],color=48,thick=2
-              oplot,[lim_back_x-y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_XY,lim_back_x-y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_XY],$
-              [lim_back_z-y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_XY,lim_back_z-y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_XY],color=48,thick=2
-              oplot,[lim_back_x-y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_XY,lim_back_x+y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_XY],$
-              [lim_back_z-y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_XY,lim_back_z+y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_XY],color=48,thick=2
-              oplot,[lim_back_x+y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_XY,lim_back_x+y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_XY],$
-              [lim_back_z+y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_XY,lim_back_z+y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_XY],color=48,thick=2
-              oplot,[lim_back_x+y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_XY,lim_back_x-y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_XY],$
-              [lim_back_z+y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_XY,lim_back_z-y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_XY],color=48,thick=2
-            endelse
-         endelse
+          z_size=float(limiters_table(2,i))
+          diam=float(limiters_table(3,i))
+          x_size=float(limiters_table(4,i))
+          y_size=float(limiters_table(5,i))
+          lim_front_x=grid_cent_x+(z_pos)*cos_pivot
+          lim_front_y=grid_cent_y-(z_pos)*sin_pivot      
+          if finite(diam) then lim_width=diam else lim_width=x_size 
+          oplot,[lim_front_x+lim_width/2.0*sin_pivot,lim_front_x+lim_width/2.0*sin_pivot+z_size*cos_pivot],$
+          [lim_front_y+lim_width/2.0*cos_pivot,lim_front_y+lim_width/2.0*cos_pivot-z_size*sin_pivot],color=48,thick=2
+          oplot,[lim_front_x-lim_width/2.0*sin_pivot,lim_front_x-lim_width/2.0*sin_pivot+z_size*cos_pivot],$
+          [lim_front_y-lim_width/2.0*cos_pivot,lim_front_y-lim_width/2.0*cos_pivot-z_size*sin_pivot],color=48,thick=2
        endfor
-       xyouts, 400,360,'Beam limiters (beam duct)',color=48,/device,charsize=1.5  
+       xyouts, 400,260,'Beam limiters (beam duct)',color=48,/device,charsize=1.5
        endif
      endif   
     end
@@ -17565,10 +16061,7 @@ case ev.id of
       if draw_req eq 2 then plot_output,widget_id
       export_flag=0
 
-      if st_err then begin
-       st_err=0
-       return
-      endif
+      if st_err then return
       Widget_control, status_wid, Get_Value=status_tx
       Widget_Control, status_wid,$
       Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Graph was exported to the file']], Set_text_top_line=n_elements(status_tx)-4      
@@ -17697,7 +16190,7 @@ end
 Pro Beam_Param_Widget_event, ev
 ;The following common block contains the parameters which describe the non-geometrical
 ;parameters of the beam (particle and energy distribution) 
-common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
+common beam_param, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,div_bml_opt, div_dist_par
 ; The following common block contains general parameters: which user,
 ; what beam, what shot and time interval
 common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
@@ -17732,16 +16225,6 @@ case ev.id of
     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Beam_Param_Widget'),/DESTROY
    end
    Widget_Info(ev.id, FIND_BY_UNAME='Beam_Param_Save_Button'): begin
-      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Beam_Atom_Text'),Get_value=beam_atom_txt
-      if beam_atom_txt(0) eq "H" or beam_atom_txt(0) eq "D" or beam_atom_txt(0) eq "T" then begin
-        beam_atom = beam_atom_txt(0)
-      endif else begin
-        Widget_control, status_wid, Get_Value=status_tx
-        Widget_Control, status_wid,$
-        Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Beam atom should be either H, D or T']], Set_text_top_line=n_elements(status_tx)-4
-        return
-      endelse
-      beam_atom=beam_atom_txt(0)
       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Full_Energy_Text'),Get_value=full_energy_txt
       e_full=float(full_energy_txt(0))
       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Energy_Frac_Text'),Get_value=energy_frac_txt
@@ -17754,10 +16237,8 @@ case ev.id of
       I_opt=float(I_opt_txt(0))
       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='I_Dens_Par_Text'),Get_value=I_dens_par_txt
       I_dens_par=float(I_dens_par_txt(0))  
-      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='X_Div_Angle_Text'),Get_value=x_div_bml_opt_txt
-      x_div_bml_opt=float(x_div_bml_opt_txt(0))  
-      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Y_Div_Angle_Text'),Get_value=y_div_bml_opt_txt
-      y_div_bml_opt=float(y_div_bml_opt_txt(0))  
+      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Div_Angle_Text'),Get_value=div_bml_opt_txt
+      div_bml_opt=float(div_bml_opt_txt(0))  
       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Div_Dist_Par_Text'),Get_value=div_dist_par_txt
       div_dist_par=float(div_dist_par_txt(0))  
       neutralization;procedure which is needed for beam parameters
@@ -17814,11 +16295,11 @@ case ev.id of
    end
    Widget_Info(ev.id, FIND_BY_UNAME='Plasma_Geometry_Save_Button'): begin
       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='R_Major_Text'),Get_value=R_major_txt
-      r_major=float(r_major_txt(0))
+      r_major=r_major_txt(0)
       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Z_Major_Text'),Get_value=z_major_txt
       z_major=float(z_major_txt(0))
       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='R_Minor_Text'),Get_value=R_minor_txt
-      r_minor=float(r_minor_txt(0))
+      r_minor=r_minor_txt(0)
       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Elong_Text'),Get_value=elong_txt
       elong=float(elong_txt(0))      
       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Triang_U_Text'),Get_value=triang_u_txt
@@ -17885,9 +16366,7 @@ case ev.id of
        Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : No beam limiters are included. Saved.']], Set_text_top_line=n_elements(status_tx)-4
        return       
      endif
-     if finite(total((float(limiters_table_new(4,*))+float(limiters_table_new(5,*)))*float(limiters_table_new(3,*)))) eq 0 and $
-     finite(total((float(limiters_table_new(6,*)))*float(limiters_table_new(3,*)))) eq 0 and $
-     finite(total((float(limiters_table_new(4,*))+float(limiters_table_new(5,*)))*float(limiters_table_new(6,*)))) eq 0  then begin
+     if finite(total((float(limiters_table_new(4,*))+float(limiters_table_new(5,*)))*float(limiters_table_new(3,*)))) eq 0 then begin
        limiters_table=limiters_table_new       
        Widget_control, status_wid, Get_Value=status_tx
        Widget_Control, status_wid,$
@@ -17902,10 +16381,10 @@ case ev.id of
      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='N_Limiters_Text'),Get_value=N_limiters_txt
      n_limiters=fix(n_limiters_txt(0))
       
-       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Beam_Limiters_Widget'),ysize=289+19*n_limiters
-       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Beam_Limiters_Base'),ysize=287+19*n_limiters
-       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Beam_Limiters_Save_Button'),yoffset=256+19*n_limiters
-       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Beam_Limiters_Close_Button'),yoffset=256+19*n_limiters
+       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Beam_Limiters_Widget'),ysize=264+19*n_limiters
+       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Beam_Limiters_Base'),ysize=261+19*n_limiters
+       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Beam_Limiters_Save_Button'),yoffset=231+19*n_limiters
+       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Beam_Limiters_Close_Button'),yoffset=231+19*n_limiters
      if n_limiters gt 0 then begin
        Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Beam_Limiters_Table'),Get_value=limiters_table
        row_label=strtrim(string(make_array(n_limiters,/index)+1,format='(I2)'),2)
@@ -17915,15 +16394,15 @@ case ev.id of
        if n_elements(limiters_table)/6 ge n_limiters then begin
          limiters_table=limiters_table(*,0:n_limiters-1)
          Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Beam_Limiters_Table'),Set_value=limiters_table
-         Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Beam_Limiters_Table'),Row_labels=[row_label]
-         Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Beam_Limiters_Table'),Table_ysize=n_limiters
+         Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Beam_Limiters_Table'),Row_labels=[row_label] 
          Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Beam_Limiters_Table'),scr_ysize=37+19*n_limiters
+         Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Beam_Limiters_Table'),Table_ysize=n_limiters
        endif else begin      
          Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Beam_Limiters_Table'),scr_ysize=37+19*n_limiters
          Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Beam_Limiters_Table'),Table_ysize=n_limiters
          Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Beam_Limiters_Table'),Row_labels=[row_label]
          for i=0, n_limiters-n_elements(limiters_table)/6-1 do begin
-           if n_limiters gt 1 then limiters_table=[[limiters_table],['name','NAN','NAN','NAN','NAN','NAN','NAN']] else limiters_table=['name','NAN','NAN','NAN','NAN','NAN','NAN']
+           if n_limiters gt 1 then limiters_table=[[limiters_table],['name','0.000','0.000','0.000','NAN','NAN']] else limiters_table=['name','0.000','0.000','0.000','NAN','NAN']
          endfor 
          Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Beam_Limiters_Table'),Set_value=limiters_table
        endelse
@@ -17985,8 +16464,8 @@ case ev.id of
    end
    Widget_Info(ev.id, FIND_BY_UNAME='Plasma_Param_Save_Button'): begin
      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Main_Ion_Text'),Get_value=main_ion_txt
-     if main_ion_txt(0) eq "D" or main_ion_txt(0) eq "H" or main_ion_txt(0) eq "He" then begin
-       main_ion = main_ion_txt(0)
+     if main_ion_txt eq "D" or main_ion_txt eq "H" or main_ion_txt eq "He" then begin
+       main_ion = main_ion_txt
      endif else begin
        Widget_control, status_wid, Get_Value=status_tx
        Widget_Control, status_wid,$
@@ -18141,10 +16620,10 @@ common temp_electrons,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_
 common effective_charge, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_eff_r,z_eff_arr,z_eff_err_arr
 ;The following common block contains X,Y,Z coordinate arrays used for the beam
 ;calculation grid and output 3D arrays of the beam density and excitation fracitons
-common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
+common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
 ;The following common block contains some of the settings for loading of
 ;the input data used for the beam attenuation and penetration
 ;calculation 
@@ -18152,7 +16631,7 @@ common load_settings, load_set_def,load_choice,general_type, general_file, beam_
 ne_type,ne_file,te_type,te_file,z_eff_type,z_eff_file,plasma_geom_type,plasma_geom_file,gas_type,gas_file,grid_type,grid_file,plasma_param_type,plasma_param_file
 ;The following common block contains neutral gas parameters used in
 ;calculation of the beam attenuation in the gas.
-common neutral_gas,tank_pressure,torus_pressure,duct_pressure,duct_pressure_loc,n0_arr,n0_stop_cross_section
+common neutral_gas,tank_pressure,torus_pressure,n0_arr,n0_stop_cross_section
 ;The following common block contains the parameters which describe the geometry
 ;and position of the tokamak plasma
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
@@ -18161,10 +16640,10 @@ common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
 common plasma_param, main_ion,n_impur,impur_table
 ;The following common block contains some of the settings of how to
 ;run the beam attenuation and penetration calculation.
-common run_settings, div_type,div_type_names,atten_type, atten_type_names, vel_dis_type,vel_dis_names,save_output_type,save_output_file
+common run_settings, div_type,div_type_names,atten_type, atten_type_names,save_output_type,save_output_file
 ;The following common block contains the parameters which describe the non-geometrical
 ;parameters of the beam (particle and energy distribution) 
-common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
+common beam_param, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,div_bml_opt, div_dist_par
 ;The following common block contains the parameters which describe the
 ;positions and sizes of the beam limiters.
 common beam_limiters, n_limiters, limiters_table,limiters_arr
@@ -18281,14 +16760,11 @@ case ev.id of
      output_files=file_search('*.abo')
      cd,cur_dir
      run_files=output_files
-     for i=0,n_elements(run_files)-1 do begin
-        if strlen(run_files(i)) gt 26 then run_files(i) = strmid(run_files(i),0,14)+'...'+strmid(run_files(i),strlen(run_files(i))-6,8)
-     end
      if output_files(0) ne "" then begin
         if all_runs(0) eq ' ' then  begin
           Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='User_Droplist'), Set_Value=run_files
         endif else begin
-          Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='User_Droplist'), Set_Value=[all_runs,run_files]
+          Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='User_Droplist'), Set_Value=[all_runs,output_files]
         endelse
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Read_Results_Button'),Sensitive=1
         Widget_control, status_wid, Get_Value=status_tx
@@ -18327,8 +16803,6 @@ case ev.id of
          run_time_ver=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+':TIME_STAMP', status=st1,/quiet)
          div_type_val=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+':DIV_TYPE', status=st1,/quiet)
          att_type_val=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+':ATTEN_TYPE', status=st1,/quiet)
-         vel_dis_type_val=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+':VEL_DIS_TYPE', status=st1,/quiet)
-         if not(st1) then vel_dis_type_val='NO'         
          stop_plsm_cs=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+':STOP_PLSM_CS', status=st1,/quiet)
          exc_plsm_cs=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+':EXC_PLSM_CS', status=st1,/quiet)
          time_int_val=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+':time_interv',status=st1,/quiet)
@@ -18336,7 +16810,6 @@ case ev.id of
          t2_val=strtrim(string(time_int_val(1),format='(F5.3)'),2)
          att_type_val=att_type_val(0)
          div_type_val=div_type_val(0)
-         vel_dis_type_val=vel_dis_type_val(0)
          stop_plsm_cs=stop_plsm_cs(0)
          exc_plsm_cs=exc_plsm_cs(0)
          if st1 then begin
@@ -18345,8 +16818,8 @@ case ev.id of
            Widget_Control, status_wid,$
            Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Selected run: '+allruns(runs_val) $
            +', shot: '+strtrim(string(Shot),1)+', time interval: ['+t1_val+' : '+t2_val+'] sec, Run performed on '+run_time_ver(0)+', by '+run_time_ver(1)],[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1) $
-           +' : Divergence type: '+div_type_val+', Attenuation type: '+att_type_val],[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Beam stoppping in plasma: '+stop_plsm_cs+', Beam excitation in plasma: '+exc_plsm_cs+ ', Velocity distribution calculated: '+vel_dis_type_val]], $
-           Set_text_top_line=n_elements(status_tx)-2
+           +' : Divergence type: '+div_type_val+', Attenuation type: '+att_type_val+', Beam stoppping in plasma: '+stop_plsm_cs+', Beam excitation in plasma: '+exc_plsm_cs]], $
+           Set_text_top_line=n_elements(status_tx)-3
          endif else begin
            Widget_control, status_wid, Get_Value=status_tx
            Widget_Control, status_wid,$
@@ -18362,7 +16835,7 @@ case ev.id of
          Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Read_Results_Button'),Sensitive=0
        endelse
      endif else begin
-       load_general_temp,file_dir+'/'+allruns(runs_val),beam_val,shot_val,run_time_ver,t1_val,t2_val,div_type_val,atten_type_val,vel_dis_type_val,stop_plsm_cs,exc_plsm_cs
+       load_general_temp,file_dir+'/'+allruns(runs_val),beam_val,shot_val,run_time_ver,t1_val,t2_val,div_type_val,atten_type_val,stop_plsm_cs,exc_plsm_cs
        if st_err then begin
          Widget_control, status_wid, Get_Value=status_tx
          Widget_Control, status_wid,$
@@ -18371,13 +16844,12 @@ case ev.id of
          st_err=0
          return
        endif
- 
        Widget_control, status_wid, Get_Value=status_tx
        Widget_Control, status_wid,$
-       Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Selected run: '+allruns(runs_val) $
-       +', shot: '+strtrim(string(Shot),1)+', time interval: ['+t1_val+' : '+t2_val+'] sec, Run performed on '+run_time_ver(0)+', by '+run_time_ver(1)],[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1) $
-       +' : Divergence type: '+div_type_val+', Attenuation type: '+atten_type_val],[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Beam stoppping in plasma: '+stop_plsm_cs+', Beam excitation in plasma: '+exc_plsm_cs+ ', Velocity distribution calculated: '+vel_dis_type_val]], $
-        Set_text_top_line=n_elements(status_tx)-2
+       Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Selected file: '+beam_val $
+       +', shot: '+shot_val+', time interval: ['+t1_val+' : '+t2_val+'] sec, Run performed on '+run_time_ver(0)+', by '+run_time_ver(1)],[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1) $
+       +' : Divergence type: '+div_type_val+', Attenuation type: '+atten_type_val+', Beam stoppping in plasma: '+stop_plsm_cs+', Beam excitation in plasma: '+exc_plsm_cs]], $
+       Set_text_top_line=n_elements(status_tx)-3
      endelse
    end
     ;---------------------Read Results From the Tree
@@ -18386,22 +16858,6 @@ case ev.id of
      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Shot_Number_Text'), Get_Value=shot
      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='User_Droplist'), Get_Value=allruns
      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='File_Dir_Text'), Get_Value=file_dir
-     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Beam_Text'),Editable=1
-     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Time_Interval_Text_1'),Editable=1
-     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Time_Interval_Text_2'),Editable=1 
-     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Shot_Number_Text'),Editable=1
-     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Ready_Button'), Set_Value='PREPARE A RUN'
-     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Load_Base'),Sensitive=0
-     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Preview_Data_Base'),Sensitive=1
-     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Save_Param_Button'),Sensitive=1
-     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Construct_Base'),Sensitive=0
-     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Preview_Arr_Base'),Sensitive=0
-     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Calc_Base'),Sensitive=0
-     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Plot_Button'),Sensitive=1
-     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Export_Button'),Sensitive=1
-     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Plot_Choice_Droplist'),Sensitive=1
-     sens_control, ev.top 
-                 
      ;check if dir ends on /
      file_dir=strtrim(file_dir,2)
      if strmid(file_dir,strlen(file_dir)-1,1) eq '/' then file_dir=strmid(file_dir,0,strlen(file_dir)-1) 
@@ -18412,25 +16868,6 @@ case ev.id of
      if strpos(allruns(runs_val),'.abo') eq -1 then begin
      MDSOPEN,'DNB',shot,/Quiet, status=st0
      if st0 then begin
-       ;modify used setting
-       run_time_ver=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+':TIME_STAMP', status=st1,/quiet)
-       div_type_val=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+':DIV_TYPE', status=st1,/quiet)
-       att_type_val=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+':ATTEN_TYPE', status=st1,/quiet)
-       vel_dis_type_val=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+':VEL_DIS_TYPE', status=st1,/quiet)
-       if not(st1) then vel_dis_type_val='NO'       
-       stop_plsm_cs=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+':STOP_PLSM_CS', status=st1,/quiet)
-       exc_plsm_cs=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+':EXC_PLSM_CS', status=st1,/quiet)
-       att_type_val=att_type_val(0)
-       div_type_val=div_type_val(0)
-       vel_dis_type_val=vel_dis_type_val(0)
-       stop_plsm_cs=stop_plsm_cs(0)
-       exc_plsm_cs=exc_plsm_cs(0)
-       div_type=where(strtrim(div_type_names,2) eq div_type_val)
-       atten_type=where(strtrim(atten_type_names,2) eq att_type_val)
-       vel_dis_type=where(strtrim(vel_dis_names,2) eq vel_dis_type_val)
-       stop_plasma_type=where(strtrim(stop_plasma_type_names,2) eq stop_plsm_cs)
-       exc_plasma_type=where(strtrim(exc_plasma_type_names,2) eq exc_plsm_cs)
-
        n_beam=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.RESULTS:n_beam',status=st1,/quiet)
        exc_n2_frac=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.RESULTS:exc_n2_frac',status=st2,/quiet)
        exc_n3_frac=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.RESULTS:exc_n3_frac',status=st3,/quiet)
@@ -18438,12 +16875,6 @@ case ev.id of
        z_beam=MDSVALUE('Dim_Of(\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.RESULTS:n_beam,1)',status=st5,/quiet)
        x_beam=MDSVALUE('Dim_Of(\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.RESULTS:n_beam,2)',status=st6,/quiet)
        y_beam=MDSVALUE('Dim_Of(\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.RESULTS:n_beam,3)',status=st7,/quiet)
-       vel_vec_x=0 & vel_vec_y=0 & vel_vec_coef=0
-       if vel_dis_type eq 0 then begin
-         vel_vec_x=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.RESULTS:vel_vec_x',status=st8,/quiet)
-         vel_vec_y=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.RESULTS:vel_vec_y',status=st8,/quiet)
-         vel_vec_coef=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.RESULTS:vel_vec_coef',status=st8,/quiet)      
-       endif
        time_int=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+':time_interv',status=st8,/quiet)
        t1=time_int(0)
        t2=time_int(1)
@@ -18460,12 +16891,7 @@ case ev.id of
        y_step=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.CODE_GRID:Y_STEP', status=st18,/quiet)
        y_max=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.CODE_GRID:Y_MAX', status=st19,/quiet)
       
-       x_grid_focus=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:X_GRID_FOCUS', status=st20,/quiet)
-       y_grid_focus=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:Y_GRID_FOCUS', status=st20,/quiet)      
-       if (not(st20)) then begin
-         x_grid_focus=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:GRID_FOCUS', status=st20,/quiet)
-         y_grid_focus=x_grid_focus
-       endif
+       grid_focus=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:GRID_FOCUS', status=st20,/quiet)
        beam_port=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:BEAM_PORT', status=st21,/quiet)
        R_grid=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:R_GRID', status=st22,/quiet)
        Z_grid=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:Z_GRID', status=st23,/quiet)       
@@ -18475,17 +16901,9 @@ case ev.id of
        Phi_wall=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:PHI_wall', status=st27,/quiet) 
        tank_front_dist=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:TANK_FRONT', status=st28,/quiet)
        tank_size=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:TANK_SIZE', status=st29,/quiet)
-       tank_diam=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:TANK_DIAM', status=st291,/quiet)
-       if (not(st291)) then tank_diam = 1.0
-       neutr_front_dist=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:NEUTR_FRONT', status=st302,/quiet)
-       if (not(st302)) then neutr_front_dist = 0.0
        neutr_size=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:NEUTR_SIZE', status=st30,/quiet)
-       neutr_diam=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:NEUTR_DIAM', status=st301,/quiet)
-       if (not(st301)) then neutr_diam = 0.2
        tank_magnet_dist=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:TANK_MAGNET', status=st31,/quiet)
        magnet_size=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:MAGNET_SIZE', status=st32,/quiet)
-       magnet_diam=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:MAGNET_DIAM', status=st321,/quiet)
-       if (not(st321)) then magnet_diam = 0.2
        tank_cal_dist=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:TANK_CAL', status=st33,/quiet)
        beam_apertures=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:BEAM_APERTUR', status=st34,/quiet)
        grid_ap_diam=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:GRID_AP_DIAM', status=st35,/quiet)     
@@ -18493,27 +16911,14 @@ case ev.id of
 
        tank_pressure=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.NEUTR_GAS:TANK_P', status=st36,/quiet)
        torus_pressure=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.NEUTR_GAS:TORUS_P', status=st37,/quiet)
-       
-       duct_pressure=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.NEUTR_GAS:DUCT_P', status=st361,/quiet)
-       duct_pressure_loc=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.NEUTR_GAS:DUCT_Z', status=st361,/quiet)
-       if (not(st361)) then duct_pressure=0.0
-       if (not(st361)) then duct_pressure_loc=0.0
 
-       beam_atom=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_PARAM:BEAM_ATOM', status=st38,/quiet)
-       if (not(st38)) then beam_atom='H'
        E_full=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_PARAM:E_FULL', status=st38,/quiet)
        E_frac=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_PARAM:E_FRAC', status=st39,/quiet)
        I_beam=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_PARAM:I_BEAM', status=st40,/quiet)
        I_frac=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_PARAM:I_FRAC', status=st41,/quiet)      
        I_opt=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_PARAM:I_opt', status=st42,/quiet)
        I_dens_par=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_PARAM:I_dens_par', status=st43,/quiet)     
-       x_div_bml_opt=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_PARAM:XDIV_BML_OPT', status=st44,/quiet)
-       y_div_bml_opt=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_PARAM:YDIV_BML_OPT', status=st44,/quiet)
-       if (not(st44)) then begin
-         x_div_bml_opt=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_PARAM:DIV_BML_OPT', status=st44,/quiet)
-         y_div_bml_opt=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_PARAM:DIV_BML_OPT', status=st44,/quiet)  
-       endif
-
+       div_bml_opt=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_PARAM:DIV_BML_OPT', status=st44,/quiet)
        div_dist_par=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_PARAM:div_dist_par', status=st45,/quiet)   
     
        r_major=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.PLASMA_GEOM:R_MAJOR', status=st46,/quiet)
@@ -18524,14 +16929,7 @@ case ev.id of
        triang_lower=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.PLASMA_GEOM:TRIANG_L', status=st51,/quiet)
 
        n_limiters=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_LIMITER:N_LIMITERS', status=st52,/quiet)
-       limiters_table_1=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_LIMITER:LIM_TABLE', status=st53,/quiet)
-       if st53 and n_elements(limiters_table_1) gt 2 then begin
-         if (size(limiters_table_1))(1) eq 6 then begin
-           limiters_table=reform(strarr(7,n_limiters))
-           limiters_table(*)='NAN'
-           limiters_table(0:5,*)=limiters_table_1
-         endif else limiters_table=limiters_table_1
-       endif 
+       limiters_table=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_LIMITER:LIM_TABLE', status=st53,/quiet)
 
        n_e_raw=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.N_E_PROF:N_E_RAW', status=st54,/quiet)
        n_e_raw_r=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.N_E_PROF:N_E_RAW_R', status=st55,/quiet)
@@ -18619,6 +17017,18 @@ case ev.id of
          ;Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Z_B_Slider'),Sensitive=0
          ;Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='X_B_Slider'),Sensitive=0
          ;Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Y_B_Slider'),Sensitive=0
+         Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Ready_Button'), Set_Value='PREPARE A RUN'
+         Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Load_Base'),Sensitive=0
+         Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Preview_Data_Base'),Sensitive=1
+         Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Save_Param_Button'),Sensitive=1
+         Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Construct_Base'),Sensitive=0
+         Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Preview_Arr_Base'),Sensitive=0
+         Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Calc_Base'),Sensitive=0
+         Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Plot_Button'),Sensitive=1
+         Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Export_Button'),Sensitive=1
+         Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Plot_Choice_Droplist'),Sensitive=1
+         sens_control, ev.top 
+                 
          WIDGET_CONTROL,Widget_Info(ev.top, FIND_BY_UNAME='Result_Plot') , GET_VALUE=drawID
          Wset,drawID
          Erase
@@ -18828,7 +17238,7 @@ case ev.id of
        Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Beam_Text'),Editable=1 
        Widget_control, status_wid, Get_Value=status_tx
        Widget_Control, status_wid,$
-       Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Run routine was canceled. Press PREPARE A RUN button to start again.']], Set_text_top_line=n_elements(status_tx)-4
+       Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Run routine was Canceled. Press PREPARE A RUN button to start again.']], Set_text_top_line=n_elements(status_tx)-4
      endif
      if button_val eq 'STOP CALC' then begin 
        Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Calc_Base'),Sensitive=1
@@ -18932,12 +17342,7 @@ case ev.id of
    ;---------------------Shows Load Settings Window
    Widget_Info(ev.id, FIND_BY_UNAME='Load_Settings_Button'): begin
      st_err=0
-     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Shot_Number_Text'), Get_Value=shot
      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Beam_Text'), Get_Value=beam
-     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Time_Interval_Text_1'), Get_Value=t1_txt
-     t1=float(t1_txt)
-     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Time_Interval_Text_2'), Get_Value=t2_txt
-     t2=float(t2_txt)
      show_load_settings_window,ev.top
      if st_err then begin
        Widget_control, status_wid, Get_Value=status_tx
@@ -18950,12 +17355,7 @@ case ev.id of
     ;---------------------Shows Construct Settings Window
    Widget_Info(ev.id, FIND_BY_UNAME='Construct_Settings_Button'): begin
      st_err=0
-     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Shot_Number_Text'), Get_Value=shot
      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Beam_Text'), Get_Value=beam
-     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Time_Interval_Text_1'), Get_Value=t1_txt
-     t1=float(t1_txt)
-     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Time_Interval_Text_2'), Get_Value=t2_txt
-     t2=float(t2_txt)
      show_construct_settings_window,ev.top
      if st_err then begin
        Widget_control, status_wid, Get_Value=status_tx
@@ -18968,12 +17368,7 @@ case ev.id of
     ;---------------------Shows Calc Settings Window
    Widget_Info(ev.id, FIND_BY_UNAME='Calc_Settings_Button'): begin
      st_err=0
-     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Shot_Number_Text'), Get_Value=shot
      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Beam_Text'), Get_Value=beam
-     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Time_Interval_Text_1'), Get_Value=t1_txt
-     t1=float(t1_txt)
-     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Time_Interval_Text_2'), Get_Value=t2_txt
-     t2=float(t2_txt)
      show_calc_settings_window,ev.top
      if st_err then begin
        Widget_control, status_wid, Get_Value=status_tx
@@ -18986,12 +17381,7 @@ case ev.id of
    ;---------------------Save Parameters to file Window
    Widget_Info(ev.id, FIND_BY_UNAME='Save_Param_Button'): begin
      st_err=0
-     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Shot_Number_Text'), Get_Value=shot
      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Beam_Text'), Get_Value=beam
-     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Time_Interval_Text_1'), Get_Value=t1_txt
-     t1=float(t1_txt)
-     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Time_Interval_Text_2'), Get_Value=t2_txt
-     t2=float(t2_txt)
      show_save_param_window,ev.top
      if st_err then begin
        Widget_control, status_wid, Get_Value=status_tx
@@ -19070,17 +17460,7 @@ case ev.id of
       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Ready_Button'), Set_Value='CANCEL RUN' 
      return
    endif
-    if div_type eq 2 and x_grid_focus ne y_grid_focus then begin
-     Widget_control, status_wid, Get_Value=status_tx
-     Widget_Control, status_wid,$
-     Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+$
-' : Only circular grid and Fx=Fy case can be calculated by analytical method.'+' *** Shot #'+strtrim(string(Shot),1)]], Set_text_top_line=n_elements(status_tx)-4
-      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Calc_Base'),Sensitive=1
-      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Preview_Arr_Base'),Sensitive=1
-      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Ready_Button'), Set_Value='CANCEL RUN' 
-     return
-   endif  
-
+   
    Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Time_Interval_Text_1'), Get_Value=t1_txt
    t1=float(t1_txt)
    Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Time_Interval_Text_2'), Get_Value=t2_txt
@@ -19142,7 +17522,6 @@ case ev.id of
          MDSTCL,'ADD NODE TIME_STAMP/USAGE=TEXT'  ;data and time, text
          MDSTCL,'ADD NODE DIV_TYPE/USAGE=TEXT'  ;divergence type, text
          MDSTCL,'ADD NODE ATTEN_TYPE/USAGE=TEXT'  ;attenuation type, text
-         MDSTCL,'ADD NODE VEL_DIS_TYPE/USAGE=TEXT'  ;velocity distribution type, text
          MDSTCL,'ADD NODE EXC_PLSM_CS/USAGE=TEXT'  ;excitation type, text
          MDSTCL,'ADD NODE STOP_PLSM_CS/USAGE=TEXT'  ;stoppping type, text
          MDSTCL,'ADD NODE time_interv/USAGE=NUMERIC'  ;time_interval, [numeric,numeric]          
@@ -19151,12 +17530,7 @@ case ev.id of
          MDSTCL,'SET DEFAULT \DNB::TOP.ALCBEAM.'+user_up+'.'+run_number+'.RESULTS'                  
          MDSTCL,'ADD NODE n_beam/USAGE=SIGNAL'  ;4D array of the beam density
          MDSTCL,'ADD NODE exc_n2_frac/USAGE=SIGNAL'  ;4D array of the excited fraction n=2
-         MDSTCL,'ADD NODE exc_n3_frac/USAGE=SIGNAL'  ;4D array of the excited fraction n=3
-         if vel_dis_type eq 0 then begin
-           MDSTCL,'ADD NODE vel_vec_x/USAGE=NUMERIC'  ;3D array of X coord for vel vect
-           MDSTCL,'ADD NODE vel_vec_y/USAGE=NUMERIC'  ;3D array of X coord for vel vect
-           MDSTCL,'ADD NODE vel_vec_coef/USAGE=NUMERIC'  ;5D array of vel vect coefs
-         endif             
+         MDSTCL,'ADD NODE exc_n3_frac/USAGE=SIGNAL'  ;4D array of the excited fraction n=3             
   
    
          MDSTCL,'SET DEFAULT \DNB::TOP.ALCBEAM.'+user_up+'.'+run_number
@@ -19181,8 +17555,7 @@ case ev.id of
          MDSTCL,'SET DEFAULT \DNB::TOP.ALCBEAM.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM'
          MDSTCL,'ADD NODE BEAM_APERTUR/USAGE=NUMERIC'       ;add x_bml,y_bml
          MDSTCL,'ADD NODE GRID_AP_DIAM/USAGE=NUMERIC'       ;add grid_ap_diam
-         MDSTCL,'ADD NODE X_GRID_FOCUS/USAGE=NUMERIC'       ;add grid_focus node
-         MDSTCL,'ADD NODE Y_GRID_FOCUS/USAGE=NUMERIC'       ;add grid_focus node
+         MDSTCL,'ADD NODE GRID_FOCUS/USAGE=NUMERIC'       ;add grid_focus node
          MDSTCL,'ADD NODE BEAM_PORT/USAGE=TEXT'   ;add beam_port node
          MDSTCL,'ADD NODE R_GRID/USAGE=NUMERIC'   ;add R_grid node
          MDSTCL,'ADD NODE Z_GRID/USAGE=NUMERIC'   ;add Z_grid node
@@ -19192,27 +17565,21 @@ case ev.id of
          MDSTCL,'ADD NODE PHI_WALL/USAGE=NUMERIC'   ;add PHI_wall node
          MDSTCL,'ADD NODE TANK_FRONT/USAGE=NUMERIC'   ;add tank_front node
          MDSTCL,'ADD NODE TANK_SIZE/USAGE=NUMERIC'   ;add tank_size node
-         MDSTCL,'ADD NODE TANK_DIAM/USAGE=NUMERIC'   ;add tank_diam node
-         MDSTCL,'ADD NODE NEUTR_FRONT/USAGE=NUMERIC'   ;add neutr_front_dist node
          MDSTCL,'ADD NODE NEUTR_SIZE/USAGE=NUMERIC'   ;add neutr_size node
-         MDSTCL,'ADD NODE NEUTR_DIAM/USAGE=NUMERIC'   ;add neutr_diam node
          MDSTCL,'ADD NODE TANK_MAGNET/USAGE=NUMERIC'   ;add tank_magnet node
          MDSTCL,'ADD NODE MAGNET_SIZE/USAGE=NUMERIC'   ;add magnet_size node
-         MDSTCL,'ADD NODE MAGNET_DIAM/USAGE=NUMERIC'   ;add magnet_diam node
          MDSTCL,'ADD NODE TANK_CAL/USAGE=NUMERIC'   ;add tank_cal node
         
          MDSTCL,'SET DEFAULT \DNB::TOP.ALCBEAM.'+user_up+'.'+run_number+'.INPUT'
          MDSTCL,'ADD NODE BEAM_PARAM/USAGE=STRUCTURE'  ;add structure
          MDSTCL,'SET DEFAULT \DNB::TOP.ALCBEAM.'+user_up+'.'+run_number+'.INPUT.BEAM_PARAM'
-         MDSTCL,'ADD NODE BEAM_ATOM/USAGE=TEXT'   ;add beam_atom node 
          MDSTCL,'ADD NODE E_FULL/USAGE=NUMERIC'   ;add e_full node 
          MDSTCL,'ADD NODE E_FRAC/USAGE=NUMERIC'   ;add e_frac node
          MDSTCL,'ADD NODE I_BEAM/USAGE=NUMERIC'   ;add i_beam node
          MDSTCL,'ADD NODE I_FRAC/USAGE=NUMERIC'   ;add i_frac node
          MDSTCL,'ADD NODE I_OPT/USAGE=NUMERIC'   ;add i_opt node
          MDSTCL,'ADD NODE I_DENS_PAR/USAGE=NUMERIC'   ;add i_dens_par node     
-         MDSTCL,'ADD NODE XDIV_BML_OPT/USAGE=NUMERIC'   ;add xdiv_bml_opt node
-         MDSTCL,'ADD NODE YDIV_BML_OPT/USAGE=NUMERIC'   ;add ydiv_bml_opt node
+         MDSTCL,'ADD NODE DIV_BML_OPT/USAGE=NUMERIC'   ;add div_bml_opt node
          MDSTCL,'ADD NODE DIV_DIST_PAR/USAGE=NUMERIC'   ;add div_dist_par node
          
          MDSTCL,'SET DEFAULT \DNB::TOP.ALCBEAM.'+user_up+'.'+run_number+'.INPUT'
@@ -19243,10 +17610,7 @@ case ev.id of
          MDSTCL,'ADD NODE NEUTR_GAS/USAGE=STRUCTURE'  ;add structure
          MDSTCL,'SET DEFAULT \DNB::TOP.ALCBEAM.'+user_up+'.'+run_number+'.INPUT.NEUTR_GAS'
          MDSTCL,'ADD NODE TANK_P/USAGE=NUMERIC'   ;add tank_p node
-         MDSTCL,'ADD NODE TORUS_P/USAGE=NUMERIC'   ;add torus_p node
-         MDSTCL,'ADD NODE DUCT_Z/USAGE=NUMERIC'   ;add duct_p node
-         MDSTCL,'ADD NODE DUCT_P/USAGE=NUMERIC'   ;add duct_z node
-
+         MDSTCL,'ADD NODE TORUS_P/USAGE=NUMERIC'   ;add torus_p nod
 
          MDSTCL,'SET DEFAULT \DNB::TOP.ALCBEAM.'+user_up+'.'+run_number +'.INPUT'  
          MDSTCL,'ADD NODE N_E_PROF/USAGE=STRUCTURE'  ;add structure
@@ -19289,7 +17653,6 @@ case ev.id of
          MDSTCL,'ADD NODE TIME_STAMP/USAGE=TEXT'  ;data and time, text
          MDSTCL,'ADD NODE DIV_TYPE/USAGE=TEXT'  ;divergence type, text
          MDSTCL,'ADD NODE ATTEN_TYPE/USAGE=TEXT'  ;attenuation type, text
-         MDSTCL,'ADD NODE VEL_DIS_TYPE/USAGE=TEXT'  ;velocity distribution type, text
          MDSTCL,'ADD NODE EXC_PLSM_CS/USAGE=TEXT'  ;excitation type, text
          MDSTCL,'ADD NODE STOP_PLSM_CS/USAGE=TEXT'  ;stoppping type, text
          MDSTCL,'ADD NODE time_interv/USAGE=NUMERIC'  ;time_interval, [numeric,numeric]
@@ -19299,11 +17662,6 @@ case ev.id of
          MDSTCL,'ADD NODE n_beam/USAGE=SIGNAL'  ;4D array of the beam density
          MDSTCL,'ADD NODE exc_n2_frac/USAGE=SIGNAL'  ;4D array of the excited fraction n=2
          MDSTCL,'ADD NODE exc_n3_frac/USAGE=SIGNAL'  ;4D array of the excited fraction n=3
-         if vel_dis_type eq 0 then begin
-           MDSTCL,'ADD NODE vel_vec_x/USAGE=NUMERIC'  ;3D array of X coord for vel vect
-           MDSTCL,'ADD NODE vel_vec_y/USAGE=NUMERIC'  ;3D array of X coord for vel vect
-           MDSTCL,'ADD NODE vel_vec_coef/USAGE=NUMERIC'  ;5D array of vel vect coefs
-         endif  
 
          MDSTCL,'SET DEFAULT \DNB::TOP.ALCBEAM.'+user_up+'.'+run_number
          MDSTCL,'ADD NODE INPUT/USAGE=STRUCTURE'  ;subtree for input data used for calculation
@@ -19328,8 +17686,7 @@ case ev.id of
          MDSTCL,'SET DEFAULT \DNB::TOP.ALCBEAM.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM'
          MDSTCL,'ADD NODE BEAM_APERTUR/USAGE=NUMERIC'       ;add x_bml,y_bml
          MDSTCL,'ADD NODE GRID_AP_DIAM/USAGE=NUMERIC'       ;add grid_ap_diam
-         MDSTCL,'ADD NODE X_GRID_FOCUS/USAGE=NUMERIC'       ;add grid_focus node
-         MDSTCL,'ADD NODE Y_GRID_FOCUS/USAGE=NUMERIC'       ;add grid_focus node
+         MDSTCL,'ADD NODE GRID_FOCUS/USAGE=NUMERIC'       ;add grid_focus node
          MDSTCL,'ADD NODE BEAM_PORT/USAGE=TEXT'   ;add beam_port node
          MDSTCL,'ADD NODE R_GRID/USAGE=NUMERIC'   ;add R_grid node
          MDSTCL,'ADD NODE Z_GRID/USAGE=NUMERIC'   ;add Z_grid node
@@ -19339,28 +17696,22 @@ case ev.id of
          MDSTCL,'ADD NODE PHI_WALL/USAGE=NUMERIC'   ;add PHI_wall node
          MDSTCL,'ADD NODE TANK_FRONT/USAGE=NUMERIC'   ;add tank_front node
          MDSTCL,'ADD NODE TANK_SIZE/USAGE=NUMERIC'   ;add tank_size node
-         MDSTCL,'ADD NODE TANK_DIAM/USAGE=NUMERIC'   ;add tank_diam node
-         MDSTCL,'ADD NODE NEUTR_FRONT/USAGE=NUMERIC'   ;add neutr_front_dist node
          MDSTCL,'ADD NODE NEUTR_SIZE/USAGE=NUMERIC'   ;add neutr_size node
-         MDSTCL,'ADD NODE NEUTR_DIAM/USAGE=NUMERIC'   ;add neutr_diam node
          MDSTCL,'ADD NODE TANK_MAGNET/USAGE=NUMERIC'   ;add tank_magnet node
          MDSTCL,'ADD NODE MAGNET_SIZE/USAGE=NUMERIC'   ;add magnet_size node
-         MDSTCL,'ADD NODE MAGNET_DIAM/USAGE=NUMERIC'   ;add magnet_diam node
          MDSTCL,'ADD NODE TANK_CAL/USAGE=NUMERIC'   ;add tank_cal node
 
            
          MDSTCL,'SET DEFAULT \DNB::TOP.ALCBEAM.'+user_up+'.'+run_number+'.INPUT'
          MDSTCL,'ADD NODE BEAM_PARAM/USAGE=STRUCTURE'  ;add structure
          MDSTCL,'SET DEFAULT \DNB::TOP.ALCBEAM.'+user_up+'.'+run_number+'.INPUT.BEAM_PARAM'
-         MDSTCL,'ADD NODE BEAM_ATOM/USAGE=TEXT'   ;add beam_atom node 
          MDSTCL,'ADD NODE E_FULL/USAGE=NUMERIC'   ;add e_full node 
          MDSTCL,'ADD NODE E_FRAC/USAGE=NUMERIC'   ;add e_frac node
          MDSTCL,'ADD NODE I_BEAM/USAGE=NUMERIC'   ;add i_beam node
          MDSTCL,'ADD NODE I_FRAC/USAGE=NUMERIC'   ;add i_frac node
          MDSTCL,'ADD NODE I_OPT/USAGE=NUMERIC'   ;add i_opt node
          MDSTCL,'ADD NODE I_DENS_PAR/USAGE=NUMERIC'   ;add i_dens_par node     
-         MDSTCL,'ADD NODE XDIV_BML_OPT/USAGE=NUMERIC'   ;add div_bml_opt node
-         MDSTCL,'ADD NODE YDIV_BML_OPT/USAGE=NUMERIC'   ;add div_bml_opt node
+         MDSTCL,'ADD NODE DIV_BML_OPT/USAGE=NUMERIC'   ;add div_bml_opt node
          MDSTCL,'ADD NODE DIV_DIST_PAR/USAGE=NUMERIC'   ;add div_dist_par node 
            
          MDSTCL,'SET DEFAULT \DNB::TOP.ALCBEAM.'+user_up+'.'+run_number+'.INPUT'
@@ -19390,9 +17741,7 @@ case ev.id of
          MDSTCL,'ADD NODE NEUTR_GAS/USAGE=STRUCTURE'  ;add structure
          MDSTCL,'SET DEFAULT \DNB::TOP.ALCBEAM.'+user_up+'.'+run_number+'.INPUT.NEUTR_GAS'
          MDSTCL,'ADD NODE TANK_P/USAGE=NUMERIC'   ;add tank_p node
-         MDSTCL,'ADD NODE TORUS_P/USAGE=NUMERIC'   ;add torus_p node
-         MDSTCL,'ADD NODE DUCT_Z/USAGE=NUMERIC'   ;add duct_p node
-         MDSTCL,'ADD NODE DUCT_P/USAGE=NUMERIC'   ;add duct_z node
+         MDSTCL,'ADD NODE TORUS_P/USAGE=NUMERIC'   ;add torus_p nod
 
          MDSTCL,'SET DEFAULT \DNB::TOP.ALCBEAM.'+user_up+'.'+run_number +'.INPUT'  
          MDSTCL,'ADD NODE N_E_PROF/USAGE=STRUCTURE'  ;add structure
@@ -19431,17 +17780,11 @@ case ev.id of
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.RESULTS.exc_n2_frac','build_signal(build_with_units($,$),*,build_with_units($,$),'+$
        'build_with_units($,$),build_with_units($,$),build_with_units($,$))',exc_n2_frac,'%',E_beam, 'keV', z_beam,'m',x_beam,'m',y_beam,'m'
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.RESULTS.exc_n3_frac','build_signal(build_with_units($,$),*,build_with_units($,$),'+$
-       'build_with_units($,$),build_with_units($,$),build_with_units($,$))',exc_n3_frac,'%',E_beam, 'keV', z_beam,'m',x_beam,'m',y_beam,'m'
-       if vel_dis_type eq 0 then begin
-         MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.RESULTS.vel_vec_x',"$",vel_vec_x
-         MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.RESULTS.vel_vec_y',"$",vel_vec_y
-         MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.RESULTS.vel_vec_coef',"$",vel_vec_coef
-       endif    
+       'build_with_units($,$),build_with_units($,$),build_with_units($,$))',exc_n3_frac,'%',E_beam, 'keV', z_beam,'m',x_beam,'m',y_beam,'m'    
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.time_interv',"$",[t1,t2]
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.time_stamp',"$",[systime(),'ALCBEAM (ver. '+alcbeam_ver+')']
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.div_type',"$",strtrim(div_type_names(div_type),2)
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.atten_type',"$",strtrim(atten_type_names(atten_type),2)
-       MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.vel_dis_type',"$",strtrim(vel_dis_names(vel_dis_type),2)
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.stop_plsm_cs',"$",strtrim(stop_plasma_type_names(stop_plasma_type),2)
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.exc_plsm_cs',"$",strtrim(exc_plasma_type_names(exc_plasma_type),2)
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.CODE_GRID.z_min',"$",code_grid_arr.z(0)
@@ -19456,8 +17799,7 @@ case ev.id of
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.CODE_GRID.y_step',"$",code_grid_arr.y(1)
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.CODE_GRID.y_max',"$",code_grid_arr.y(2)
 
-       MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.x_grid_focus',"$",x_grid_focus
-       MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.y_grid_focus',"$",y_grid_focus
+       MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.grid_focus',"$",grid_focus
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.beam_port',"$",beam_port
 
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.R_grid',"$",R_grid
@@ -19468,31 +17810,22 @@ case ev.id of
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.Phi_wall',"$",phi_wall
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.tank_front',"$",tank_front_dist
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.tank_size',"$",tank_size
-       MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.tank_diam',"$",tank_diam
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.neutr_size',"$",neutr_size
-       MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.neutr_front',"$",neutr_front_dist
-       MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.neutr_diam',"$",neutr_diam
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.tank_magnet',"$",tank_magnet_dist
-       MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.magnet_size',"$",magnet_size
-       MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.magnet_diam',"$",magnet_diam,neutr_front_dist       
+       MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.magnet_size',"$",magnet_size        
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.tank_cal',"$",tank_cal_dist
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.beam_apertur',"$",[[x_bml],[y_bml]]
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.grid_ap_diam',"$",grid_ap_diam
 
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.NEUTR_GAS.tank_p',"$",tank_pressure
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.NEUTR_GAS.torus_p',"$",torus_pressure
-       MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.NEUTR_GAS.duct_p',"$",duct_pressure
-       MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.NEUTR_GAS.duct_z',"$",duct_pressure_loc
-
-       MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_PARAM.beam_atom',"$",beam_atom
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_PARAM.e_full',"$",e_full
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_PARAM.e_frac',"$",e_frac
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_PARAM.i_beam',"$",i_beam
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_PARAM.i_frac',"$",i_frac
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_PARAM.i_opt',"$",i_opt
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_PARAM.i_dens_par',"$",i_dens_par
-       MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_PARAM.xdiv_bml_opt',"$",x_div_bml_opt
-       MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_PARAM.ydiv_bml_opt',"$",y_div_bml_opt
+       MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_PARAM.div_bml_opt',"$",div_bml_opt
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_PARAM.div_dist_par',"$",div_dist_par
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.PLASMA_GEOM.r_major',"$",r_major
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.PLASMA_GEOM.z_major',"$",z_major
@@ -19575,7 +17908,7 @@ case ev.id of
    Widget_Info(ev.id, FIND_BY_UNAME='Construct_Data_Button'): begin
     st_err=0
      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Shot_Number_Text'), Get_Value=shot
-     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Beam_Text'), Get_Value=beam
+    ; Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Beam_Text'), Get_Value=beam
      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Time_Interval_Text_1'), Get_Value=t1_txt
      t1=float(t1_txt)
      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Time_Interval_Text_2'), Get_Value=t2_txt
@@ -19593,12 +17926,6 @@ case ev.id of
        return
      endelse
      ;construction of the 3D flux_surface_arr
-     if strpos(strtrim(beam,2),'ALCATOR') eq -1 and flux_surf_arr_type eq 2 then begin
-       Widget_control, status_wid, Get_Value=status_tx
-       Widget_Control, status_wid,$
-       Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : EFIT flux surfaces can only be used for ALCATOR C-Mod shots. Please change the source for Flux surface reconstruction.']], Set_text_top_line=n_elements(status_tx)-4
-       return
-     endif 
      make_flux_surf
      if st_err then begin
        Widget_control, status_wid, Get_Value=status_tx
@@ -19832,21 +18159,6 @@ case ev.id of
        endelse
      endif
      if plasma_geom_type eq 1 then begin
-       load_plasma_geom_efit_file
-       if st_err eq 0 then begin
-         flux_surf_names=[['Miller equilib'],['Hakkarainen eq'],['EFIT (EQDSK files)  '],['skip']]
-         flux_surf_arr_type=2
-         Widget_control, status_wid, Get_Value=status_tx
-         Widget_Control, status_wid,$
-         Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Plasma Geometry data was loaded successfully.']], Set_text_top_line=n_elements(status_tx)-4
-       endif else begin
-         Widget_control, status_wid, Get_Value=status_tx
-         Widget_Control, status_wid,$
-         Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Error during LOAD Plasma Geometry procedure. Please review previous message.']], Set_text_top_line=n_elements(status_tx)-4
-         return    
-       endelse
-     endif
-     if plasma_geom_type eq 2 then begin
        load_plasma_geom_file
        if st_err eq 0 then begin       
          flux_surf_arr_type=0
@@ -20042,7 +18354,7 @@ case ev.id of
        if st_err eq 0  then begin 
          Widget_control, status_wid, Get_Value=status_tx
          Widget_Control, status_wid,$
-         Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Z_eff data was loaded successfully.']], Set_text_top_line=n_elements(status_tx)-4
+         Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Z_eff data was set to constant successfully.']], Set_text_top_line=n_elements(status_tx)-4
        endif else begin
          Widget_control, status_wid, Get_Value=status_tx
          Widget_Control, status_wid,$
@@ -20064,19 +18376,6 @@ case ev.id of
        endelse
     endif  
     if z_eff_type eq 3 then begin
-       get_z_eff
-       if st_err eq 0  then begin 
-         Widget_control, status_wid, Get_Value=status_tx
-         Widget_Control, status_wid,$
-         Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Z_eff data was loaded successfully from z_neo_ave file.']], Set_text_top_line=n_elements(status_tx)-4
-       endif else begin
-         Widget_control, status_wid, Get_Value=status_tx
-         Widget_Control, status_wid,$
-         Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Error during LOAD Z_eff procedure. Please review previous message.']], Set_text_top_line=n_elements(status_tx)-4
-         return    
-       endelse
-    endif  
-    if z_eff_type eq 4 then begin
        get_z_eff_file
        if st_err eq 0 then begin 
          Widget_control, status_wid, Get_Value=status_tx
@@ -20089,7 +18388,7 @@ case ev.id of
          return    
        endelse
      endif 
-    if z_eff_type eq 5 then begin
+    if z_eff_type eq 4 then begin
        Widget_control, status_wid, Get_Value=status_tx
        Widget_Control, status_wid,$
        Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Z_eff data was NOT loaded (previous value retained).']], Set_text_top_line=n_elements(status_tx)-4
@@ -20378,7 +18677,7 @@ common load_settings, load_set_def,load_choice,general_type, general_file, beam_
 ne_type,ne_file,te_type,te_file,z_eff_type,z_eff_file,plasma_geom_type,plasma_geom_file,gas_type,gas_file,grid_type,grid_file,plasma_param_type,plasma_param_file
 ;The following common block contains some of the settings of how to
 ;run the beam attenuation and penetration calculation.
-common run_settings, div_type,div_type_names,atten_type, atten_type_names, vel_dis_type,vel_dis_names,save_output_type,save_output_file
+common run_settings, div_type,div_type_names,atten_type, atten_type_names,save_output_type,save_output_file
 ;The following common block contains some of the settings of "saving
 ;run settings to the file"
 common settings_file, save_set_file
@@ -20404,7 +18703,6 @@ Widget_Control, Widget_Info(widget_id, FIND_BY_UNAME='Shot_Number_Text'), Get_Va
 Widget_Control, Widget_Info(widget_id, FIND_BY_UNAME='Param_Base'),Sensitive=0
 Widget_Control, Widget_Info(driver_id, FIND_BY_UNAME='Run_Driver_Button'), Get_Value=driver_val
 Widget_Control, Widget_Info(driver_id, FIND_BY_UNAME='Run_Driver_Button'), Set_Value='Pause Driver'
-Widget_Control, Widget_Info(driver_id, FIND_BY_UNAME='Driver_Quit_Button'), Sensitive=0
 Widget_Control, Widget_Info(widget_id, FIND_BY_UNAME='Beam_Text'), Get_Value=beam
 Widget_Control, Widget_Info(driver_id, FIND_BY_UNAME='Driver_Filename_Text'),get_value=save_set_file
 Widget_Control, Widget_Info(driver_id, FIND_BY_UNAME='Driver_Shots_Text'),get_value=driver_shots
@@ -20444,18 +18742,14 @@ if st_err ne 1 then begin
   Widget_Control, Widget_Info(widget_id, FIND_BY_UNAME='Shot_Number_Text'), Set_Value=strtrim(string(shot_list(l)),2)
   ;adjust TS fits file names
   ;--------------------------------------------
-  if ne_type eq 2 then begin
+  if ne_type eq 1 then begin
     ne_file_new=strsplit(ne_file,'fits_',/extract,/regex)
     ne_file=ne_file_new(0)+'fits_'+strtrim(string(shot),2)+'.save' 
   endif
-  if te_type eq 3 then begin
+  if te_type eq 2 then begin
     te_file_new=strsplit(te_file,'fits_',/extract,/regex)
     te_file=te_file_new(0)+'fits_'+strtrim(string(shot),2)+'.save' 
   endif
-  if z_eff_type eq 3 then begin
-    z_eff_file_new=strsplit(z_eff_file,'z_neo_ave_',/extract,/regex)
-    z_eff_file=z_eff_file_new(0)+'z_neo_ave_'+strtrim(string(shot),2)+'.sav' 
-  endif  
   ;-------------------------------------------
   b_t1=t1
   b_t2=t2
@@ -20492,7 +18786,6 @@ if st_err ne 1 then begin
         Widget_control, driver_wid, Get_Value=status_tx
         Widget_Control, driver_wid,$
         Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Error in loading procedure: ALCBEAM Driver has stopped']], Set_text_top_line=n_elements(status_tx)-4
-        Widget_Control, Widget_Info(driver_id, FIND_BY_UNAME='Driver_Quit_Button'), Sensitive=1
         st_err=0 
         return
       endif
@@ -20502,7 +18795,6 @@ if st_err ne 1 then begin
         Widget_control, driver_wid, Get_Value=status_tx
         Widget_Control, driver_wid,$
         Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Error in construction procedure: ALCBEAM Driver has stopped']], Set_text_top_line=n_elements(status_tx)-4
-        Widget_Control, Widget_Info(driver_id, FIND_BY_UNAME='Driver_Quit_Button'), Sensitive=1
         st_err=0 
         return
       endif   
@@ -20512,9 +18804,6 @@ if st_err ne 1 then begin
         Widget_control, driver_wid, Get_Value=status_tx
         Widget_Control, driver_wid,$
         Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Error in run procedure: ALCBEAM Driver has stopped']], Set_text_top_line=n_elements(status_tx)-4
-        Widget_Control, Widget_Info(driver_id, FIND_BY_UNAME='Driver_Quit_Button'), Sensitive=1
-        st_err=0 
-        return
       endif        
       res=Widget_Event(Widget_Info(driver_id, FIND_BY_UNAME='Run_Driver_Button'),/nowait)
       if res.ID eq Widget_Info(driver_id, FIND_BY_UNAME='Run_Driver_Button') or st_err eq 3 then begin
@@ -20527,7 +18816,6 @@ if st_err ne 1 then begin
         Widget_Control, driver_wid,$
         Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : ALCBEAM Driver was interrupted. Press Continue to continue.']], Set_text_top_line=n_elements(status_tx)-4
         Widget_Control, Widget_Info(driver_id, FIND_BY_UNAME='Run_Driver_Button'), Set_Value='Continue'
-        Widget_Control, Widget_Info(driver_id, FIND_BY_UNAME='Driver_Quit_Button'), Sensitive=1
         Widget_Control, Widget_Info(widget_id, FIND_BY_UNAME='Param_Base'),Sensitive=1
         Widget_Control, Widget_Info(widget_id, FIND_BY_UNAME='Time_Interval_Text_1'),Editable=1
         Widget_Control, Widget_Info(widget_id, FIND_BY_UNAME='Time_Interval_Text_2'),Editable=1            
@@ -20542,8 +18830,7 @@ if st_err ne 1 then begin
   endif else begin
     Widget_control, driver_wid, Get_Value=status_tx
     Widget_Control, driver_wid,$
-    Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : ALCBEAM Driver can currently be used only for DNBI_ALCATOR']], Set_text_top_line=n_elements(status_tx)-4
-    Widget_Control, Widget_Info(driver_id, FIND_BY_UNAME='Driver_Quit_Button'), Sensitive=1 
+    Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : ALCBEAM Driver can currently be used only for DNBI_ALCATOR']], Set_text_top_line=n_elements(status_tx)-4 
     st_err=1
     return
   endelse
@@ -20553,7 +18840,6 @@ if st_err ne 1 then begin
   Widget_Control, driver_wid,$
   Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : ALCBEAM Driver has finished']], Set_text_top_line=n_elements(status_tx)-4
   Widget_Control, Widget_Info(driver_id, FIND_BY_UNAME='Run_Driver_Button'), Set_Value='RUN Driver'
-  Widget_Control, Widget_Info(driver_id, FIND_BY_UNAME='Driver_Quit_Button'), Sensitive=1
 endif
 
 
@@ -20561,7 +18847,9 @@ end
 
 ;Some external functions (only for C-Mod)
 @/usr/local/rsi/idl_6.3/lib/mean.pro
-@/home/bespam/quickfit/quick_fit.pro
+@/home/yma/analysis/widget/quick_fit
+@/usr/local/cmod/codes/efit/idl/efit_rz2psi.pro
+@/usr/local/cmod/codes/efit/idl/efit_rz2rho.pro
 @/usr/local/mdsplus/idl/mdsvalue.pro
 @/usr/local/mdsplus/idl/mdsput.pro
 @/usr/local/mdsplus/idl/mdsopen.pro
@@ -20585,10 +18873,10 @@ common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir,adas_dir
 common draw_request,draw_req
 ;The following common block contains X,Y,Z coordinate arrays used for the beam
  ;calculation grid and output 3D arrays of the beam density and excitation fracitons
-common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
+common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist
 ;The following common block contains some of the settings for loading of
 ;the input data used for the beam attenuation and penetration
 ;calculation 
@@ -20596,16 +18884,16 @@ common load_settings, load_set_def,load_choice,general_type, general_file, beam_
 ne_file,te_type,te_file,z_eff_type,z_eff_file,plasma_geom_type,plasma_geom_file,gas_type,gas_file,grid_type,grid_file,plasma_param_type,plasma_param_file
 ;The following common block contains neutral gas parameters used in
 ;calculation of the beam attenuation in the gas.
-common neutral_gas,tank_pressure,torus_pressure,duct_pressure,duct_pressure_loc,n0_arr,n0_stop_cross_section
+common neutral_gas,tank_pressure,torus_pressure,n0_arr,n0_stop_cross_section
 ;The following common block contains the parameters which describe the geometry
 ;and position of the tokamak plasma
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
 ;The following common block contains some of the settings of how to
 ;run the beam attenuation and penetration calculation.
-common run_settings, div_type,div_type_names,atten_type, atten_type_names, vel_dis_type,vel_dis_names,save_output_type,save_output_file
+common run_settings, div_type,div_type_names,atten_type, atten_type_names,save_output_type,save_output_file
 ;The following common block contains the parameters which describe the non-geometrical
 ;parameters of the beam (particle and energy distribution) 
-common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
+common beam_param, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,div_bml_opt, div_dist_par
 ;The following common block contains the parameters which describe
 ;some relative  global parameters of the plasma 
 common plasma_param, main_ion,n_impur,impur_table
@@ -20634,7 +18922,7 @@ common settings_file, save_set_file
 ;graph to the file"
 common export_file, export_file,export_sel,export_flag
 
-  alcbeam_ver='4.10'
+  alcbeam_ver='3.11'
   ;debuging parameter (default=1:catch errors, debug=0:pass errors)  
   error_catch=1
   st_err=0;initial error status 0
@@ -20652,17 +18940,15 @@ common export_file, export_file,export_sel,export_flag
   run=1
   spawn,'echo $USER',user
   spawn,'echo $HOSTNAME',hostname
-  spawn,'echo $HOME',file_dir
   hostname=hostname(0)
   user=user(0)
-  file_dir=file_dir(0)
   cd, current=cur_dir
+  file_dir='/home/'+user
   cd, file_dir
   dir1=file_search('alcbeam',count=count,/test_directory)
-  if count eq 1 then file_dir=file_dir+'/alcbeam'
+  if count eq 1 then file_dir='/home/'+user+'/alcbeam'
   cd, cur_dir
   adas_dir='/usr/local/cmod/codes/dnb/alcbeam/adas'
-  
   ;load settings
   load_set_def=[0,0,0,0,0,0,0,0,1,0,0]
   load_choice=0
@@ -20707,18 +18993,16 @@ common export_file, export_file,export_sel,export_flag
   div_type=0
   atten_type=0
   div_type_names=[['INTERPOLATING'],['RAY TRACING'],['ANALYTIC     ']]
-  atten_type_names=[['Full attenuation '],['Plasma only'],['Gas only'],['Limiters only'],['Gas + Limiters'],['Skip attenuation']]
-  vel_dis_names=[['YES'],['NO']]
-  vel_dis_type=1
+  atten_type_names=[['Full attenuation '],['Plasma only'],['Gas only'],['Limiters only'],['Skip attenuation']]
   save_output_type=2
   save_output_file=file_dir+'/'+beam+'_'+strtrim(string(run),2)+'.abo' 
   ;grid_arr
   code_grid_arr={z:[0.0,0.0,0.0,0.0,0.0],x:[0.0,0.0,0.0],y:[0.0,0.0,0.0]}
   ;beam_geometry
-  x_bml=0.0 & y_bml=0.0 & grid_ap_diam=0.0 & x_grid_focus=0.0 & y_grid_focus=0.0 & beam_port='?' & r_grid=0.0 & z_grid=0.0 & phi_grid=0.0 & r_wall=0.0 & z_wall=0.0 & phi_wall=0.0 & tank_front_dist=0.0 & tank_size=0.0 & neutr_size=0.0 & tank_diam=0.0 & neutr_diam=0.0 & magnet_diam=0.0 & neutr_front_dist=0.0
+  x_bml=0.0 & y_bml=0.0 & grid_ap_diam=0.0 & grid_focus=0.0 & beam_port='?' & r_grid=0.0 & z_grid=0.0 & phi_grid=0.0 & r_wall=0.0 & z_wall=0.0 & phi_wall=0.0 & tank_front_dist=0.0 & tank_size=0.0 & neutr_size=0.0
   tank_magnet_dist=0.0 & magnet_size=0.0 & tank_cal_dist=0.0
   ;beam_param
-  beam_atom='H' & e_full=0.0 & E_frac=[1.0,1.0,1.0,1.0] & I_beam=0.0 & I_frac=[0.0,0.0,0.0,0.0] & I_opt=0.0 & I_dens_par=0.0 & neutr_dens_ns_tot=0.0 & neutr_dens_frac=[0.0,0.0,0.0,0.0] & x_div_bml_opt=0.0 & y_div_bml_opt=0.0 & div_dist_par=0.0
+  e_full=0.0 & E_frac=[1.0,1.0,1.0,1.0] & I_beam=0.0 & I_frac=[0.0,0.0,0.0,0.0] & I_opt=0.0 & I_dens_par=0.0 & neutr_dens_ns_tot=0.0 & neutr_dens_frac=[0.0,0.0,0.0,0.0] & div_bml_opt=0.0 & div_dist_par=0.0
   ;plasma param
   main_ion='D' & n_impur=1 & impur_table=[['B'],['5'],['1.000']]
   ;beam_limiters
@@ -20727,7 +19011,7 @@ common export_file, export_file,export_sel,export_flag
   ;plasma_geometry
   r_major=0.0 & z_major=0.0 & r_minor=0.0 & elong=0.0 & triang_upper=0.0 & triang_lower=0.0
   ;neutral_gas
-  tank_pressure=0.0 & torus_pressure=0.0 & duct_pressure=0.0 & duct_pressure_loc=0.0 
+  tank_pressure=0.0 & torus_pressure=0.0 
   ;save_param
   save_param_file=file_dir+'/'+beam+'.abi'
   save_set_file=file_dir+'/'+beam+'.aset'
@@ -20771,7 +19055,7 @@ common export_file, export_file,export_sel,export_flag
       ,VALUE= 'Beam Type: ' ,XSIZE=5 ,YSIZE=23,/Align_left)
       
   Beam_Text = Widget_text(Main_Base, UNAME='Beam_Text'  $
-      ,XOFFSET=75, YOFFSET=8,SCR_XSIZE=130 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=75, YOFFSET=8,SCR_XSIZE=90 ,SCR_YSIZE=30,/editable $
       ,VALUE=beam ,XSIZE=20 ,YSIZE=1)
      
   Show_Driver_Button = Widget_Button(Main_Base, UNAME='Show_Driver_Button'  $
@@ -21158,9 +19442,9 @@ common export_file, export_file,export_sel,export_flag
   
 
   Plot_Choice_Droplist=Widget_Droplist(Main_Base, UNAME='Plot_Choice_Droplist'$
-      ,XOFFSET=510,YOFFSET=693,XSIZE=120,YSIZE=15,value=[['n_beam volume'],['n_beam contour'],['beam line density vs z_beam'],['beam line density vs r_major'],$
+      ,XOFFSET=510,YOFFSET=693,XSIZE=120,YSIZE=15,value=[['n_beam contour'],['beam line density vs z_beam'],['beam line density vs r_major'],$
 ['beam deposition vs rho'],['total beam power (in atoms)'],['beam horizontal width'],['beam vertical width'],['n_beam vs z_beam'],['n_beam vs r_major'],$
-['n_beam vs x_beam'],['n_beam vs y_beam'],['lost atoms line density'],['beam power loss'],['velocity contour']])  
+['n_beam vs x_beam'],['n_beam vs y_beam'],['lost atoms line density'],['beam power loss']])  
 
   Widget_Control, Plot_Button,Sensitive=0
   Widget_Control, Export_Button,Sensitive=0
