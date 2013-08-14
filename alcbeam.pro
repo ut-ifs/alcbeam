@@ -1663,7 +1663,7 @@ common construct_settings, flux_surf_names, flux_surf_arr_type,ne_arr_type,te_ar
 stop_plasma_type_names,exc_plasma_type, exc_plasma_type_names,gas_arr_type,stop_gas_type,lim_arr_type,grid_aper_names,grid_aper_type
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, $
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,beam_port_phi,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, $
 tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ; The following common block contains general parameters: which user,
 ; what beam, what shot and time interval
@@ -2042,7 +2042,7 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
       ,VALUE= 'Plasma Geometry from :' ,XSIZE=5 ,YSIZE=23,/Align_left)
  
       Plasma_Geom_Type_Droplist=Widget_Droplist(Load_Settings_Base, UNAME='Plasma_Geom_Type_Droplist'$
-      ,XOFFSET=190,YOFFSET=227,XSIZE=100,YSIZE=15,value=[['EFIT (MDSPLUS) '],['EFIT(EQDSK files)'],['*.abi input file  '],['skip']])
+      ,XOFFSET=190,YOFFSET=227,XSIZE=100,YSIZE=15,value=[['EFIT (MDSPLUS) '],['EFIT (EQDSK files)'],['VMEC (wout file)  '],['*.abi input file  '],['skip']])
 
       Widget_Control, Plasma_Geom_Type_Droplist,Set_droplist_select=plasma_geom_type     
       
@@ -2050,7 +2050,7 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
       ,XOFFSET=355, YOFFSET=229,SCR_XSIZE=250 ,SCR_YSIZE=30,/editable $
       ,VALUE=plasma_geom_file ,XSIZE=20 ,YSIZE=1) 
       
-      plasma_geom_sens=[0,1,0]
+      plasma_geom_sens=[0,1,1,1,0]
       Widget_Control, Plasma_Geom_File_text,Sensitive=plasma_geom_sens(Plasma_Geom_type) 
       
       Plasma_Param_label = Widget_Label(Load_Settings_Base, UNAME='Plasma_Param_Label'  $
@@ -2232,7 +2232,7 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
 
       N_limiters_Label_6 = Widget_Label(Beam_Limiters_Base, UNAME='N_Limiters_Label_6'  $
       ,XOFFSET=8, YOFFSET=175, SCR_XSIZE=467 , SCR_YSIZE=23 $
-      ,VALUE= 'Tokamak walls - (cylinders) - (defined by R-major), (Others - NaN)' ,XSIZE=5 ,YSIZE=1,/align_left)
+      ,VALUE= 'Vessel walls - (cylinders) - (defined by R-major), (Others - NaN)' ,XSIZE=5 ,YSIZE=1,/align_left)
       
       N_limiters_Text = Widget_text(Beam_Limiters_Base, UNAME='N_Limiters_Text'  $
       ,XOFFSET=256, YOFFSET=35,SCR_XSIZE=32 ,SCR_YSIZE=33,/editable $
@@ -2279,7 +2279,7 @@ end
 ;-------------------------------------------------------------------------------------------------------------------------
 pro show_plasma_geometry_window, main_base
 ;The following common block contains the parameters which describe the geometry
-;and position of the tokamak  plasma
+;and position of the machine  plasma
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
 ;The following common block is used to transfer the pointer to the
 ;status window and availability states of each data set
@@ -2315,7 +2315,7 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
   
       R_Major_Label = Widget_Label(Plasma_Geometry_Base, UNAME='R_Major_Label'  $
       ,XOFFSET=8, YOFFSET=40, SCR_XSIZE=347 , SCR_YSIZE=33 $
-      ,VALUE= 'Major radius of the tokamak (radius of plasma center), m ' ,XSIZE=5 ,YSIZE=1)
+      ,VALUE= 'Major radius of the plasma (radius of plasma center), m ' ,XSIZE=5 ,YSIZE=1)
  
       R_Major_Text = Widget_text(Plasma_Geometry_Base, UNAME='R_Major_Text'  $
       ,XOFFSET=356, YOFFSET=40,SCR_XSIZE=58 ,SCR_YSIZE=30,/editable $
@@ -2331,7 +2331,7 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
 
       R_Minor_Label = Widget_Label(Plasma_Geometry_Base, UNAME='R_Minor_Label'  $
       ,XOFFSET=8, YOFFSET=100, SCR_XSIZE=347 , SCR_YSIZE=33 $
-      ,VALUE= 'Minor radius of the tokamak, m                           ' ,XSIZE=5 ,YSIZE=1)
+      ,VALUE= 'Minor radius of the plasma, m                           ' ,XSIZE=5 ,YSIZE=1)
  
       R_Minor_Text = Widget_text(Plasma_Geometry_Base, UNAME='R_Minor_Text'  $
       ,XOFFSET=356, YOFFSET=100,SCR_XSIZE=58 ,SCR_YSIZE=30,/editable $
@@ -2490,9 +2490,9 @@ end
 pro show_beam_geometry_window, main_base
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,beam_port_phi,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains the parameters which describe the geometry
-;and position of the tokamak  plasma
+;and position of the machine  plasma
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
 ;The following common block contains the parameters which describe the
 ;positions and sizes of the beam limiters. This block also holds the
@@ -2528,31 +2528,35 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
       ,VALUE= 'Parameters specifying the geometry and location of the beam injector' ,XSIZE=5 ,YSIZE=23, /Align_Center,/sunken_frame)   
   
       Beam_Port_Text = Widget_text(Beam_Geometry_Base, UNAME='Beam_Port_Text'  $
-      ,XOFFSET=356, YOFFSET=35,SCR_XSIZE=28 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=426, YOFFSET=35,SCR_XSIZE=28 ,SCR_YSIZE=30,/editable $
       ,VALUE=beam_port ,XSIZE=20 ,YSIZE=1)
 
+      Beam_Port_Phi_Text = Widget_text(Beam_Geometry_Base, UNAME='Beam_Port_Phi_Text'  $
+      ,XOFFSET=286, YOFFSET=35,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
+      ,VALUE=strtrim(string(beam_port_phi,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
+
       Beam_Port_Label = Widget_Label(Beam_Geometry_Base, UNAME='Beam_Port_Label'  $
-      ,XOFFSET=8, YOFFSET=35, SCR_XSIZE=347 , SCR_YSIZE=33 $
-      ,VALUE= 'Beam Injector is attached to the port                    ' ,XSIZE=5 ,YSIZE=1) 
+      ,XOFFSET=8, YOFFSET=35, SCR_XSIZE=447 , SCR_YSIZE=33 $
+      ,VALUE= 'Toroidal angles are relative to the phi0, deg             -   Port: ' , /align_left, XSIZE=5 ,YSIZE=1) 
 
       X_Grids_Focus_Text = Widget_text(Beam_Geometry_Base, UNAME='X_Grids_Focus_Text'  $
-      ,XOFFSET=256, YOFFSET=66,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=306, YOFFSET=66,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(x_grid_focus,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
   
       Y_Grids_Focus_Text = Widget_text(Beam_Geometry_Base, UNAME='Y_Grids_Focus_Text'  $
-      ,XOFFSET=356, YOFFSET=66,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=406, YOFFSET=66,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(Y_grid_focus,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)    
 
       Grids_Focus_Label = Widget_Label(Beam_Geometry_Base, UNAME='Grids_Focus_Label'  $
-      ,XOFFSET=8, YOFFSET=65, SCR_XSIZE=345 , SCR_YSIZE=33 $
-      ,VALUE= 'Radii of curvature of the grids, m    X:               Y:' ,XSIZE=5 ,YSIZE=1,/align_left)
+      ,XOFFSET=8, YOFFSET=65, SCR_XSIZE=395 , SCR_YSIZE=33 $
+      ,VALUE= 'Radii of curvature of the grids, m            X:               Y:' ,XSIZE=5 ,YSIZE=1,/align_left)
  
       X_Bml_Label = Widget_Label(Beam_Geometry_Base, UNAME='X_Bml_Label'  $
       ,XOFFSET=8, YOFFSET=95, SCR_XSIZE=247 , SCR_YSIZE=33 $
       ,VALUE= 'X positions of the apertures, mm ' ,XSIZE=5 ,YSIZE=1,/align_left)
  
       X_Bml_Text = Widget_text(Beam_Geometry_Base, UNAME='X_Bml_Text'  $
-      ,XOFFSET=256, YOFFSET=96,SCR_XSIZE=148 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=306, YOFFSET=96,SCR_XSIZE=148 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(x_bml*1e3,format='(F10.5,", ")'),1) ,XSIZE=120 ,YSIZE=1)
       
       Y_Bml_Label = Widget_Label(Beam_Geometry_Base, UNAME='Y_Bml_Label'  $
@@ -2560,7 +2564,7 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
       ,VALUE= 'Y positions of the apertures, mm ' ,XSIZE=5 ,YSIZE=1,/align_left)
  
       Y_Bml_Text = Widget_text(Beam_Geometry_Base, UNAME='Y_Bml_Text'  $
-      ,XOFFSET=256, YOFFSET=125,SCR_XSIZE=148 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=306, YOFFSET=125,SCR_XSIZE=148 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(y_bml*1e3,format='(F10.5,", ")'),1) ,XSIZE=120 ,YSIZE=1)
 
       Grid_Ap_Diam_Label = Widget_Label(Beam_Geometry_Base, UNAME='Grid_Ap_Diam_Label'  $
@@ -2568,7 +2572,7 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
       ,VALUE= 'Diameter of elemental aperture in extraction grid, mm', XSIZE=5 ,YSIZE=1,/align_left)
  
       Grid_Ap_Diam_Text = Widget_text(Beam_Geometry_Base, UNAME='Grid_Ap_Diam_Text'  $
-      ,XOFFSET=356, YOFFSET=155,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=406, YOFFSET=155,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(grid_ap_diam,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
  
       Tank_Front_Label = Widget_Label(Beam_Geometry_Base, UNAME='Tank_Front_Label'  $
@@ -2576,7 +2580,7 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
       ,VALUE= 'Distance from grids to the tank front wall, m            ', XSIZE=5 ,YSIZE=1)
  
       Tank_Front_Text = Widget_text(Beam_Geometry_Base, UNAME='Tank_Front_Text'  $
-      ,XOFFSET=356, YOFFSET=185,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=406, YOFFSET=185,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(tank_front_dist,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
 
       Tank_Size_Label = Widget_Label(Beam_Geometry_Base, UNAME='Tank_Size_Label'  $
@@ -2584,7 +2588,7 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
       ,VALUE= 'The length of the beam vacuum tank, m                     ', XSIZE=5 ,YSIZE=1)
 
       Tank_Size_Text = Widget_text(Beam_Geometry_Base, UNAME='Tank_Size_Text'  $
-      ,XOFFSET=356, YOFFSET=215,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=406, YOFFSET=215,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(tank_size,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
 
       Tank_Diam_Label = Widget_Label(Beam_Geometry_Base, UNAME='Tank_Diam_Label'  $
@@ -2592,7 +2596,7 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
       ,VALUE= 'Inner diameter of the beam vacuum tank, m                 ', XSIZE=5 ,YSIZE=1)
 
       Tank_Diam_Text = Widget_text(Beam_Geometry_Base, UNAME='Tank_Diam_Text'  $
-      ,XOFFSET=356, YOFFSET=245,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=406, YOFFSET=245,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(tank_diam,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
 
       Neutr_Front_Label = Widget_Label(Beam_Geometry_Base, UNAME='Neutr_Front_Label'  $
@@ -2600,7 +2604,7 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
       ,VALUE= 'Distance from grids to the neutralizer front surface, m   ', XSIZE=5 ,YSIZE=1)
  
       Neutr_Front_Text = Widget_text(Beam_Geometry_Base, UNAME='Neutr_Front_Text'  $
-      ,XOFFSET=356, YOFFSET=275,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=406, YOFFSET=275,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(neutr_front_dist,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
      
       Neutr_Size_Label = Widget_Label(Beam_Geometry_Base, UNAME='Neutr_Size_Label'  $
@@ -2608,7 +2612,7 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
       ,VALUE= 'The length of the beam neutralizer tube, m                ', XSIZE=5 ,YSIZE=1)
  
       Neutr_Size_Text = Widget_text(Beam_Geometry_Base, UNAME='Neutr_Size_Text'  $
-      ,XOFFSET=356, YOFFSET=305,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=406, YOFFSET=305,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(neutr_size,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)     
 
       Neutr_Diam_Label = Widget_Label(Beam_Geometry_Base, UNAME='Neutr_Diam_Label'  $
@@ -2616,7 +2620,7 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
       ,VALUE= 'Inner diameter of the beam neutralizer tube, m            ', XSIZE=5 ,YSIZE=1)
  
       Neutr_Diam_Text = Widget_text(Beam_Geometry_Base, UNAME='Neutr_Diam_Text'  $
-      ,XOFFSET=356, YOFFSET=335,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=406, YOFFSET=335,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(neutr_diam,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)  
 
       Tank_Magnet_Label = Widget_Label(Beam_Geometry_Base, UNAME='Tank_Magnet_Label'  $
@@ -2762,15 +2766,15 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
         plot,[0,0],[1,1],color=0,background=-1,xrange=[wx0,wx1],yrange=[wy0,wy1],/nodata,ystyle=1,xstyle=1
         angl_arr=interpol([-!Pi,!Pi],200)
         oplot,[wx0,wx1],[0,0],color=0,linestyle=2
-        ;plot plasma and tokamak
+        ;plot plasma and machine
         oplot,(r_major+r_minor)*cos(angl_arr),(r_major+r_minor)*sin(angl_arr),thick=1,color=120,linestyle=2      
         oplot,(r_major-r_minor)*cos(angl_arr),(r_major-r_minor)*sin(angl_arr),thick=1,color=120,linestyle=2
         oplot,r_major*cos(angl_arr),r_major*sin(angl_arr),thick=2,color=120              
         oplot,(r_major+r_minor*1.4)*cos(angl_arr),(r_major+r_minor*1.2)*sin(angl_arr),thick=3,color=0
-        xyouts, 630,380,'Tokamak torus',color=0,/device,charsize=1.5
+        xyouts, 630,380,'Machine torus',color=0,/device,charsize=1.5
         xyouts, 630,360,'Plasma center, inner and outer SOL',color=120,/device,charsize=1.5
         ;plot beam port
-        xyouts,-r_minor*3.0-r_major,-0.2,beam_port+' port',color=0,charsize=1.5
+        xyouts,-r_minor*3.0-r_major,-0.4,beam_port+' port',color=0,charsize=1.5
 
         ;plot focal point
         F_diam=(wx1-wx0)/500.0
@@ -3165,7 +3169,7 @@ end
 Pro get_z_eff_file
 ;The following common block contains all the extracted z_eff profiles and 3D
 ;z_eff array after it constructed 
-common effective_charge, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_eff_r,z_eff_arr,z_eff_err_arr
+common effective_charge, z_eff_coord, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_eff_r,z_eff_arr,z_eff_err_arr
 ;The following common block contains the name of the input file from which the input
 ;data is extracted 
 common load_settings, load_set_def,load_choice,general_type, general_file, beam_geom_type,beam_geom_file,beam_lim_type,$
@@ -3205,11 +3209,15 @@ if file(0) eq "" then begin
 endif
 ;----------------------------------------------------- 
 z_eff=0 & z_eff_r=0 & z_eff_err=0 & z_eff_raw=0 & z_eff_raw_r=0 & z_eff_raw_err=0
+z_eff_coord = 0
 openr,1,z_eff_file
 while ~EOF(1) do begin
 
 readf,1,val
-
+if val eq 'z_eff_coord:' then begin 
+  readf,1,val
+  z_eff_coord=int(val)
+endif
 if val eq 'z_eff_raw_r:' then begin 
   readf,1,val
   z_eff_raw_r=float(strsplit(val,', ',/extract))
@@ -3298,13 +3306,13 @@ end
 pro get_z_eff
 ;The following common block contains all the extracted z_eff profiles and 3D
 ;z_eff array after it constructed 
-common effective_charge, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_eff_r,z_eff_arr,z_eff_err_arr
+common effective_charge, z_eff_coord, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_eff_r,z_eff_arr,z_eff_err_arr
 ;The following common block contains all the previously ne profiles and 3D
 ;n_e and ne_stop_cross_section arrays after they constructed.. This block is used here to get the
 ;n_e 1D spatial grid
-common dens_electrons,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
+common dens_electrons,n_e_coord,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
 ;The following common block contains parameters which describe the geometry
-;and position of the tokamak  plasma. This block is used here to
+;and position of the machine  plasma. This block is used here to
 ;extrapolate z_eff pofile to the range starting form center of the
 ;plasma to the edge.
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
@@ -3337,6 +3345,7 @@ endif
 ;----------------------------------------------------- 
 z_eff=0 & z_eff_r=0 & z_eff_err=0 & z_eff_raw=0 & z_eff_raw_r=0 & z_eff_raw_err=0
 if z_eff_type eq 0 then begin
+ z_eff_coord = 0
  mdsopen,'cmod',shot,status=st0,/quiet
  if st0 then begin
    t_arr=mdsvalue('dim_of(\nrootz,0)',status=st1,/quiet)
@@ -3410,6 +3419,7 @@ if z_eff_type eq 0 then begin
   endelse
 endif
 if z_eff_type eq 1 then begin
+ z_eff_coord = 0
  mdsopen,'spectroscopy',shot,status=st0,/quiet
  if st0 then begin
    t_arr=mdsvalue('dim_of(\z_ave)',status=st1,/quiet)
@@ -3462,12 +3472,14 @@ if z_eff_type eq 1 then begin
   endelse
 endif
 if z_eff_type eq 2 then begin
+    z_eff_coord = n_e_coord
     st_z_eff=0
     val=float(z_eff_file)  
-    z_eff_raw_r=[r_major,r_major+r_minor]
+    
+    if z_eff_coord eq 0 then z_eff_raw_r=[r_major,r_major+r_minor] else z_eff_raw_r=[0.0,1.0]
     z_eff_raw=[val,val]
 
-    z_eff_raw_err=[0,0]
+    z_eff_raw_err=[0.1,0.1]
     z_eff_r = n_e_r
      
     z_eff=interpol(z_eff_raw,z_eff_raw_r,z_eff_r)
@@ -3494,6 +3506,7 @@ if z_eff_type eq 3 then begin
   z_eff_raw=z_eff
   z_eff_raw_r=z_eff_r
   z_eff_raw_err=z_eff_raw
+  z_eff_coord = n_e_coord
 endif
 end
 ;-------------------------------------------------------------------------------------------------------------------------
@@ -3505,9 +3518,9 @@ end
 pro get_ne_fits, filename
 ;The following common block contains 1D ne profiles and 3D
 ;n_e and ne_stop_cross_section arrays after they constructed.
-common dens_electrons,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
+common dens_electrons,n_e_coord,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
 ;The following common block contains the parameters which describe the geometry
-;and position of the tokamak  plasma. This block is used here to
+;and position of the machine  plasma. This block is used here to
 ;extrapolate n_e pofile to the range starting form center of the
 ;plasma to the edge.
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
@@ -3574,6 +3587,7 @@ n_e_raw_err(locate(n_e_raw_r,n_e_r(n_elements(n_e_r)-1)):*)=n_e_raw_err(locate(n
 n_e_r=n_e_raw_r
 n_e_err=n_e_raw_err
 n_e=n_e_raw
+n_e_coord = 0
 end
 ;-------------------------------------------------------------------------------------------------------------------------
 
@@ -3584,9 +3598,9 @@ end
 pro get_te_fits, filename
 ;The following common block contains 1D t_e profiles and 3D
 ;t_e array after it constructed.
-common temp_electrons,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
+common temp_electrons,t_e_coord,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
 ;The following common block contains the parameters which describe the geometry
-;and position of the tokamak  plasma. This block is used here to
+;and position of the machine  plasma. This block is used here to
 ;extrapolate t_e pofile to the range starting form center of the
 ;plasma to the edge.
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
@@ -3653,7 +3667,7 @@ t_e_raw_err(locate(t_e_raw_r,t_e_r(n_elements(t_e_r)-1)):*)=t_e_raw_err(locate(t
 t_e_r=t_e_raw_r
 t_e_err=t_e_raw_err
 t_e=t_e_raw
-
+t_e_coord = 0
 end
 ;-------------------------------------------------------------------------------------------------------------------------
 
@@ -3700,7 +3714,7 @@ end
 pro smooth_ne,sm_n
 ;The following common block contains 1D n_e profiles of raw and smoothed data, and 3D
 ;n_e array after it constructed.
-common dens_electrons,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
+common dens_electrons,n_e_coord,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
 ;The following common block is used to transfer the pointer to the
 ;status window and availability states of each data set
 common status, status_wid,error_catch,st_err  
@@ -3721,15 +3735,17 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
  endif
 ;----------------------------------------------------- 
   ncrd=n_elements(n_e_raw)
-  if (where(n_e_raw_err eq 0))(0) eq -1 and (where(finite(n_e_raw_err) eq 0))(0) eq -1 then dy=(n_e_raw_err)/max(n_e_raw_err) else dy=make_array(ncrd,value=1)
-  y_max=max(n_e_raw)
-  yout_ne=smooth_func(n_e_raw_r,n_e_raw/y_max,dy,ncrd,sm_n)*y_max
-  if st_err then return
-  eval_sp,n_e_raw_r,yout_ne,n_e_r,n_e,y1_new,y2_new
-  if st_err then return
-  n_e=(n_e>0)
-  n_e_err=interpol(n_e_raw_err,n_e_raw_r,n_e_r,/quadratic)
-  n_e_err=(n_e_err>0)
+  if ncrd gt 3 then begin
+     if (where(n_e_raw_err eq 0))(0) eq -1 and (where(finite(n_e_raw_err) eq 0))(0) eq -1 then dy=(n_e_raw_err)/max(n_e_raw_err) else dy=make_array(ncrd,value=1)
+     y_max=max(n_e_raw)
+     yout_ne=smooth_func(n_e_raw_r,n_e_raw/y_max,dy,ncrd,sm_n)*y_max
+     if st_err then return
+     eval_sp,n_e_raw_r,yout_ne,n_e_r,n_e,y1_new,y2_new
+     if st_err then return
+     n_e=(n_e>0)
+     n_e_err=interpol(n_e_raw_err,n_e_raw_r,n_e_r,/quadratic)
+     n_e_err=(n_e_err>0)
+  endif
 end
 ;-------------------------------------------------------------------------------------------------------------------------
 
@@ -3741,7 +3757,7 @@ end
 pro smooth_te,sm_t
 ;The following common block contains 1D t_e profiles of raw and smoothed data, and 3D
 ;t_e array after it constructed.
-common temp_electrons,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
+common temp_electrons,t_e_coord,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
 ;The following common block is used to transfer the pointer to the
 ;status window and availability states of each data set
 common status, status_wid,error_catch,st_err  
@@ -3762,15 +3778,17 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
  endif
 ;----------------------------------------------------- 
   ncrd=n_elements(t_e_raw)
-  if (where(t_e_raw_err eq 0))(0) eq -1 and (where(finite(t_e_raw_err) eq 0))(0) eq -1 then dy=(t_e_raw_err)/max(t_e_raw_err) else dy=make_array(ncrd,value=1)
-  y_max=max(t_e_raw)
-  yout_te=smooth_func(t_e_raw_r,t_e_raw/y_max,dy,ncrd,sm_t)*y_max
-  if st_err then return
-  eval_sp,t_e_raw_r,yout_te,t_e_r,t_e,y1_new,y2_new
-  if st_err then return
-  t_e=(t_e>0)
-  t_e_err=interpol(t_e_raw_err,t_e_raw_r,t_e_r,/quadratic)
-  t_e_err=(t_e_err>0)
+  if ncrd gt 3 then begin
+     if (where(t_e_raw_err eq 0))(0) eq -1 and (where(finite(t_e_raw_err) eq 0))(0) eq -1 then dy=(t_e_raw_err)/max(t_e_raw_err) else dy=make_array(ncrd,value=1)
+     y_max=max(t_e_raw)
+     yout_te=smooth_func(t_e_raw_r,t_e_raw/y_max,dy,ncrd,sm_t)*y_max
+     if st_err then return
+     eval_sp,t_e_raw_r,yout_te,t_e_r,t_e,y1_new,y2_new
+     if st_err then return
+     t_e=(t_e>0)
+     t_e_err=interpol(t_e_raw_err,t_e_raw_r,t_e_r,/quadratic)
+     t_e_err=(t_e_err>0)
+  endif
 end
 ;-------------------------------------------------------------------------------------------------------------------------
 
@@ -3782,7 +3800,7 @@ end
 pro smooth_z_eff,sm_z_eff
 ;The following common block contains 1D z_eff profiles of raw and smoothed data, and 3D
 ;z_eff array after it constructed.
-common effective_charge, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_eff_r,z_eff_arr,z_eff_err_arr
+common effective_charge, z_eff_coord, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_eff_r,z_eff_arr,z_eff_err_arr
 ;The following common block is used to transfer the pointer to the
 ;status window and availability states of each data set
 common status, status_wid,error_catch,st_err  
@@ -3803,16 +3821,18 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
  endif
 ;----------------------------------------------------- 
   ncrd=n_elements(z_eff_raw)
-  if (where(z_eff_raw_err eq 0))(0) eq -1 and (where(finite(z_eff_raw_err) eq 0))(0) eq -1 then dy=(z_eff_raw_err)/max(z_eff_raw_err) else dy=make_array(ncrd,value=1)
-  y_max=max(z_eff_raw)
-  if ncrd lt 3 then return
-  yout_te=smooth_func(z_eff_raw_r,z_eff_raw/y_max,dy,ncrd,sm_z_eff)*y_max
-  if st_err then return
-  eval_sp,z_eff_raw_r,yout_te,z_eff_r,z_eff,y1_new,y2_new
-  if st_err then return
-  z_eff=(z_eff>0)
-  z_eff_err=interpol(z_eff_raw_err,z_eff_raw_r,z_eff_r,/quadratic)
-  z_eff_err=(z_eff_err>0)
+  if ncrd gt 3 then begin
+     if (where(z_eff_raw_err eq 0))(0) eq -1 and (where(finite(z_eff_raw_err) eq 0))(0) eq -1 then dy=(z_eff_raw_err)/max(z_eff_raw_err) else dy=make_array(ncrd,value=1)
+     y_max=max(z_eff_raw)
+     if ncrd lt 3 then return
+     yout_te=smooth_func(z_eff_raw_r,z_eff_raw/y_max,dy,ncrd,sm_z_eff)*y_max
+     if st_err then return
+     eval_sp,z_eff_raw_r,yout_te,z_eff_r,z_eff,y1_new,y2_new
+     if st_err then return
+     z_eff=(z_eff>0)
+     z_eff_err=interpol(z_eff_raw_err,z_eff_raw_r,z_eff_r,/quadratic)
+     z_eff_err=(z_eff_err>0)
+   endif
 end
 ;-------------------------------------------------------------------------------------------------------------------------
 
@@ -3822,7 +3842,7 @@ end
 Pro get_ne_file
 ;The following common block contains 1D n_e profiles of raw and smoothed data, and 3D
 ;n_e array after it constructed.
-common dens_electrons,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
+common dens_electrons,n_e_coord,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
 ;The following common block contains the name of the input file from which the input
 ;data is extracted 
 common load_settings, load_set_def,load_choice,general_type, general_file, beam_geom_type,beam_geom_file,beam_lim_type,beam_lim_file,beam_param_type,beam_param_file,$
@@ -3850,6 +3870,7 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
  endif
 ;----------------------------------------------------- 
 n_e=0 & n_e_r=0 & n_e_err=0 & n_e_raw=0 & n_e_raw_r=0 & n_e_raw_err=0
+n_e_coord = 0; default if no value in the file
 val='template'
 close,1
 st=0
@@ -3864,6 +3885,10 @@ endif
 openr,1,ne_file
 while ~EOF(1) do begin
 readf,1,val
+if val eq 'n_e_coord:' then begin 
+  readf,1,val
+  n_e_coord=int(val)
+endif
 if val eq 'n_e_raw_r:' then begin 
   readf,1,val
   n_e_raw_r=float(strsplit(val,', ',/extract))
@@ -3949,9 +3974,9 @@ end
 pro dens_e
 ;The follwing common block contains 1D n_e profiles of raw and smoothed data, and 3D
 ;n_e array after it constructed.
-common dens_electrons,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
+common dens_electrons,n_e_coord,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
 ;The following common block contains the parameters which describe the geometry
-;and position of the tokamak  plasma. This block is used here to
+;and position of the machine  plasma. This block is used here to
 ;extrapolate n_e pofile to the range starting form center of the
 ;plasma to the edge
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower 
@@ -4120,6 +4145,7 @@ n_e=0 & n_e_r=0 & n_e_err=0 & n_e_raw=0 & n_e_raw_r=0 & n_e_raw_err=0
    n_e_r=interpol([min(n_e_raw_r),max(n_e_raw_r)],n_int)
    n_e=interpol(n_e_raw,n_e_raw_r,n_e_r)
    n_e_err=interpol(n_e_raw_err,n_e_raw_r,n_e_r,/quadratic)
+n_e_coord = 0
 end
 ;-------------------------------------------------------------------------------------------------------------------------
 ;-------------------------------------------------------------------------------------------------------------------------
@@ -4128,9 +4154,9 @@ end
 pro quickfit_ne
 ;The follwing common block contains 1D n_e profiles of raw and smoothed data, and 3D
 ;n_e array after it constructed.
-common dens_electrons,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
+common dens_electrons,n_e_coord,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
 ;The following common block contains the parameters which describe the geometry
-;and position of the tokamak  plasma. This block is used here to
+;and position of the machine  plasma. This block is used here to
 ;extrapolate n_e pofile to the range starting form center of the
 ;plasma to the edge
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower 
@@ -4199,6 +4225,7 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
      n_e=n_e_raw
      n_e_err=n_e_raw_err   
   endelse
+n_e_coord = 0
 end
 ;-------------------------------------------------------------------------------------------------------------------------
 
@@ -4209,7 +4236,7 @@ end
 Pro get_te_file
 ;The following common block contains 1D t_e profiles of raw and smoothed data, and 3D
 ;t_e array after it constructed. 
-common temp_electrons,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
+common temp_electrons,t_e_coord,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
 ;The following common block contains the name of the input file from which the input
 ;data is extracted 
 common load_settings, load_set_def,load_choice,general_type, general_file, beam_geom_type,beam_geom_file,beam_lim_type,beam_lim_file,beam_param_type,beam_param_file,ne_type,$
@@ -4237,6 +4264,7 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
  endif
 ;----------------------------------------------------- 
 t_e=0 & t_e_r=0 & t_e_err=0 & t_e_raw=0 & t_e_raw_r=0 & t_e_raw_err=0
+t_e_coord = 0 ;default if no value in file
 val='template'
 close,1
 st=0
@@ -4253,7 +4281,10 @@ openr,1,te_file
 while ~EOF(1) do begin
 
 readf,1,val
-
+if val eq 't_e_coord:' then begin 
+  readf,1,val
+  t_e_coord=int(val)
+endif
 if val eq 't_e_raw_r:' then begin 
   readf,1,val
   t_e_raw_r=float(strsplit(val,', ',/extract))
@@ -4341,9 +4372,9 @@ end
 pro temp_e
 ;The following common block contains 1D t_e profiles of raw and smoothed data, and 3D
 ;t_e array after it constructed.
-common temp_electrons,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
+common temp_electrons,t_e_coord,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
 ;The following common block contains the parameters which describe the geometry
-;and position of the tokamak  plasma. This block is used here to
+;and position of the machine  plasma. This block is used here to
 ;extrapolate t_e pofile to the range starting form center of the
 ;plasma to the edge
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower 
@@ -4513,6 +4544,7 @@ t_e=0 & t_e_r=0 & t_e_err=0 & t_e_raw=0 & t_e_raw_r=0 & t_e_raw_err=0
    t_e_r=interpol([min(t_e_raw_r),max(t_e_raw_r)],n_int)
    t_e=interpol(t_e_raw,t_e_raw_r,t_e_r)
    t_e_err=interpol(t_e_raw_err,t_e_raw_r,t_e_r,/quadratic)
+t_e_coord = 0
 end
 ;-------------------------------------------------------------------------------------------------------------------------
 
@@ -4522,9 +4554,9 @@ end
 pro quickfit_te
 ;The following common block contains 1D t_e profiles of raw and smoothed data, and 3D
 ;t_e array after it constructed.
-common temp_electrons,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
+common temp_electrons,t_e_coord,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
 ;The following common block contains the parameters which describe the geometry
-;and position of the tokamak  plasma. This block is used here to
+;and position of the machine  plasma. This block is used here to
 ;extrapolate n_e pofile to the range starting form center of the
 ;plasma to the edge
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower 
@@ -4593,6 +4625,7 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
      t_e=t_e_raw
      t_e_err=t_e_raw_err   
   endelse
+t_e_coord = 0
 end
 ;-------------------------------------------------------------------------------------------------------------------------
 
@@ -4603,9 +4636,9 @@ end
 pro get_ece_temp
 ;The following common block contains 1D t_e profiles of raw and smoothed data, and 3D
 ;t_e array after it constructed.
-common temp_electrons,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
+common temp_electrons,t_e_coord,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
 ;The following common block contains the parameters which describe the geometry
-;and position of the tokamak  plasma. This block is used here to
+;and position of the machine  plasma. This block is used here to
 ;extrapolate t_e pofile to the range starting form center of the
 ;plasma to the edge
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower 
@@ -4687,6 +4720,7 @@ t_e=0 & t_e_r=0 & t_e_err=0 & t_e_raw=0 & t_e_raw_r=0 & t_e_raw_err=0
      st_err=1
      return
    endelse
+t_e_coord = 0
 end
 ;-------------------------------------------------------------------------------------------------------------------------
 
@@ -4695,7 +4729,7 @@ end
 ;-------------------------------------------------------------------------------------------------------------------------
 Pro load_plasma_geom_file
 ;The following common block contains the parameters which describe the geometry
-;and position of the tokamak  plasma.
+;and position of the machine  plasma.
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower 
 ;The following common block contains the name of the input file from which the input
 ;data is extracted 
@@ -4793,7 +4827,7 @@ end
 ;-------------------------------------------------------------------------------------------------------------------------
 Pro load_plasma_geom
 ;The following common block contains the parameters which describe the geometry
-;and position of the tokamak  plasma.
+;and position of the machine  plasma.
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower 
 ; The following common block contains general parameters: which user,
 ; what beam, what shot and time interval
@@ -4875,7 +4909,7 @@ end
 ;-------------------------------------------------------------------------------------------------------------------------
 Pro load_plasma_geom_efit_file
 ;The following common block contains the parameters which describe the geometry
-;and position of the tokamak  plasma.
+;and position of the machine  plasma.
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
 
 ;The following common block contains some of the settings for loading of
@@ -4961,6 +4995,68 @@ triang_lower=mean(doutl)
 end
 ;-------------------------------------------------------------------------------------------------------------------------
 
+;-------------------------------------------------------------------------------------------------------------------------
+;Procedure which loads plasma geometry parameters from the VMEC wout file
+;-------------------------------------------------------------------------------------------------------------------------
+Pro load_plasma_geom_vmec_file
+;The following common block contains the parameters which describe the geometry
+;and position of the machine  plasma.
+common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
+
+;The following common block contains some of the settings for loading of
+;the input data used for the beam attenuation and penetration
+;calculation. ;The following common block contains the name of the input file from which the input
+;data is extracted 
+common load_settings, load_set_def,load_choice,general_type, general_file, beam_geom_type,beam_geom_file,beam_lim_type,beam_lim_file,beam_param_type,beam_param_file,$
+ne_type,ne_file,te_type,te_file,z_eff_type,z_eff_file,plasma_geom_type,plasma_geom_file,gas_type,gas_file,grid_type,grid_file,plasma_param_type,plasma_param_file
+; The following common block contains general parameters: which user,
+; what beam, what shot and time interval
+common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
+;The following common block is used to transfer the pointer to the
+;status window and availability states of each data set
+common status, status_wid,error_catch,st_err  
+
+;Error handler---------------------------------------
+if error_catch then begin
+   Catch,error_status
+   if error_status ne 0 then begin
+     err_msg=strjoin(strsplit(!Error_State.MSG,string(10B),/extract))
+     Widget_control, status_wid, Get_Value=status_tx
+     Widget_Control, status_wid,$
+     Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+$
+' : IDL Error. Error Status: '+strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line=n_elements(status_tx)-4
+     catch,/cancel
+     st_err=1
+     return
+   endif
+ endif
+;----------------------------------------------------- 
+wout_files=file_search(plasma_geom_file)
+if n_elements(wout_files) ne 1 then begin
+    Widget_control, status_wid, Get_Value=status_tx
+    Widget_Control, status_wid,$
+    Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+$
+' : There are either no or more than one VMEC files selected']], Set_text_top_line=n_elements(status_tx)-4
+    st_err=1
+    return
+endif
+wout_file=wout_files(0)
+ncdfid = ncdf_open(wout_file)
+
+; get rmajor, a_minor
+ncdf_varget,ncdfid, ncdf_varid(ncdfid,'Rmajor_p'),r_major
+ncdf_varget,ncdfid, ncdf_varid(ncdfid,'zaxis_cs'),z_axis_cs
+ncdf_varget,ncdfid, ncdf_varid(ncdfid,'zmax_surf'),zmax_surf
+z_major = z_axis_cs(0); 0-order of Fourier
+ncdf_varget,ncdfid, ncdf_varid(ncdfid,'rmax_surf'),rmax_surf
+ncdf_varget,ncdfid, ncdf_varid(ncdfid,'rmin_surf'),rmin_surf
+r_minor = max([r_major-rmin_surf,rmax_surf-r_major,zmax_surf-z_major])
+elong = 1.0
+triang_upper = 0.0
+triang_lower = 0.0 
+end
+;-------------------------------------------------------------------------------------------------------------------------
+
 
 ;-------------------------------------------------------------------------------------------------------------------------
 ;Procedure which constructs 3D plasma rho surfaces either from input data or
@@ -4984,17 +5080,20 @@ ne_type,ne_file,te_type,te_file,z_eff_type,z_eff_file,plasma_geom_type,plasma_ge
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for
 ;calculation. These parameters are needed here to map the plasma
-;surfaces defined in tokamak coordinates to the beam coordinates
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+;surfaces defined in machine coordinates to the beam coordinates
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,beam_port_phi,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+;The following common block contains the table of the parameters which
+;defile the 3D spatial grid which used for calculation
+common grid_arr, code_grid_arr
 ;The following common block contains the parameters which describe the geometry
-;and position of the tokamak plasma. These parameters are used here to
+;and position of the machine plasma. These parameters are used here to
 ;construct rho array based on the equillibrium formula.
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
 ;The following common block contains X,Y,Z coordinate arrays for the beam
 ;calculation grid and output 3D arrays of the beam density and excitation fracitons
 common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
 ;The following commong block contains the rho arrays which used for
-;mapping of 1D Ne,Te,Z_eff arrays to the tokamak 3D coordinated and
+;mapping of 1D Ne,Te,Z_eff arrays to the machine 3D coordinated and
 ;eventually to the beam coordinates.
 common flux_surfaces, rho_arr_beam_coord,rho_grid,rgrid_arr,zgrid_arr,rgrid_midplane,rho_grid_midplane
 ; The following common block contains general parameters: which user,
@@ -5033,11 +5132,11 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
   wall_cent_x=r_wall*cos(phi_wall)
   wall_cent_y=-r_wall*sin(phi_wall)
   dist_all_XY=sqrt((wall_cent_x-grid_cent_x)^2.0+(wall_cent_y-grid_cent_y)^2.0)
-  sin_pivot=-(wall_cent_y-grid_cent_y)/dist_all_XY;angle in tokamak XY plane (horizontal)
+  sin_pivot=-(wall_cent_y-grid_cent_y)/dist_all_XY;angle in machine XY plane (horizontal)
   cos_pivot=-(wall_cent_x-grid_cent_x)/dist_all_XY
   
   dist_all_XYZ=sqrt((wall_cent_x-grid_cent_x)^2.0+(wall_cent_y-grid_cent_y)^2.0+(z_wall-z_grid)^2.0)
-  sin_alpha=(z_wall-z_grid)/dist_all_XYZ ; angle in tokamak XZ plane (vertical)
+  sin_alpha=(z_wall-z_grid)/dist_all_XYZ ; angle in machine XZ plane (vertical)
   cos_alpha=sqrt(1.0-sin_alpha^2.0)
    
 ; do this if EFIT(MDSPLUS) setting is choosen
@@ -5060,7 +5159,7 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
     psirz = total(psirz(*,*,t1_ind:t2_ind),3)/(t2_ind-t1_ind+1)
     simag = mean(simag(t1_ind:t2_ind))
     sibry = mean(sibry(t1_ind:t2_ind))
-    n_z_int=200
+    n_z_int=201
     n_r_int=1000
     rgrid_arr = interpol([rgrid(0),rgrid(n_elements(rgrid)-1)],n_r_int)
     zgrid_arr = interpol([zgrid(0),zgrid(n_elements(zgrid)-1)],n_z_int)
@@ -5151,7 +5250,7 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
    simag = mean(simag)
    sibry = mean(sibry)
 
-   n_z_int=200
+   n_z_int=201
    n_r_int=1000
    rgrid_arr = interpol([rgrid(0),rgrid(n_elements(rgrid)-1)],n_r_int)
    zgrid_arr = interpol([zgrid(0),zgrid(n_elements(zgrid)-1)],n_z_int)
@@ -5169,13 +5268,184 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
    z_bound = where(zgrid_arr gt z_major + r_minor*elong*1.1 or zgrid_arr lt z_major - r_minor*elong*1.1)
    rho_grid (*,z_bound) = 1.1 
  
+  endif
+  ; do this if VMEC (wout file)  setting is choosen
+  if strtrim(flux_surf_names(flux_surf_arr_type)) eq 'VMEC (wout file)' then begin
+  wout_files=file_search(plasma_geom_file)
+  if n_elements(wout_files) ne 1 then begin
+     Widget_control, status_wid, Get_Value=status_tx
+     Widget_Control, status_wid,$
+     Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+$
+ ' : There are either no or more than one VMEC files selected']], Set_text_top_line=n_elements(status_tx)-4
+     st_err=1
+     return
+  endif
+  wout_file=wout_files(0)
+  ncdfid = ncdf_open(wout_file)
+
+  ;find range of neede phi values to cover beam grid
+  z_corners = [z_beam(0),z_beam(0),z_beam(0),z_beam(0),z_beam(n_z-1),z_beam(n_z-1),z_beam(n_z-1),z_beam(n_z-1)]
+  x_corners = [x_beam(0),x_beam(0),x_beam(n_x-1),x_beam(n_x-1),x_beam(0),x_beam(0),x_beam(n_x-1),x_beam(n_x-1)]
+  y_corners = [y_beam(0),x_beam(n_y-1),x_beam(0),x_beam(n_y-1),x_beam(0),x_beam(n_y-1),x_beam(0),x_beam(n_y-1)]
+  phi_corners = fltarr(8)
+  
+  z_beam1=z_corners*cos_alpha-y_corners*sin_alpha
+  y_beam1=z_corners*sin_alpha+y_corners*cos_alpha+z_grid
+  x_beam1=x_corners                    
+ 
+  x_tor2=-z_beam1*cos_pivot+x_beam1*sin_pivot+r_grid*cos(phi_grid)
+  y_tor2=-z_beam1*sin_pivot-x_beam1*cos_pivot-r_grid*sin(phi_grid)
+   
+  
+  for i = 0,7 do phi_corners(i) = atan(y_tor2(i),x_tor2(i))
+  
+  phi_max = max(phi_corners)+beam_port_phi
+  phi_min = min(phi_corners)+beam_port_phi
+
+  min_phi_step = 0.01
+  
+  n_phi = fix((phi_max-phi_min)/min_phi_step)+1
+  
+  ;n_phi > 10
+  n_phi=n_phi>10
+  
+
+  ;get other parameters
+  ncdf_varget,ncdfid, ncdf_varid(ncdfid,'ns'),n_s_all ; number surfaces
+  ncdf_varget,ncdfid, ncdf_varid(ncdfid,'mnmax'),n_f ; number fourier components
+  ncdf_varget,ncdfid, ncdf_varid(ncdfid,'xn'),xn
+  ncdf_varget,ncdfid, ncdf_varid(ncdfid,'xm'),xm
+  ncdf_varget,ncdfid, ncdf_varid(ncdfid,'rmnc'),rmnc
+  ncdf_varget,ncdfid, ncdf_varid(ncdfid,'zmns'),zmns  
+
+
+  n_s = 20 ; how many surfaces to use
+  n_surf = fix(interpol([1,sqrt(n_s_all-1)],n_s)^2.0)
+
+  n_surf = n_surf(uniq(n_surf))
+  n_s = n_elements(n_surf)
+
+  n_theta = 75>fix(2e4/n_phi/n_s) ;data points in pol dir
+  
+  r_arr = fltarr(n_f,n_theta,n_phi)
+  z_arr = fltarr(n_f,n_theta,n_phi)
+ 
+  x_out = fltarr(n_s,n_theta,n_phi)
+  y_out = fltarr(n_s,n_theta,n_phi)
+  r_out = fltarr(n_s,n_theta,n_phi)
+  z_out = fltarr(n_s,n_theta,n_phi)
+  f_out = fltarr(n_s,n_theta,n_phi)  
+    
+  theta_arr = fltarr(n_f,n_theta,n_phi)
+  phi_arr = fltarr(n_f,n_theta,n_phi)
+  xn_arr = fltarr(n_f,n_theta,n_phi)
+  xm_arr = fltarr(n_f,n_theta,n_phi)      
+
+  
+  for i=0,n_f-1 do begin
+     theta_arr(i,*,*) = make_array(n_phi,value=1) ## (interpol([0.0,2.0*!Pi],n_theta+1))[1:*]
+     phi_arr(i,*,*) = (interpol([phi_min,phi_max],n_phi)) ## make_array(n_theta,value=1)    
+     xn_arr(i,*,*) = xn(i)
+     xm_arr(i,*,*) = xm(i)
+  endfor 
+ 
+  cos_arr = cos(xm_arr*theta_arr - xn_arr*phi_arr)
+  sin_arr = sin(xm_arr*theta_arr - xn_arr*phi_arr)   
+  
+  ;for rho=0 surface
+  cos_arr0 = cos(-xn_arr*phi_arr)
+  sin_arr0 = sin(-xn_arr*phi_arr)
+
+  cos_phi = cos(reform(phi_arr(0,*,*))-beam_port_phi)
+  sin_phi = sin(reform(phi_arr(0,*,*))-beam_port_phi)
+
+  ;calculate flux lines for all flux surfaces except rho=0
+  for j=0,n_s-1 do begin
+     for k=0, n_f-1 do begin
+        r_arr(k,*,*) = rmnc(k,n_surf(j))
+        z_arr(k,*,*) = zmns(k,n_surf(j))
+     endfor
+     fact = total(r_arr*cos_arr,1)
+     z_out(j,*,*) = total(z_arr*sin_arr,1)
+     f_out(j,*,*) = sqrt(float(n_surf(j))/(n_s_all-1))
+     ;r_out(j,*,*) = fact
+     x_out(j,*,*) = fact*cos_phi
+     y_out(j,*,*) = fact*sin_phi     
+  endfor
+
+  x_out = reform(x_out, long(n_s)*n_theta*n_phi,/overwrite)
+  y_out = reform(y_out, long(n_s)*n_theta*n_phi,/overwrite)
+  z_out = reform(z_out, long(n_s)*n_theta*n_phi,/overwrite)
+  f_out = reform(f_out, long(n_s)*n_theta*n_phi,/overwrite)   
+
+  ;calculate flux lines for rho=0 surface (no theta
+  for k=0, n_f-1 do begin
+     r_arr(k,*,*) = rmnc(k,0)
+     z_arr(k,*,*) = zmns(k,0)
+  endfor
+  fact = total(r_arr*cos_arr0,1)
+  z_out0 = total(z_arr*sin_arr0,1)
+  ;r_out0 = fact
+  x_out0 = fact*cos_phi
+  y_out0 = fact*sin_phi
+  f_out0 = x_out0*0.0
+
+  x_out=[reform(x_out0(0,*)),x_out]
+  y_out=[reform(y_out0(0,*)),y_out]
+  z_out=[reform(z_out0(0,*)),z_out]
+  f_out=[reform(f_out0(0,*)),f_out]
+
+
+  QHULL, x_out, y_out, z_out, tet, /DELAUNAY
+  ; getting midplane values
+  n_r_int=1000
+  n_z_int=201
+  rgrid1=r_major-r_minor*1.1
+  rgrid2=r_major+r_minor*1.1
+  zgrid1=-r_minor*elong*1.1+z_major
+  zgrid2=r_minor*elong*1.1+z_major    
+  rgrid_arr = interpol([rgrid1,rgrid2],n_r_int)
+  zgrid_arr = interpol([zgrid1,zgrid2],n_z_int)
+  
+  rgrid_midplane = rgrid_arr
+  result = QGRID3(y_out, x_out, z_out, f_out, tet, start=[0.0,rgrid1,zgrid1],dimension=[2,n_r_int,n_z_int], delta=[0.0001,2.2*r_minor/n_r_int,2.2*r_minor*elong/n_z_int],missing=1.1)
+  rho_grid = reform(result(0,*,*))
+  rho_grid_midplane = reform(rho_grid(*,(n_z_int-1)/2))
+  rho_grid_midplane(where(rho_grid_midplane ge 1.0)) = 1.1 ; NANs
+
+  ; moving from toroidal coordinates to beam coordinates
+  y_beam1 = z_out
+  z_beam1 = -(x_out-r_grid*cos(phi_grid))*cos_pivot - (y_out+r_grid*sin(phi_grid))*sin_pivot
+  x_beam1 = (x_out-r_grid*cos(phi_grid))*sin_pivot - (y_out+r_grid*sin(phi_grid))*cos_pivot
+
+  x_beam2 = x_beam1
+  z_beam2 = z_beam1*cos_alpha+(y_beam1-z_grid)*sin_alpha
+  y_beam2 = -z_beam1*sin_alpha+(y_beam1-z_grid)*cos_alpha
+
+  QHULL, x_beam2, y_beam2, z_beam2, tet, /DELAUNAY
+
+  ;z_beam in plasma
+  z_mid = code_grid_arr.z(2)
+  z_end = code_grid_arr.z(4)
+  z_step2 = code_grid_arr.z(3)
+  n_z2 = (z_end-z_mid)/z_step2+1
+
+  rho_arr_beam_coord(locate(z_beam,z_mid):*,*,*) = QGRID3(z_beam2, x_beam2, y_beam2, f_out, tet, start=[z_mid,x_beam[0],y_beam[0]],dimension=[n_z2,n_x,n_y], $
+  delta=[z_step2,(x_beam[n_x-1]-x_beam(0))/(n_x-1),(y_beam[n_y-1]-y_beam(0))/(n_y-1)],missing=1.1)
+
+  rho_arr_beam_coord(where(rho_arr_beam_coord ge 1.0))=1.1;value outside of the real rho range - serves as NAN value
+
+  Widget_control, status_wid, Get_Value=status_tx
+  Widget_Control, status_wid, $
+  Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Flux Surfaces Array was constructed successfully from VMEC equillibrium']], Set_text_top_line=n_elements(status_tx)-4
+  return 
  endif
  ; do this if Miller or Hakkarainen setting are choosen
  if strpos(flux_surf_names(flux_surf_arr_type), 'Miller') ne -1 or strpos(flux_surf_names(flux_surf_arr_type), 'Hakkarainen') ne -1 then begin
  ;Miller Physics of Plasmas,5,5,1998 (Miller equillibrium)
  ;SP Hakkarainen, phys_fluids B 2(7) 1990
    if strpos(flux_surf_names(flux_surf_arr_type), 'Miller') ne -1 then sel=2 else sel=3  
-    n_z_int=200
+    n_z_int=201
     n_r_int=1000
     rgrid1=r_major-r_minor*1.1
     rgrid2=r_major+r_minor*1.1
@@ -5196,26 +5466,26 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
     triang(where(theta_arr gt 0))=triang_upper
     triang(where(theta_arr le 0))=triang_lower
     for i=0,n_r_minor-1 do begin   
-        if sel eq 1 then r_new=r_major+r_minor_arr(i)*cos(theta_arr+sin(theta_arr)*asin(triang))
-        if sel eq 1 then z_new=elong*r_minor_arr(i)*sin(theta_arr)+z_major
-        if sel eq 2 then r_add=r_minor_arr(i)*(1-((elong-1.0)/2.0)*(cos(2.0*theta_arr)-1)+(triang/4.0)*(cos(3.0*theta_arr)-cos(theta_arr)))
-        if sel eq 2 then r_new=r_major+r_add*cos(theta_arr)
-        if sel eq 2 then z_new=r_add*sin(theta_arr)+z_major
+        if sel eq 2 then r_new=r_major+r_minor_arr(i)*cos(theta_arr+sin(theta_arr)*asin(triang))
+        if sel eq 2 then z_new=elong*r_minor_arr(i)*sin(theta_arr)+z_major
+        if sel eq 3 then r_add=r_minor_arr(i)*(1-((elong-1.0)/2.0)*(cos(2.0*theta_arr)-1)+(triang/4.0)*(cos(3.0*theta_arr)-cos(theta_arr)))
+        if sel eq 3 then r_new=r_major+r_add*cos(theta_arr)
+        if sel eq 3 then z_new=r_add*sin(theta_arr)+z_major
         rho_grid(locate(rgrid_arr,r_new),locate(zgrid_arr,z_new))=r_minor_arr(i)/r_minor
     endfor 
  endif
 
-  ;calculation rho values at the tokamak midplane
+  ;calculation rho values at the machine midplane
   rgrid_midplane=rgrid_arr
   rho_grid_midplane=rho_grid(*,locate(zgrid_arr,0.0))
     ;---------------------------
     for ix=0,n_x-1 do begin
       for iy=0,n_y-1 do begin 
-        ;rotating beam coordinate to tokamak midplane projection 
+        ;rotating beam coordinate to machine midplane projection 
         z_beam1=z_beam*cos_alpha-y_beam(iy)*sin_alpha
         y_beam1=z_beam*sin_alpha+y_beam(iy)*cos_alpha+z_grid
         x_beam1=x_beam(ix)                    
-        ;moving beam to tokamak center and rotating
+        ;moving beam to machine center and rotating
         x_tor2=-z_beam1*cos_pivot+x_beam1*sin_pivot+r_grid*cos(phi_grid)
         y_tor2=-z_beam1*sin_pivot-x_beam1*cos_pivot-r_grid*sin(phi_grid)
         z_tor2=y_beam1
@@ -5262,12 +5532,12 @@ end
 Pro make_n_e_arr
 ;The following common block contains 1D n_e profiles of raw and smoothed data, and 3D
 ;n_e array after it constructed. 
-common dens_electrons,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
+common dens_electrons,n_e_coord,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
 ;The following common block contains X,Y,Z coordinate arrays for the beam
 ;calculation grid and output 3D arrays of the beam density and excitation fracitons
 common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
 ;The following commong block contains the rho arrays which used for
-;mapping of 1D Ne,Te,Z_eff arrays to the tokamak 3D coordinated and
+;mapping of 1D Ne,Te,Z_eff arrays to the machine 3D coordinated and
 ;eventually to the beam coordinates.
 common flux_surfaces, rho_arr_beam_coord,rho_grid,rgrid_arr,zgrid_arr,rgrid_midplane,rho_grid_midplane
 ;The following common block contains some of the settings for construction
@@ -5300,24 +5570,27 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
 ;-----------------------------------------------------  
 
 if ne_arr_type eq 0 then begin
-  val=min(rho_grid_midplane,min_ind,/Nan)
-  rho_grid_ne=rho_grid_midplane(min_ind:*)
-  rgrid=rgrid_midplane(min_ind:*)
-  ;to make arrays ascending
-  rgrid=rgrid(uniq(rho_grid_ne))
-  rho_grid_ne=rho_grid_ne(uniq(rho_grid_ne)) 
-  ; correction for lack of the non-midplane data Dec 16 2011
-  rho_arr_beam_coord=rho_arr_beam_coord>min(rho_grid_ne)
-  ;--------------------------
-  ind_1=interpol(rgrid,rho_grid_ne,rho_arr_beam_coord,/spline)
-  ind_1=reform(ind_1,(size(rho_arr_beam_coord))(1),(size(rho_arr_beam_coord))(2),(size(rho_arr_beam_coord))(3),/overwrite)
-  num=100
+  if n_e_coord eq 0 then begin
+    val=min(rho_grid_midplane,min_ind,/Nan)
+    rho_grid_ne=rho_grid_midplane(min_ind:*)
+    rgrid=rgrid_midplane(min_ind:*)
+                                  ;to make arrays ascending
+    rgrid=rgrid(uniq(rho_grid_ne))
+    rho_grid_ne=rho_grid_ne(uniq(rho_grid_ne)) 
+                                  ; correction for lack of the non-midplane data Dec 16 2011
+    rho_arr_beam_coord=rho_arr_beam_coord>min(rho_grid_ne)
+                                  ;--------------------------
+    ind_1=interpol(rgrid,rho_grid_ne,rho_arr_beam_coord,/spline)
+    ind_1=reform(ind_1,(size(rho_arr_beam_coord))(1),(size(rho_arr_beam_coord))(2),(size(rho_arr_beam_coord))(3),/overwrite)
+    num=100
+  endif else ind_1 = rho_arr_beam_coord
+ 
   n_e_r1=interpol([n_e_r(0),n_e_r(n_elements(n_e)-1)],2000)
   n_e1=interpol(n_e,n_e_r,n_e_r1)
   n_e_err1=interpol(n_e_err,n_e_r,n_e_r1)
   
-  ind_2=locate(n_e_r1,ind_1)
-  
+  ind_2=locate(n_e_r1,ind_1)  
+
   n_e_arr=n_e1(ind_2)
   n_e_arr(where(rho_arr_beam_coord eq max(rho_arr_beam_coord)))=0
   n_e_arr_err=n_e_err1(ind_2)
@@ -5341,9 +5614,9 @@ end
 Pro make_t_e_arr
 ;The following common block contains 1D t_e profiles of raw and smoothed data, and 3D
 ;t_e array after it constructed. 
-common temp_electrons,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
+common temp_electrons,t_e_coord,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
 ;The following commong block contains the rho arrays which used for
-;mapping of 1D Ne,Te,Z_eff arrays to the tokamak 3D coordinated and
+;mapping of 1D Ne,Te,Z_eff arrays to the machine 3D coordinated and
 ;eventually to the beam coordinates.
 common flux_surfaces, rho_arr_beam_coord,rho_grid,rgrid_arr,zgrid_arr,rgrid_midplane,rho_grid_midplane
 ;The following common block contains some of the settings for construction
@@ -5376,19 +5649,22 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
 ;-----------------------------------------------------
 
 if te_arr_type eq 0 then begin
-  val=min(rho_grid_midplane,min_ind,/Nan)
-  rho_grid_te=rho_grid_midplane(min_ind:*)
-  rgrid=rgrid_midplane(min_ind:*)
-  ;to make arrays ascending
-  rgrid=rgrid(uniq(rho_grid_te))
-  rho_grid_te=rho_grid_te(uniq(rho_grid_te))
-  ; correction for lack of the non-midplane data Dec 16 2011
-  rho_arr_beam_coord=rho_arr_beam_coord>min(rho_grid_te)
-  ;--------------------------  
+  if t_e_coord eq 0 then begin
+    val=min(rho_grid_midplane,min_ind,/Nan)
+    rho_grid_te=rho_grid_midplane(min_ind:*)
+    rgrid=rgrid_midplane(min_ind:*)
+    ;to make arrays ascending
+    rgrid=rgrid(uniq(rho_grid_te))
+    rho_grid_te=rho_grid_te(uniq(rho_grid_te))
+    ; correction for lack of the non-midplane data Dec 16 2011
+    rho_arr_beam_coord=rho_arr_beam_coord>min(rho_grid_te)
+    ;--------------------------  
 
-  ind_1=interpol(rgrid,rho_grid_te,rho_arr_beam_coord,/spline)
-  ind_1=reform(ind_1,(size(rho_arr_beam_coord))(1),(size(rho_arr_beam_coord))(2),(size(rho_arr_beam_coord))(3),/overwrite)
-  num=100
+    ind_1=interpol(rgrid,rho_grid_te,rho_arr_beam_coord,/spline)
+    ind_1=reform(ind_1,(size(rho_arr_beam_coord))(1),(size(rho_arr_beam_coord))(2),(size(rho_arr_beam_coord))(3),/overwrite)
+    num=100
+  endif else ind_1 = rho_arr_beam_coord
+
   t_e_r1=interpol([t_e_r(0),t_e_r(n_elements(t_e)-1)],2000)
   t_e1=interpol(t_e,t_e_r,t_e_r1)
   t_e_err1=interpol(t_e_err,t_e_r,t_e_r1)
@@ -5419,9 +5695,9 @@ end
 Pro make_z_eff_arr
 ;The following common block contains 1D z_eff profiles of raw and smoothed data, and 3D
 ;z_eff array after it constructed.
-common effective_charge, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_eff_r,z_eff_arr,z_eff_err_arr
+common effective_charge, z_eff_coord, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_eff_r,z_eff_arr,z_eff_err_arr
 ;The following commong block contains the rho arrays which used for
-;mapping of 1D Ne,Te,Z_eff arrays to the tokamak 3D coordinated and
+;mapping of 1D Ne,Te,Z_eff arrays to the machine 3D coordinated and
 ;eventually to the beam coordinates.
 common flux_surfaces, rho_arr_beam_coord,rho_grid,rgrid_arr,zgrid_arr,rgrid_midplane,rho_grid_midplane
 ;The following common block contains some of the settings for construction
@@ -5457,21 +5733,23 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
 ;-----------------------------------------------------
 
 if z_eff_arr_type eq 0 then begin
-  
-  val=min(rho_grid_midplane,min_ind,/Nan)
-  rho_grid_z_eff=rho_grid_midplane(min_ind:*)
-  rgrid=rgrid_midplane(min_ind:*)
+  if z_eff_coord eq 0 then begin
+    val=min(rho_grid_midplane,min_ind,/Nan)
+    rho_grid_z_eff=rho_grid_midplane(min_ind:*)
+    rgrid=rgrid_midplane(min_ind:*)
 
-  ;to make arrays ascending
-  rgrid=rgrid(uniq(rho_grid_z_eff))
-  rho_grid_z_eff=rho_grid_z_eff(uniq(rho_grid_z_eff))
-  ; correction for lack of the non-midplane data Dec 16 2011
-  rho_arr_beam_coord=rho_arr_beam_coord>min(rho_grid_z_eff)
-  ;--------------------------
+    ;to make arrays ascending
+    rgrid=rgrid(uniq(rho_grid_z_eff))
+    rho_grid_z_eff=rho_grid_z_eff(uniq(rho_grid_z_eff))
+    ; correction for lack of the non-midplane data Dec 16 2011
+    rho_arr_beam_coord=rho_arr_beam_coord>min(rho_grid_z_eff)
+    ;--------------------------
 
-  ind_1=interpol(rgrid,rho_grid_z_eff,rho_arr_beam_coord,/spline)
-  ind_1=reform(ind_1,(size(rho_arr_beam_coord))(1),(size(rho_arr_beam_coord))(2),(size(rho_arr_beam_coord))(3),/overwrite)
-  num=100
+    ind_1=interpol(rgrid,rho_grid_z_eff,rho_arr_beam_coord,/spline)
+    ind_1=reform(ind_1,(size(rho_arr_beam_coord))(1),(size(rho_arr_beam_coord))(2),(size(rho_arr_beam_coord))(3),/overwrite)
+    num=100
+  endif else ind_1 = rho_arr_beam_coord
+
   z_eff_r1=interpol([z_eff_r(0),z_eff_r(n_elements(z_eff)-1)],2000)
   z_eff1=interpol(z_eff,z_eff_r,z_eff_r1)
   z_eff_err1=interpol(z_eff_err,z_eff_r,z_eff_r1)
@@ -5504,16 +5782,16 @@ common adas_data, adas_stop,adas_exc2,adas_exc3
 ;The following common block contains 1D n_e profiles of raw and smoothed data, and 3D
 ;n_e array after it constructed. It also contains the constructed
 ;3D ne_stop_cross_section array.
-common dens_electrons,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
+common dens_electrons,n_e_coord,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
 ;The following common block contains 1D t_e profiles of raw and smoothed data, and 3D
 ;t_e array after it constructed. 
-common temp_electrons,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
+common temp_electrons,t_e_coord,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
 ;The following common block contains X,Y,Z coordinate arrays for the beam
 ;calculation grid and output 3D arrays of the beam density and excitation fracitons
 common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
 ;The following common block contains 1D z_eff profiles of raw and smoothed data, and 3D
 ;z_eff array after it constructed.
-common effective_charge, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_eff_r,z_eff_arr,z_eff_err_arr
+common effective_charge, z_eff_coord, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_eff_r,z_eff_arr,z_eff_err_arr
 ;The following common block contains some of the settings for construction
 ;of the arrays used for the beam attenuation and penetration
 ;calculation. stop_plasma_type parameter defines which way to
@@ -5619,16 +5897,16 @@ common adas_data, adas_stop,adas_exc2,adas_exc3
 ;The following common block contains 1D n_e profiles of raw and smoothed data, and 3D
 ;n_e array after it constructed. It also contains the constructed
 ;3D ne_stop_cross_section array.
-common dens_electrons,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
+common dens_electrons,n_e_coord,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
 ;The following common block contains 1D t_e profiles of raw and smoothed data, and 3D
 ;t_e array after it constructed.
-common temp_electrons,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
+common temp_electrons,t_e_coord,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
 ;The following common block contains X,Y,Z coordinate arrays for the beam
 ;calculation grid and output 3D arrays of the beam density and excitation fracitons
 common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
 ;The following common block contains 1D z_eff profiles of raw and smoothed data, and 3D
 ;z_eff array after it constructed.
-common effective_charge, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_eff_r,z_eff_arr,z_eff_err_arr
+common effective_charge, z_eff_coord, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_eff_r,z_eff_arr,z_eff_err_arr
 ;The following common block contains some of the settings for construction
 ;of the arrays used for the beam attenuation and penetration
 ;calculation. exc_plasma_type parameter defines which way to
@@ -5735,7 +6013,7 @@ end
 Pro make_gas_arr
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,beam_port_phi,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains X,Y,Z coordinate arrays used for the beam
 ;calculation grid and output 3D arrays of the beam density and excitation fracitons
 common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
@@ -5745,13 +6023,13 @@ common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_
 common beam_limiters, n_limiters, limiters_table,limiters_arr
 ;The following common block contains 1D t_e profiles of raw and smoothed data, and 3D
 ;t_e array after it constructed.
-common temp_electrons,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
+common temp_electrons,t_e_coord,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
 ;The following common block contains neutral gas parameters used in
 ;calculation of the beam attenuation in the gas. It also contains the
 ;constructed 3D neutral gas array.
 common neutral_gas,tank_pressure,torus_pressure,duct_pressure,duct_pressure_loc,n0_arr,n0_stop_cross_section
 ;The following commong block contains the rho arrays which used for
-;mapping of 1D Ne,Te,Z_eff arrays to the tokamak 3D coordinated and
+;mapping of 1D Ne,Te,Z_eff arrays to the machine 3D coordinated and
 ;eventually to the beam coordinates.
 common flux_surfaces, rho_arr_beam_coord,rho_grid,rgrid_arr,zgrid_arr,rgrid_midplane,rho_grid_midplane
 ;The following common block contains some of the settings for construction
@@ -5851,11 +6129,11 @@ Pro make_lim_arr
 ;3D array of the limiters positions after it is constructed
 common beam_limiters, n_limiters, limiters_table,limiters_arr
 ;The following common block contains the parameters which describe the geometry
-;and position of the tokamak plasma
+;and position of the machine plasma
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lowe
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,beam_port_phi,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains X,Y,Z coordinate arrays used for the beam
 ;calculation grid and output 3D arrays of the beam density and excitation fracitons
 common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
@@ -5906,18 +6184,18 @@ if lim_arr_type eq 0 then begin
       wall_cent_x=r_wall*cos(phi_wall)
       wall_cent_y=-r_wall*sin(phi_wall)
       dist_all_XY=sqrt((wall_cent_x-grid_cent_x)^2.0+(wall_cent_y-grid_cent_y)^2.0)
-      sin_pivot=-(wall_cent_y-grid_cent_y)/dist_all_XY;angle in tokamak XY plane (horizontal)
+      sin_pivot=-(wall_cent_y-grid_cent_y)/dist_all_XY;angle in machine XY plane (horizontal)
       cos_pivot=-(wall_cent_x-grid_cent_x)/dist_all_XY
 
       dist_all_XYZ=sqrt((wall_cent_x-grid_cent_x)^2.0+(wall_cent_y-grid_cent_y)^2.0+(z_wall-z_grid)^2.0)
-      sin_alpha=(z_wall-z_grid)/dist_all_XYZ ; angle in tokamak XZ plane (vertical)
+      sin_alpha=(z_wall-z_grid)/dist_all_XYZ ; angle in machine XZ plane (vertical)
       cos_alpha=sqrt(1.0-sin_alpha^2.0)
-      ;rotating beam coordinate to tokamak midplane projection
+      ;rotating beam coordinate to machine midplane projection
       ;find tangent rad
       z_beam1_tang=z_beam*cos_alpha-y_beam((n_y-1)/2)*sin_alpha
       y__beam1_tang=z_beam*sin_alpha+y_beam((n_y-1)/2)*cos_alpha+z_grid
       x_beam1_tang=x_beam((n_x-1)/2)                   
-      ;moving beam to tokamak center and rotating
+      ;moving beam to machine center and rotating
       x_tang=-z_beam1_tang*cos_pivot+x_beam1_tang*sin_pivot+r_grid*cos(phi_grid)
       y_tang=-z_beam1_tang*sin_pivot-x_beam1_tang*cos_pivot-r_grid*sin(phi_grid)
       r_tang=sqrt(x_tang^2.0+y_tang^2.0) 
@@ -5928,7 +6206,7 @@ if lim_arr_type eq 0 then begin
             z_beam1=z_beam(l)*cos_alpha-y_beam(k)*sin_alpha
             y_beam1=z_beam(l)*sin_alpha+y_beam(k)*cos_alpha+z_grid
             x_beam1=x_beam(j)                   
-            ;moving beam to tokamak center and rotating
+            ;moving beam to machine center and rotating
             x_tor2=-z_beam1*cos_pivot+x_beam1*sin_pivot+r_grid*cos(phi_grid)
             y_tor2=-z_beam1*sin_pivot-x_beam1*cos_pivot-r_grid*sin(phi_grid)
             r_tor2=sqrt(x_tor2^2.0+y_tor2^2.0)
@@ -6111,9 +6389,9 @@ Pro load_beam_grid
 common grid_arr, code_grid_arr
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,beam_port_phi,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains the parameters which describe the geometry
-;and position of the tokamak plasma
+;and position of the machine plasma
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
 ;The following common block is used to transfer the pointer to the
 ;status window and availability states of each data set
@@ -6593,7 +6871,7 @@ common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_
 common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
 ; The following common block contains general parameters: which user,
 ; what beam, what shot and time interval
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,beam_port_phi,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block is used to transfer the pointer to the
 ;status window and availability states of each data set
 common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
@@ -6770,7 +7048,7 @@ pro save_output_to_file
 common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,beam_port_phi,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains the parameters which describe the non-geometrical
 ;parameters of the beam (particle and energy distribution)
 common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
@@ -6779,18 +7057,18 @@ common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par,
 common neutral_gas,tank_pressure,torus_pressure,duct_pressure,duct_pressure_loc,n0_arr,n0_stop_cross_section
 ;The following common block contains 1D n_e profiles of raw and
 ;smoothed data, 3D n_e and ne_stop_cross_section arrays after they constructed
-common dens_electrons,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
+common dens_electrons,n_e_coord,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
 ;The following common block contains 1D t_e profiles of raw and
 ;smoothed data and 3D t_e array after it constructed.
-common temp_electrons,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
+common temp_electrons,t_e_coord,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
 ;The following common block contains 1D z_eff profiles of raw and
 ;smoothed data and 3D z_eff array after it constructed.
-common effective_charge, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_eff_r,z_eff_arr,z_eff_err_arr
+common effective_charge, z_eff_coord, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_eff_r,z_eff_arr,z_eff_err_arr
 ;The following common block contains X,Y,Z coordinate arrays used for the beam
 ;calculation grid and output 3D arrays of the beam density and excitation fracitons
 common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
 ;The following common block contains the parameters which describe the geometry
-;and position of the tokamak plasma
+;and position of the machine plasma
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
 ;The following common block contains the parameters which describe
 ;some relative  global parameters of the plasma 
@@ -6880,7 +7158,7 @@ printf,1,exc_plasma_type_names(exc_plasma_type)
 printf,1,''
 printf,1,'----------------------------------'
 ;Saving beam geometry to file
-;x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+;x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,beam_port_phi,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 printf,1,''
 printf,1,';X positions of the apertures in the accelerating grid, m'
 printf,1,'x_bml:'
@@ -6896,6 +7174,10 @@ printf,1,''
 printf,1,';Diameter of elemental aperture in extraction grid, mm'
 printf,1,'grid_ap_diam:'
 printf,1,strtrim(string(grid_ap_diam,format='(F10.3)'),1)
+printf,1,''
+printf,1,';Toroidal angles are relative to the phi0, rad'
+printf,1,'beam_port_phi:'
+printf,1,strtrim(string(beam_port_phi,format='(F10.3)'),1)
 printf,1,''
 printf,1,';Beam injector is attached to the port'
 printf,1,'beam_port:'
@@ -7067,7 +7349,7 @@ printf,1,strtrim(string(duct_pressure,format='(F10.3)'),1)
 ;Saving plasma geometry parameters to file
 ;r_major,z_major,r_minor,elong,triang_upper,triang_lower
 printf,1,''
-printf,1,';Major radius of the tokamak, radius of plasma center), m'
+printf,1,';Major radius of the plasma, (radius of plasma center), m'
 printf,1,'r_major:'
 printf,1,strtrim(string(R_major,format='(F10.3)'),1)
 printf,1,''
@@ -7075,7 +7357,7 @@ printf,1,';Vertical position of the plasma center, m'
 printf,1,'z_major:'
 printf,1,strtrim(string(Z_major,format='(F10.3)'),1)
 printf,1,''
-printf,1,';Minor radius of the tokamak, m'
+printf,1,';Minor radius of the plasma, m'
 printf,1,'r_minor:'
 printf,1,strtrim(string(R_minor,format='(F10.3)'),1)
 printf,1,''
@@ -7139,7 +7421,11 @@ printf,1,code_grid_y_str
 ;Save 1D electron density profile
 ;n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr
 printf,1,''
-printf,1,';Density of electrons, radial position for raw data, m'
+printf,1,';Radial coordinate for electron densities, 0 - r_major (m), 1 - rho=sqrt(psi), 2 - rho=sqrt(phi)'
+printf,1,'n_e_coord:'
+printf,1, strtrim(string(n_e_coord,format='(I10)'),2)
+printf,1,''
+printf,1,';Density of electrons, radial position for raw data'
 printf,1,'n_e_raw_r:'
 form='('+strtrim(string(n_elements(n_e_raw_r)),2)+'(F6.4,", "))'
 n_e_raw_r_str=string(n_e_raw_r,format=form)
@@ -7160,7 +7446,7 @@ n_e_raw_err_str=string(n_e_raw_err,format=form)
 n_e_raw_err_str=strmid(n_e_raw_err_str,0,strlen(n_e_raw_err_str)-2)
 printf,1,n_e_raw_err_str
 printf,1,''
-printf,1,';Density of electrons, radial position for smoothed data , m'
+printf,1,';Density of electrons, radial position for smoothed data'
 printf,1,'n_e_r:'
 form='('+strtrim(string(n_elements(n_e_r)),2)+'(F6.4,", "))'
 n_e_r_str=string(n_e_r,format=form)
@@ -7184,7 +7470,11 @@ printf,1,n_e_err_str
 ;Save 1D electron temperature profile
 ;t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
 printf,1,''
-printf,1,';Temperature of electrons, radial position for raw data, m'
+printf,1,';Radial coordinate for electron temperatures, 0 - r_major (m), 1 - rho=sqrt(psi), 2 - rho=sqrt(phi)'
+printf,1,'t_e_coord:'
+printf,1, strtrim(string(t_e_coord,format='(I10)'),2)
+printf,1,''
+printf,1,';Temperature of electrons, radial position for raw data'
 printf,1,'t_e_raw_r:'
 form='('+strtrim(string(n_elements(t_e_raw_r)),2)+'(F6.4,", "))'
 t_e_raw_r_str=string(t_e_raw_r,format=form)
@@ -7205,7 +7495,7 @@ t_e_raw_err_str=string(t_e_raw_err,format=form)
 t_e_raw_err_str=strmid(t_e_raw_err_str,0,strlen(t_e_raw_err_str)-2)
 printf,1,t_e_raw_err_str
 printf,1,''
-printf,1,';Temperature of electrons, radial position for smoothed data , m'
+printf,1,';Temperature of electrons, radial position for smoothed data'
 printf,1,'t_e_r:'
 form='('+strtrim(string(n_elements(t_e_r)),2)+'(F6.4,", "))'
 t_e_r_str=string(t_e_r,format=form)
@@ -7231,7 +7521,11 @@ printf,1,t_e_err_str
 ;Save 1D z_eff  profiles
 ;z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_eff_r,z_eff_arr,z_eff_err_arr
 printf,1,''
-printf,1,';Effective Charge Z_Eff, radial position for raw data, m'
+printf,1,';Radial coordinate for effective charge, 0 - r_major (m), 1 - rho=sqrt(psi), 2 - rho=sqrt(phi)'
+printf,1,'z_eff_coord:'
+printf,1, strtrim(string(z_eff_coord,format='(I10)'),2)
+printf,1,''
+printf,1,';Effective Charge Z_Eff, radial position for raw data'
 printf,1,'z_eff_raw_r:'
 form='('+strtrim(string(n_elements(z_eff_raw_r)),2)+'(F6.4,", "))'
 z_eff_raw_r_str=string(z_eff_raw_r,format=form)
@@ -7252,7 +7546,7 @@ z_eff_raw_err_str=string(z_eff_raw_err,format=form)
 z_eff_raw_err_str=strmid(z_eff_raw_err_str,0,strlen(z_eff_raw_err_str)-2)
 printf,1,z_eff_raw_err_str
 printf,1,''
-printf,1,';Effective Charge Z_Eff, radial position for smoothed data , m'
+printf,1,';Effective Charge Z_Eff, radial position for smoothed data'
 printf,1,'z_eff_r:'
 form='('+strtrim(string(n_elements(z_eff_r)),2)+'(F6.4,", "))'
 z_eff_r_str=string(z_eff_r,format=form)
@@ -7363,7 +7657,7 @@ common save_param, save_param_file
 common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,beam_port_phi,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains the parameters which describe the non-geometrical
 ;parameters of the beam (particle and energy distribution)
 common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
@@ -7372,18 +7666,18 @@ common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par,
 common neutral_gas,tank_pressure,torus_pressure,duct_pressure,duct_pressure_loc,n0_arr,n0_stop_cross_section
 ;The following common block contains 1D n_e profiles of raw and smoothed data, and 3D
 ;n_e array after it constructed.
-common dens_electrons,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
+common dens_electrons,n_e_coord,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
 ;The following common block contains 1D t_e profiles of raw and smoothed data, and 3D
 ;t_e array after it constructed.
-common temp_electrons,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
+common temp_electrons,t_e_coord,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
 ;The following common block contains 1D z_eff profiles of raw and smoothed data, and 3D
 ;z_eff array after it constructed.
-common effective_charge, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_eff_r,z_eff_arr,z_eff_err_arr
+common effective_charge, z_eff_coord, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_eff_r,z_eff_arr,z_eff_err_arr
 ;The following common block contains X,Y,Z coordinate arrays used for the beam
 ;calculation grid and output 3D arrays of the beam density and excitation fracitons
 common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
 ;The following common block contains the parameters which describe the geometry
-;and position of the tokamak plasma
+;and position of the machine plasma
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
 ;The following common block contains the parameters which describe
 ;some relative  global parameters of the plasma 
@@ -7427,7 +7721,7 @@ printf,1,';File is created by:'
 printf,1, 'ALCBEAM (ver. '+alcbeam_ver+')'
 
 ;Saving beam geometry to file
-;x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+;x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,beam_port_phi,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 printf,1,''
 printf,1,';Beam label'
 printf,1,'beam:'
@@ -7461,6 +7755,10 @@ printf,1,''
 printf,1,';Diameter of elemental aperture in extraction grid, mm'
 printf,1,'grid_ap_diam:'
 printf,1,strtrim(string(grid_ap_diam,format='(F10.3)'),1)
+printf,1,''
+printf,1,';Toroidal angles are relative to the phi0, rad'
+printf,1,'beam_port_phi:'
+printf,1,strtrim(string(beam_port_phi,format='(F10.3)'),1)
 printf,1,''
 printf,1,';Beam injector is attached to the port'
 printf,1,'beam_port:'
@@ -7629,7 +7927,7 @@ printf,1,strtrim(string(duct_pressure,format='(F10.3)'),1)
 ;Saving plasma geometry parameters to file
 ;r_major,z_major,r_minor,elong,triang_upper,triang_lower
 printf,1,''
-printf,1,';Major radius of the tokamak, radius of plasma center), m'
+printf,1,';Major radius of the plasma (radius of plasma center), m'
 printf,1,'r_major:'
 printf,1,strtrim(string(R_major,format='(F10.3)'),1)
 printf,1,''
@@ -7637,7 +7935,7 @@ printf,1,';Vertical position of the plasma center, m'
 printf,1,'z_major:'
 printf,1,strtrim(string(Z_major,format='(F10.3)'),1)
 printf,1,''
-printf,1,';Minor radius of the tokamak, m'
+printf,1,';Minor radius of the plasma, m'
 printf,1,'r_minor:'
 printf,1,strtrim(string(R_minor,format='(F10.3)'),1)
 printf,1,''
@@ -7700,7 +7998,11 @@ printf,1,code_grid_y_str
 ;Save 1D electron density profile
 ;n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr
 printf,1,''
-printf,1,';Density of electrons, radial position for raw data, m'
+printf,1,';Radial coordinate for electron densities, 0 - r_major (m), 1 - rho=sqrt(psi), 2 - rho=sqrt(phi)'
+printf,1,'n_e_coord:'
+printf,1, strtrim(string(n_e_coord,format='(I10)'),2)
+printf,1,''
+printf,1,';Density of electrons, radial position for raw data'
 printf,1,'n_e_raw_r:'
 form='('+strtrim(string(n_elements(n_e_raw_r)),2)+'(F6.4,", "))'
 n_e_raw_r_str=string(n_e_raw_r,format=form)
@@ -7721,7 +8023,7 @@ n_e_raw_err_str=string(n_e_raw_err,format=form)
 n_e_raw_err_str=strmid(n_e_raw_err_str,0,strlen(n_e_raw_err_str)-2)
 printf,1,n_e_raw_err_str
 printf,1,''
-printf,1,';Density of electrons, radial position for smoothed data , m'
+printf,1,';Density of electrons, radial position for smoothed data'
 printf,1,'n_e_r:'
 form='('+strtrim(string(n_elements(n_e_r)),2)+'(F6.4,", "))'
 n_e_r_str=string(n_e_r,format=form)
@@ -7745,7 +8047,11 @@ printf,1,n_e_err_str
 ;Save 1D electron temperature profile
 ;t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
 printf,1,''
-printf,1,';Temperature of electrons, radial position for raw data, m'
+printf,1,';Radial coordinate for electron temperatures, 0 - r_major (m), 1 - rho=sqrt(psi), 2 - rho=sqrt(phi)'
+printf,1,'t_e_coord:'
+printf,1, strtrim(string(t_e_coord,format='(I10)'),2)
+printf,1,''
+printf,1,';Temperature of electrons, radial position for raw data'
 printf,1,'t_e_raw_r:'
 form='('+strtrim(string(n_elements(t_e_raw_r)),2)+'(F6.4,", "))'
 t_e_raw_r_str=string(t_e_raw_r,format=form)
@@ -7766,7 +8072,7 @@ t_e_raw_err_str=string(t_e_raw_err,format=form)
 t_e_raw_err_str=strmid(t_e_raw_err_str,0,strlen(t_e_raw_err_str)-2)
 printf,1,t_e_raw_err_str
 printf,1,''
-printf,1,';Temperature of electrons, radial position for smoothed data , m'
+printf,1,';Temperature of electrons, radial position for smoothed data'
 printf,1,'t_e_r:'
 form='('+strtrim(string(n_elements(t_e_r)),2)+'(F6.4,", "))'
 t_e_r_str=string(t_e_r,format=form)
@@ -7792,7 +8098,11 @@ printf,1,t_e_err_str
 ;Save 1D z_eff  profiles
 ;z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_eff_r,z_eff_arr,z_eff_err_arr
 printf,1,''
-printf,1,';Effective Charge Z_Eff, radial position for raw data, m'
+printf,1,';Radial coordinate for effective charge, 0 - r_major (m), 1 - rho=sqrt(psi), 2 - rho=sqrt(phi)'
+printf,1,'z_ef_coord:'
+printf,1, strtrim(string(z_eff_coord,format='(I10)'),2)
+printf,1,''
+printf,1,';Effective Charge Z_Eff, radial position for raw data'
 printf,1,'z_eff_raw_r:'
 form='('+strtrim(string(n_elements(z_eff_raw_r)),2)+'(F6.4,", "))'
 z_eff_raw_r_str=string(z_eff_raw_r,format=form)
@@ -7813,7 +8123,7 @@ z_eff_raw_err_str=string(z_eff_raw_err,format=form)
 z_eff_raw_err_str=strmid(z_eff_raw_err_str,0,strlen(z_eff_raw_err_str)-2)
 printf,1,z_eff_raw_err_str
 printf,1,''
-printf,1,';Effective Charge Z_Eff, radial position for smoothed data , m'
+printf,1,';Effective Charge Z_Eff, radial position for smoothed data'
 printf,1,'z_eff_r:'
 form='('+strtrim(string(n_elements(z_eff_r)),2)+'(F6.4,", "))'
 z_eff_r_str=string(z_eff_r,format=form)
@@ -8790,7 +9100,7 @@ Pro load_output_data_file,file_name
 common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,beam_port_phi,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains the parameters which describe the non-geometrical
 ;parameters of the beam (particle and energy distribution)
 common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
@@ -8801,7 +9111,7 @@ common neutral_gas,tank_pressure,torus_pressure,duct_pressure,duct_pressure_loc,
 ;calculation grid and output 3D arrays of the beam density and excitation fracitons
 common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
 ;The following common block contains the parameters which describe the geometry
-;and position of the tokamak plasma
+;and position of the machine plasma
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
 ;The following common block contains the parameters which describe
 ;some relative  global parameters of the plasma 
@@ -8814,13 +9124,13 @@ common grid_arr, code_grid_arr
 common beam_limiters, n_limiters, limiters_table,limiters_arr
 ;The following common block contains 1D n_e profiles of raw and smoothed data, and 3D
 ;n_e array after it constructed.
-common dens_electrons,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
+common dens_electrons,n_e_coord,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
 ;The following common block contains 1D t_e profiles of raw and smoothed data, and 3D
 ;t_e array after it constructed.
-common temp_electrons,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
+common temp_electrons,t_e_coord,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
 ;The following common block contains 1D z_eff profiles of raw and smoothed data, and 3D
 ;z_eff array after it constructed.
-common effective_charge, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_eff_r,z_eff_arr,z_eff_err_arr
+common effective_charge, z_eff_coord, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_eff_r,z_eff_arr,z_eff_err_arr
 ;The following common block contains some of the settings of how to
 ;run the beam attenuation and penetration calculation. ;The following
 ;common block contains the name of the output save file
@@ -8867,6 +9177,10 @@ vel_dis_type=1 ;default
 vel_vec_coef=0
 vel_vec_x=0
 vel_vec_y=0
+n_e_coord = 0
+t_e_coord = 0
+z_eff_coord = 0
+beam_port_phi = 0.0
 
 while ~EOF(1) do begin
 
@@ -8937,6 +9251,10 @@ if val eq 'grid_ap_diam:' then begin
   readf,1,val
   grid_ap_diam=float(val)
   if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
+endif
+if val eq 'beam_port_phi:' then begin 
+  readf,1,val
+  beam_port_phi=float(val)
 endif
 if val eq 'beam_port:' then begin 
   readf,1,val
@@ -9206,6 +9524,10 @@ if val eq 'code_grid_arr.Y:' then begin
 endif
 
 ;load used input profiles electron density
+if val eq 'n_e_coord:' then begin 
+  readf,1,val
+  n_e_coord=int(val)
+endif
 if val eq 'n_e_raw_r:' then begin 
   readf,1,val
   n_e_raw_r=float(strsplit(val,', ',/extract))
@@ -9239,6 +9561,10 @@ endif
 
 
 ;load used input profiles electron temperature
+if val eq 't_e_coord:' then begin 
+  readf,1,val
+  t_e_coord=int(val)
+endif
 if val eq 't_e_raw_r:' then begin 
   readf,1,val
   t_e_raw_r=float(strsplit(val,', ',/extract))
@@ -9270,7 +9596,11 @@ if val eq 't_e_err:' then begin
   if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
 endif
 
-;load input profiles of Z_eff 
+;load input profiles of Z_eff
+if val eq 'z_eff_coord:' then begin 
+  readf,1,val
+  z_eff_coord=int(val)
+endif
 if val eq 'z_eff_raw_r:' then begin 
   readf,1,val
   z_eff_raw_r=float(strsplit(val,', ',/extract))
@@ -9401,7 +9731,7 @@ end
 Pro load_beam_geometry_file
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,beam_port_phi,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains some of the settings for loading of
 ;the input data used for the beam attenuation and penetration
 ;calculation. ;The following common block contains the name of the input file from which the input
@@ -9447,6 +9777,7 @@ openr,1,beam_geom_file
 tank_diam=1.0
 magnet_diam=0.2
 neutr_diam=0.2
+beam_port_phi = 0.0 ;default
 
 while ~EOF(1) do begin
 
@@ -9466,6 +9797,10 @@ if val eq 'grid_ap_diam:' then begin
   readf,1,val
   grid_ap_diam=float(val)
   if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
+endif
+if val eq 'beam_port_phi:' then begin 
+  readf,1,val
+  beam_port_phi=float(val)
 endif
 if val eq 'beam_port:' then begin 
   readf,1,val
@@ -9614,12 +9949,12 @@ end
 Pro load_beam_lim
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,beam_port_phi,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains the parameters which describe the
 ;positions and sizes of the beam limiters.
 common beam_limiters, n_limiters, limiters_table,limiters_arr
 ;The following common block contains the parameters which describe the geometry
-;and position of the tokamak plasma
+;and position of the machine plasma
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
 ;status window and availability states of each data set
 common status, status_wid,error_catch,st_err  
@@ -9664,7 +9999,7 @@ end
 Pro load_beam_geometry
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,beam_port_phi,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block is used to transfer the pointer to the
 ;status window and availability states of each data set
 common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
@@ -9694,7 +10029,7 @@ if error_catch then begin
    r_grid=mdsvalue('\DNB::TOP.DNB_GEOM.R_grid',status=st4,/quiet);center of the grid
    z_grid=mdsvalue('\DNB::TOP.DNB_GEOM.z_grid',status=st5,/quiet);center of the grid
    phi_grid=mdsvalue('\DNB::TOP.DNB_GEOM.phi_grid',status=st6,/quiet) ;center of the grid
-   beam_port=MDSVALUE('\DNB::TOP.DNB_GEOM.beam_port', status=st7,/quiet); tokamak port to which beam is attached
+   beam_port=MDSVALUE('\DNB::TOP.DNB_GEOM.beam_port', status=st7,/quiet); machine port to which beam is attached
    x_grid_focus=MDSVALUE('\DNB::TOP.DNB_GEOM.grid_focus', status=st8,/quiet);x focal distance of the beam
    y_grid_focus=x_grid_focus;y focal distance of the beam    
    tank_front_dist=MDSVALUE('\DNB::TOP.DNB_GEOM.tank_front', status=st9,/quiet);distance from grids to the front of the beam tank
@@ -9710,6 +10045,7 @@ if error_catch then begin
    magnet_diam=0.2
    neutr_diam=0.2
    neutr_front_dist=0.0
+   beam_port_phi = 0.0
 
    if st1 and st2 and st3 and st4 and st5 and st6 and st7 and st8 and st9 and st10 and st11 and st12 and st13 and st14 and st15 and st16 then begin
      x_bml=beam_apertur(*,0)
@@ -9817,7 +10153,7 @@ common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_
 common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist 
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,beam_port_phi,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist 
 ;The following common block is used to transfer the pointer to the status window and availability states of each data set
 common status, status_wid,error_catch,st_err
 
@@ -9933,16 +10269,16 @@ common run_settings,div_type,div_type_names,atten_type, atten_type_names, vel_di
 common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,beam_port_phi,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains the parameters which describe the non-geometrical
 ;parameters of the beam (particle and energy distribution) 
 common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
 ;The following common block contains 1D n_e profiles of raw and
 ;smoothed data, 3D n_e and ne_stop_cross_section arrays after they constructed
-common dens_electrons,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
+common dens_electrons,n_e_coord,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
 ;The following common block contains 1D t_e profiles of raw and smoothed data, and 3D
 ;t_e array after it constructed
-common temp_electrons,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
+common temp_electrons,t_e_coord,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
 ;The following common block contains neutral gas parameters used in
 ;calculation of the beam attenuation in the gas.
 common neutral_gas,tank_pressure,torus_pressure,duct_pressure,duct_pressure_loc,n0_arr,n0_stop_cross_section
@@ -9955,7 +10291,7 @@ exc_plasma_type_names,gas_arr_type,stop_gas_type,lim_arr_type,grid_aper_names,gr
 ;positions and sizes of the beam limiters.
 common beam_limiters, n_limiters, limiters_table,limiters_arr
 ;The following commong block contains the rho arrays which used for
-;mapping of 1D Ne,Te,Z_eff arrays to the tokamak 3D coordinated and
+;mapping of 1D Ne,Te,Z_eff arrays to the machine 3D coordinated and
 ;eventually to the beam coordinates.
 common flux_surfaces, rho_arr_beam_coord,rho_grid,rgrid_arr,zgrid_arr,rgrid_midplane,rho_grid_midplane
 ;The following common block is used to transfer the pointer to the status window and availability states of each data set
@@ -10266,16 +10602,16 @@ common run_settings,div_type,div_type_names,atten_type, atten_type_names, vel_di
 common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,beam_port_phi,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains the parameters which describe the non-geometrical
 ;parameters of the beam (particle and energy distribution) 
 common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
 ;The following common block contains 1D n_e profiles of raw and
 ;smoothed data, 3D n_e and ne_stop_cross_section arrays after they constructed
-common dens_electrons,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
+common dens_electrons,n_e_coord,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
 ;The following common block contains 1D t_e profiles of raw and smoothed data, and 3D
 ;t_e array after it constructed
-common temp_electrons,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
+common temp_electrons,t_e_coord,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
 ;The following common block contains neutral gas parameters used in
 ;calculation of the beam attenuation in the gas.
 common neutral_gas,tank_pressure,torus_pressure,duct_pressure,duct_pressure_loc,n0_arr,n0_stop_cross_section
@@ -11002,15 +11338,15 @@ common export_file, export_file,export_sel,export_flag
 ;curently plotted
 common draw_request,draw_req
 ;The following common block contains the parameters which describe the geometry
-;and position of the tokamak plasma
+;and position of the machine plasma
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
 ;The following commong block contains the rho arrays which used for
-;mapping of 1D Ne,Te,Z_eff arrays to the tokamak 3D coordinated and
+;mapping of 1D Ne,Te,Z_eff arrays to the machine 3D coordinated and
 ;eventually to the beam coordinates.
 common flux_surfaces, rho_arr_beam_coord,rho_grid,rgrid_arr,zgrid_arr,rgrid_midplane,rho_grid_midplane
 ;The following common block contains 1D n_e profiles of raw and
 ;smoothed data, 3D n_e and ne_stop_cross_section arrays after they constructed
-common dens_electrons,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
+common dens_electrons,n_e_coord,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
 ; The following common block contains general parameters: which user,
 ; what beam, what shot and time interval
 common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
@@ -11022,7 +11358,7 @@ common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_
 common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,beam_port_phi,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block is used to transfer the pointer to the
 ;status window and availability states of each data set
 common status, status_wid,error_catch,st_err 
@@ -11438,23 +11774,30 @@ if plot_val eq 2 then begin
    wall_cent_x=r_wall*cos(phi_wall)
    wall_cent_y=-r_wall*sin(phi_wall)
    dist_all_XY=sqrt((wall_cent_x-grid_cent_x)^2.0+(wall_cent_y-grid_cent_y)^2.0)
-   sin_pivot=-(wall_cent_y-grid_cent_y)/dist_all_XY;angle in tokamak XY plane (horizontal)
+   sin_pivot=-(wall_cent_y-grid_cent_y)/dist_all_XY;angle in machine XY plane (horizontal)
    cos_pivot=-(wall_cent_x-grid_cent_x)/dist_all_XY
   
    dist_all_XYZ=sqrt((wall_cent_x-grid_cent_x)^2.0+(wall_cent_y-grid_cent_y)^2.0+(z_wall-z_grid)^2.0)
-   sin_alpha=(z_wall-z_grid)/dist_all_XYZ ; angle in tokamak XZ plane (vertical)
+   sin_alpha=(z_wall-z_grid)/dist_all_XYZ ; angle in machine XZ plane (vertical)
    cos_alpha=sqrt(1.0-sin_alpha^2.0)
-   ;rotating beam coordinate to tokamak midplane projection 
+   ;rotating beam coordinate to machine midplane projection 
    ix=(n_x-1)/2
    iy=(n_y-1)/2
    z_beam1=z_beam*cos_alpha-y_beam(iy)*sin_alpha
    y_beam1=z_beam*sin_alpha+y_beam(iy)*cos_alpha+z_grid
    x_beam1=x_beam(ix)                    
-   ;moving beam to tokamak center and rotating
+   ;moving beam to machine center and rotating
    x_tor2=-z_beam1*cos_pivot+x_beam1*sin_pivot+r_grid*cos(phi_grid)
    y_tor2=-z_beam1*sin_pivot-x_beam1*cos_pivot-r_grid*sin(phi_grid)
    r_tor2=sqrt(x_tor2^2.0+y_tor2^2.0)
    ind1=n_z-1-locate(reverse(r_tor2),r_major)
+   if ind1 eq n_z then begin
+      Widget_control, status_wid, Get_Value=status_tx
+      Widget_Control, status_wid,$
+      Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Cannot plot vs r_major, since beam axis does not reach plasma core']], Set_text_top_line=n_elements(status_tx)-4
+      st_err=1
+      return 
+   endif
    ind2=n_z-1-locate(reverse(r_tor2),r_major+r_minor*1.2)
    r_output=(reverse(r_tor2))(n_z-1-ind1:n_z-1-ind2)
    ;---------------------------------------------------------------
@@ -12128,23 +12471,30 @@ if plot_val eq 9 then begin
    wall_cent_x=r_wall*cos(phi_wall)
    wall_cent_y=-r_wall*sin(phi_wall)
    dist_all_XY=sqrt((wall_cent_x-grid_cent_x)^2.0+(wall_cent_y-grid_cent_y)^2.0)
-   sin_pivot=-(wall_cent_y-grid_cent_y)/dist_all_XY;angle in tokamak XY plane (horizontal)
+   sin_pivot=-(wall_cent_y-grid_cent_y)/dist_all_XY;angle in machine XY plane (horizontal)
    cos_pivot=-(wall_cent_x-grid_cent_x)/dist_all_XY
   
    dist_all_XYZ=sqrt((wall_cent_x-grid_cent_x)^2.0+(wall_cent_y-grid_cent_y)^2.0+(z_wall-z_grid)^2.0)
-   sin_alpha=(z_wall-z_grid)/dist_all_XYZ ; angle in tokamak XZ plane (vertical)
+   sin_alpha=(z_wall-z_grid)/dist_all_XYZ ; angle in machine XZ plane (vertical)
    cos_alpha=sqrt(1.0-sin_alpha^2.0)
-   ;rotating beam coordinate to tokamak midplane projection 
+   ;rotating beam coordinate to machine midplane projection 
    ix=x_b_slider_val
    iy=y_b_slider_val
    z_beam1=z_beam*cos_alpha-y_beam(iy)*sin_alpha
    y_beam1=z_beam*sin_alpha+y_beam(iy)*cos_alpha+z_grid
    x_beam1=x_beam(ix)                    
-   ;moving beam to tokamak center and rotating
+   ;moving beam to machine center and rotating
    x_tor2=-z_beam1*cos_pivot+x_beam1*sin_pivot+r_grid*cos(phi_grid)
    y_tor2=-z_beam1*sin_pivot-x_beam1*cos_pivot-r_grid*sin(phi_grid)
    r_tor2=sqrt(x_tor2^2.0+y_tor2^2.0)
    ind1=n_z-1-locate(reverse(r_tor2),r_major)
+   if ind1 eq n_z then begin
+      Widget_control, status_wid, Get_Value=status_tx
+      Widget_Control, status_wid,$
+      Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Cannot plot vs r_major, since beam axis does not reach plasma core']], Set_text_top_line=n_elements(status_tx)-4
+      st_err=1
+      return 
+   endif
    ind2=n_z-1-locate(reverse(r_tor2),r_major+r_minor*1.2)
    r_output=(reverse(r_tor2))(n_z-1-ind1:n_z-1-ind2)
    ;---------------------------------------------------------------
@@ -12780,16 +13130,16 @@ Pro plot_input, Main_base
 common export_file, export_file,export_sel,export_flag
 ;The following common block contains 1D n_e profiles of raw and
 ;smoothed data, 3D n_e and ne_stop_cross_section arrays after they constructed
-common dens_electrons,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
+common dens_electrons,n_e_coord,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
 ;The following common block contains 1D t_e profiles of raw and
 ;smoothed data and 3D t_e array after it constructed.
-common temp_electrons,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
+common temp_electrons,t_e_coord,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
 ;The following common block contains 1D z_eff profiles of raw and
 ;smoothed data and 3D z_eff array after it constructed.
-common effective_charge, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_eff_r,z_eff_arr,z_eff_err_arr
+common effective_charge, z_eff_coord, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_eff_r,z_eff_arr,z_eff_err_arr
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,beam_port_phi,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains the parameter which data is
 ;curently plotted
 common draw_request,draw_req
@@ -13017,7 +13367,9 @@ if preview_val eq 2 then begin
    max_range=max(n_e_raw+n_e_err)
    scale_coef=fix(alog10(max_val))
    titl='Electron density'
-   xtitl='Major radius, m'
+   if n_e_coord eq 0 then xtitl='Major radius, m'
+   if n_e_coord eq 1 then xtitl='rho = sqrt(psi)'
+   if n_e_coord eq 2 then xtitl='rho = sqrt(phi)'
    ytitl='Electron density, x10!U'+strtrim(string(scale_coef,format='(I2)'),1)+'!N cm!U-3!N'
    plot, n_e_raw_r, n_e_raw*10.0^(-scale_coef),color=0,background=-1,xstyle=0,ystyle=0,psym=6,yrange=[0,max_range*10.0^(-scale_coef)],$
    Thick=1, Charsize=1.5, ticklen=1,xtitle=xtitl,ytitle=ytitl,title=titl
@@ -13096,7 +13448,9 @@ if preview_val eq 3 then begin
    max_val=max(t_e_raw)
    max_range=max(t_e_raw+t_e_err)
    titl='Electron temperature'
-   xtitl='Major radius, m'
+   if t_e_coord eq 0 then xtitl='Major radius, m'
+   if t_e_coord eq 1 then xtitl='rho = sqrt(psi)'
+   if t_e_coord eq 2 then xtitl='rho = sqrt(phi)'
    ytitl='Electron temperature, keV'
    plot, t_e_raw_r, t_e_raw,color=0,background=-1,xstyle=0,ystyle=0,psym=6,yrange=[0,max_range],$
    Thick=1, Charsize=1.5, ticklen=1,xtitle=xtitl,ytitle=ytitl,title=titl
@@ -13175,7 +13529,9 @@ if preview_val eq 4 then begin
    max_val=max(z_eff_raw)
    max_range=max(z_eff_raw+z_eff_err)
    titl='Effective charge (Z!Deff!N)'
-   xtitl='Major radius, m'
+   if z_eff_coord eq 0 then xtitl='Major radius, m'
+   if z_eff_coord eq 1 then xtitl='rho = sqrt(psi)'
+   if z_eff_coord eq 2 then xtitl='rho = sqrt(phi)'
    ytitl='Z!Deff!N'
    plot, z_eff_raw_r, z_eff_raw,color=0,background=-1,xstyle=0,ystyle=0,psym=6,yrange=[0,max_range*1.1],$
    Thick=1, Charsize=1.5, ticklen=1,xtitle=xtitl,ytitle=ytitl,$
@@ -13254,24 +13610,24 @@ Pro plot_input_arr, Main_base
 common export_file, export_file,export_sel,export_flag
  ;The following common block contains 1D n_e profiles of raw and
  ;smoothed data, 3D n_e and ne_stop_cross_section arrays after they constructed
- common dens_electrons,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
+ common dens_electrons,n_e_coord,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
  ;The following common block contains 1D t_e profiles of raw and
  ;smoothed data and 3D t_e array after it constructed.
- common temp_electrons,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
+ common temp_electrons,t_e_coord,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
  ;The following common block contains 1D z_eff profiles of raw and
  ;smoothed data and 3D z_eff array after it constructed.
- common effective_charge, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_eff_r,z_eff_arr,z_eff_err_arr
+ common effective_charge, z_eff_coord, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_eff_r,z_eff_arr,z_eff_err_arr
  ;The following common block contains the parameters which describe the geometry
  ;and position of the beam tank and all components needed for calculation.
- common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+ common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,beam_port_phi,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains the parameters which describe the geometry
-;and position of the tokamak plasma
+;and position of the machine plasma
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
  ;The following common block contains the parameter which data is
  ;curently plotted
  common draw_request,draw_req
 ;The following commong block contains the rho arrays which used for
-;mapping of 1D Ne,Te,Z_eff arrays to the tokamak 3D coordinated and
+;mapping of 1D Ne,Te,Z_eff arrays to the machine 3D coordinated and
 ;eventually to the beam coordinates.
 common flux_surfaces, rho_arr_beam_coord,rho_grid,rgrid_arr,zgrid_arr,rgrid_midplane,rho_grid_midplane
 ; The following common block contains general parameters: which user,
@@ -13416,16 +13772,27 @@ if preview_val eq 1 then begin
    Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Label_top'),Sensitive=0
    Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='exc_B_Label_top'),Sensitive=0   
    Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='exc_B_Check'),Sensitive=0
-   !X.Margin=[12,22]
+   !X.Margin=[10,6]
    !Y.Margin=[3,2]
    ;plot flux----------
    titl='Plasma flux surfaces'
    xtitl='Major radius, m'
    ytitl='Z, m'
-   contour, rho_grid<1.0,rgrid_arr,zgrid_arr,color=0,background=-1,ystyle=1,xstyle=1,Thick=1, xrange=[r_major-r_minor*1.1,r_major+r_minor*1.1], yrange=[-r_minor*elong*1.1,r_minor*elong*1.1],$
+   x_ind = where(min(rho_grid,dimension=2) lt 0.95)
+   x_range1 = rgrid_arr(x_ind(0))
+   x_range2 = rgrid_arr(x_ind(n_elements(x_ind)-1))
+   x_border = (x_range2-x_range1)/10.0
+   z_ind = where(min(rho_grid,dimension=1) lt 0.95)
+   z_range1 = zgrid_arr(z_ind(0))
+   z_range2 = zgrid_arr(z_ind(n_elements(z_ind)-1))
+   z_border = (z_range2-z_range1)/10.0
+
+   contour, rho_grid<1.0,rgrid_arr,zgrid_arr,color=0,background=-1,ystyle=1,xstyle=1,Thick=1, xrange=[x_range1-x_border,x_range2+x_border], yrange=[z_range1-z_border,z_range2+z_border*3.0],$
    Charsize=1.4, ticklen=0,ytitle=ytitl,xtitle=xtitl, Title=titl,levels=[0.01,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,0.99],c_colors=[120,0,0,0,0,0,0,0,0,0,120]
    xyouts,105,370,'Beam: '+beam,/device,color=0,charsize=1.3,charthick=1
    xyouts,105,350,'Shot: '+strtrim(string(shot),2),/device,color=0,charsize=1.3,charthick=1
+   xyouts,320,370,'Phi0: '+strtrim(string(beam_port_phi,format='(F10.3)'),1)+' rad',/device,color=0,charsize=1.3,charthick=1
+
    if export_flag then begin
      if export_sel eq 0 then begin
        a_img=tvrd(true=1) 
@@ -13650,25 +14017,34 @@ if preview_val eq 3 then begin
    wall_cent_x=r_wall*cos(phi_wall)
    wall_cent_y=-r_wall*sin(phi_wall)
    dist_all_XY=sqrt((wall_cent_x-grid_cent_x)^2.0+(wall_cent_y-grid_cent_y)^2.0)
-   sin_pivot=-(wall_cent_y-grid_cent_y)/dist_all_XY;angle in tokamak XY plane (horizontal)
+   sin_pivot=-(wall_cent_y-grid_cent_y)/dist_all_XY;angle in machine XY plane (horizontal)
    cos_pivot=-(wall_cent_x-grid_cent_x)/dist_all_XY
   
    dist_all_XYZ=sqrt((wall_cent_x-grid_cent_x)^2.0+(wall_cent_y-grid_cent_y)^2.0+(z_wall-z_grid)^2.0)
-   sin_alpha=(z_wall-z_grid)/dist_all_XYZ ; angle in tokamak XZ plane (vertical)
+   sin_alpha=(z_wall-z_grid)/dist_all_XYZ ; angle in machine XZ plane (vertical)
    cos_alpha=sqrt(1.0-sin_alpha^2.0)
-   ;rotating beam coordinate to tokamak midplane projection 
+   ;rotating beam coordinate to machine midplane projection 
    ix=x_b_slider_val
    iy=y_b_slider_val
    z_beam1=z_beam*cos_alpha-y_beam(iy)*sin_alpha
    y_beam1=z_beam*sin_alpha+y_beam(iy)*cos_alpha+z_grid
    x_beam1=x_beam(ix)                    
-   ;moving beam to tokamak center and rotating
+   ;moving beam to machine center and rotating
    x_tor2=-z_beam1*cos_pivot+x_beam1*sin_pivot+r_grid*cos(phi_grid)
    y_tor2=-z_beam1*sin_pivot-x_beam1*cos_pivot-r_grid*sin(phi_grid)
    r_tor2=sqrt(x_tor2^2.0+y_tor2^2.0)
    ind1=n_z-1-locate(reverse(r_tor2),r_major)
+   if ind1 eq n_z then begin
+      Widget_control, status_wid, Get_Value=status_tx
+      Widget_Control, status_wid,$
+      Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Cannot plot vs r_major, since beam axis does not reach plasma core']], Set_text_top_line=n_elements(status_tx)-4
+      st_err=1
+      return 
+   endif
+
    ind2=n_z-1-locate(reverse(r_tor2),r_major+r_minor*1.2)
    r_output=(reverse(r_tor2))(n_z-1-ind1:n_z-1-ind2)
+
    ;---------------------------------------------------------------
    if scale_check eq 1 then max_val=max(n_e_arr(ind2:ind1,*,*)) else max_val=max(n_e_arr(ind2:ind1,X_B_Slider_val,Y_B_Slider_val))
    scale_coef=fix(alog10(max_val))
@@ -14052,23 +14428,30 @@ if preview_val eq 8 then begin
    wall_cent_x=r_wall*cos(phi_wall)
    wall_cent_y=-r_wall*sin(phi_wall)
    dist_all_XY=sqrt((wall_cent_x-grid_cent_x)^2.0+(wall_cent_y-grid_cent_y)^2.0)
-   sin_pivot=-(wall_cent_y-grid_cent_y)/dist_all_XY;angle in tokamak XY plane (horizontal)
+   sin_pivot=-(wall_cent_y-grid_cent_y)/dist_all_XY;angle in machine XY plane (horizontal)
    cos_pivot=-(wall_cent_x-grid_cent_x)/dist_all_XY
   
    dist_all_XYZ=sqrt((wall_cent_x-grid_cent_x)^2.0+(wall_cent_y-grid_cent_y)^2.0+(z_wall-z_grid)^2.0)
-   sin_alpha=(z_wall-z_grid)/dist_all_XYZ ; angle in tokamak XZ plane (vertical)
+   sin_alpha=(z_wall-z_grid)/dist_all_XYZ ; angle in machine XZ plane (vertical)
    cos_alpha=sqrt(1.0-sin_alpha^2.0)
-   ;rotating beam coordinate to tokamak midplane projection 
+   ;rotating beam coordinate to machine midplane projection 
    ix=x_b_slider_val
    iy=y_b_slider_val
    z_beam1=z_beam*cos_alpha-y_beam(iy)*sin_alpha
    y_beam1=z_beam*sin_alpha+y_beam(iy)*cos_alpha+z_grid
    x_beam1=x_beam(ix)                    
-   ;moving beam to tokamak center and rotating
+   ;moving beam to machine center and rotating
    x_tor2=-z_beam1*cos_pivot+x_beam1*sin_pivot+r_grid*cos(phi_grid)
    y_tor2=-z_beam1*sin_pivot-x_beam1*cos_pivot-r_grid*sin(phi_grid)
    r_tor2=sqrt(x_tor2^2.0+y_tor2^2.0)
    ind1=n_z-1-locate(reverse(r_tor2),r_major)
+   if ind1 eq n_z then begin
+      Widget_control, status_wid, Get_Value=status_tx
+      Widget_Control, status_wid,$
+      Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Cannot plot vs r_major, since beam axis does not reach plasma core']], Set_text_top_line=n_elements(status_tx)-4
+      st_err=1
+      return 
+   endif
    ind2=n_z-1-locate(reverse(r_tor2),r_major+r_minor*1.2)
    r_output=(reverse(r_tor2))(n_z-1-ind1:n_z-1-ind2)
    ;---------------------------------------------------------------
@@ -15138,23 +15521,30 @@ if preview_val eq 17 then begin
    wall_cent_x=r_wall*cos(phi_wall)
    wall_cent_y=-r_wall*sin(phi_wall)
    dist_all_XY=sqrt((wall_cent_x-grid_cent_x)^2.0+(wall_cent_y-grid_cent_y)^2.0)
-   sin_pivot=-(wall_cent_y-grid_cent_y)/dist_all_XY;angle in tokamak XY plane (horizontal)
+   sin_pivot=-(wall_cent_y-grid_cent_y)/dist_all_XY;angle in machine XY plane (horizontal)
    cos_pivot=-(wall_cent_x-grid_cent_x)/dist_all_XY
   
    dist_all_XYZ=sqrt((wall_cent_x-grid_cent_x)^2.0+(wall_cent_y-grid_cent_y)^2.0+(z_wall-z_grid)^2.0)
-   sin_alpha=(z_wall-z_grid)/dist_all_XYZ ; angle in tokamak XZ plane (vertical)
+   sin_alpha=(z_wall-z_grid)/dist_all_XYZ ; angle in machine XZ plane (vertical)
    cos_alpha=sqrt(1.0-sin_alpha^2.0)
-   ;rotating beam coordinate to tokamak midplane projection 
+   ;rotating beam coordinate to machine midplane projection 
    ix=x_b_slider_val
    iy=y_b_slider_val
    z_beam1=z_beam*cos_alpha-y_beam(iy)*sin_alpha
    y_beam1=z_beam*sin_alpha+y_beam(iy)*cos_alpha+z_grid
    x_beam1=x_beam(ix)                    
-   ;moving beam to tokamak center and rotating
+   ;moving beam to machine center and rotating
    x_tor2=-z_beam1*cos_pivot+x_beam1*sin_pivot+r_grid*cos(phi_grid)
    y_tor2=-z_beam1*sin_pivot-x_beam1*cos_pivot-r_grid*sin(phi_grid)
    r_tor2=sqrt(x_tor2^2.0+y_tor2^2.0)
    ind1=n_z-1-locate(reverse(r_tor2),r_major)
+   if ind1 eq n_z then begin
+      Widget_control, status_wid, Get_Value=status_tx
+      Widget_Control, status_wid,$
+      Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Cannot plot vs r_major, since beam axis does not reach plasma core']], Set_text_top_line=n_elements(status_tx)-4
+      st_err=1
+      return 
+   endif
    ind2=n_z-1-locate(reverse(r_tor2),r_major+r_minor*1.2)
    r_output=(reverse(r_tor2))(n_z-1-ind1:n_z-1-ind2)
    ;---------------------------------------------------------------
@@ -15710,23 +16100,30 @@ if preview_val eq 17 then begin
    wall_cent_x=r_wall*cos(phi_wall)
    wall_cent_y=-r_wall*sin(phi_wall)
    dist_all_XY=sqrt((wall_cent_x-grid_cent_x)^2.0+(wall_cent_y-grid_cent_y)^2.0)
-   sin_pivot=-(wall_cent_y-grid_cent_y)/dist_all_XY;angle in tokamak XY plane (horizontal)
+   sin_pivot=-(wall_cent_y-grid_cent_y)/dist_all_XY;angle in machine XY plane (horizontal)
    cos_pivot=-(wall_cent_x-grid_cent_x)/dist_all_XY
   
    dist_all_XYZ=sqrt((wall_cent_x-grid_cent_x)^2.0+(wall_cent_y-grid_cent_y)^2.0+(z_wall-z_grid)^2.0)
-   sin_alpha=(z_wall-z_grid)/dist_all_XYZ ; angle in tokamak XZ plane (vertical)
+   sin_alpha=(z_wall-z_grid)/dist_all_XYZ ; angle in machine XZ plane (vertical)
    cos_alpha=sqrt(1.0-sin_alpha^2.0)
-   ;rotating beam coordinate to tokamak midplane projection 
+   ;rotating beam coordinate to machine midplane projection 
    ix=x_b_slider_val
    iy=y_b_slider_val
    z_beam1=z_beam*cos_alpha-y_beam(iy)*sin_alpha
    y_beam1=z_beam*sin_alpha+y_beam(iy)*cos_alpha+z_grid
    x_beam1=x_beam(ix)                    
-   ;moving beam to tokamak center and rotating
+   ;moving beam to machine center and rotating
    x_tor2=-z_beam1*cos_pivot+x_beam1*sin_pivot+r_grid*cos(phi_grid)
    y_tor2=-z_beam1*sin_pivot-x_beam1*cos_pivot-r_grid*sin(phi_grid)
    r_tor2=sqrt(x_tor2^2.0+y_tor2^2.0)
    ind1=n_z-1-locate(reverse(r_tor2),r_major)
+   if ind1 eq n_z then begin
+      Widget_control, status_wid, Get_Value=status_tx
+      Widget_Control, status_wid,$
+      Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Cannot plot vs r_major, since beam axis does not reach plasma core']], Set_text_top_line=n_elements(status_tx)-4
+      st_err=1
+      return 
+   endif
    ind2=n_z-1-locate(reverse(r_tor2),r_major+r_minor*1.2)
    r_output=(reverse(r_tor2))(n_z-1-ind1:n_z-1-ind2)
    ;---------------------------------------------------------------
@@ -16725,7 +17122,7 @@ case ev.id of
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Beam_Lim_Type_Droplist'),Timer=0.01  
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Beam_Param_Type_Droplist'), Set_Droplist_Select=1
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Beam_Param_Type_Droplist'),Timer=0.01
-        Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_Type_Droplist'), Set_Droplist_Select=2
+        Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_Type_Droplist'), Set_Droplist_Select=3
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_Type_Droplist'),Timer=0.01
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Param_Type_Droplist'), Set_Droplist_Select=1
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Param_Type_Droplist'),Timer=0.01          
@@ -16749,7 +17146,7 @@ case ev.id of
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Beam_Lim_Type_Droplist'),Timer=0.01  
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Beam_Param_Type_Droplist'), Set_Droplist_Select=2
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Beam_Param_Type_Droplist'),Timer=0.01
-        Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_Type_Droplist'), Set_Droplist_Select=3
+        Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_Type_Droplist'), Set_Droplist_Select=4
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_Type_Droplist'),Timer=0.01
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Param_Type_Droplist'), Set_Droplist_Select=2
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Param_Type_Droplist'),Timer=0.01         
@@ -16905,17 +17302,22 @@ case ev.id of
       if plasma_geom_type_1 eq 0 then begin
         Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_File_Text'),Sensitive=0
       endif
-      if plasma_geom_type_1 eq 2 then begin
-        Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_File_Text'),Sensitive=1
-        plasma_geom_file_1=file_dir+'/'+beam+'.abi'
-        Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_File_Text'),Set_value=plasma_geom_file_1
-      endif
       if plasma_geom_type_1 eq 1 then begin
         Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_File_Text'),Sensitive=1
         plasma_geom_file_1=file_dir+'/efit/*.*'
         Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_File_Text'),Set_value=plasma_geom_file_1
       endif
+      if plasma_geom_type_1 eq 2 then begin
+        Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_File_Text'),Sensitive=1
+        plasma_geom_file_1=file_dir+'/vmec/*.*'
+        Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_File_Text'),Set_value=plasma_geom_file_1
+      endif
       if plasma_geom_type_1 eq 3 then begin
+        Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_File_Text'),Sensitive=1
+        plasma_geom_file_1=file_dir+'/'+beam+'.abi'
+        Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_File_Text'),Set_value=plasma_geom_file_1
+      endif
+      if plasma_geom_type_1 eq 4 then begin
          Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Plasma_Geom_File_Text'),Sensitive=0
       endif     
     end
@@ -16976,9 +17378,9 @@ end
 Pro Beam_Geometry_Widget_event, ev
  ;The following common block contains the parameters which describe the geometry
  ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,beam_port_phi,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains the parameters which describe the geometry
-;and position of the tokamak plasma
+;and position of the machine plasma
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
 ;The following common block contains the parameters which describe the
 ;positions and sizes of the beam limiters.
@@ -17018,6 +17420,8 @@ case ev.id of
    Widget_Info(ev.id, FIND_BY_UNAME='Beam_Geometry_Save_Button') or Widget_Info(ev.id, FIND_BY_UNAME='Beam_Geometry_View'): begin
       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Beam_Port_Text'),Get_value=beam_port_txt
       beam_port=beam_port_txt(0)
+      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Beam_Port_Phi_Text'),Get_value=beam_port_phi_txt
+      beam_port_phi=float(beam_port_phi_txt(0))
       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='X_Bml_Text'),Get_value=x_Bml_txt
       x_bml=float(strsplit(x_bml_txt,', ',/extract))/1e3
       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Y_Bml_Text'),Get_value=y_Bml_txt
@@ -17107,15 +17511,15 @@ case ev.id of
         plot,[0,0],[1,1],color=0,background=-1,xrange=[wx0,wx1],yrange=[wy0,wy1],/nodata,ystyle=1,xstyle=1
         angl_arr=interpol([-!Pi,!Pi],200)
         oplot,[wx0,wx1],[0,0],color=0,linestyle=2
-        ;plot plasma and tokamak
+        ;plot plasma and machine
         oplot,(r_major+r_minor)*cos(angl_arr),(r_major+r_minor)*sin(angl_arr),thick=1,color=120,linestyle=2      
         oplot,(r_major-r_minor)*cos(angl_arr),(r_major-r_minor)*sin(angl_arr),thick=1,color=120,linestyle=2
         oplot,r_major*cos(angl_arr),r_major*sin(angl_arr),thick=2,color=120              
         oplot,(r_major+r_minor*1.4)*cos(angl_arr),(r_major+r_minor*1.2)*sin(angl_arr),thick=3,color=0
-        xyouts, 630,380,'Tokamak torus',color=0,/device,charsize=1.5
-        xyouts, 630,360,'Plasma center, inner and outer SOL',color=120,/device,charsize=1.5
+        xyouts, 630,380,'Machine torus',color=0,/device,charsize=1.5
+        xyouts, 630,360,'Plasma center and plasma enclosure',color=120,/device,charsize=1.5
         ;plot beam port
-        xyouts,-r_minor*3.0-r_major,-0.2,beam_port+' port',color=0,charsize=1.5
+        xyouts,-r_minor*3.0-r_major,-0.4,beam_port+' port',color=0,charsize=1.5
 
         ;plot focal point
         F_diam=(wx1-wx0)/500.0
@@ -17271,7 +17675,7 @@ case ev.id of
         plot,[0,0],[1,1],color=0,background=-1,xrange=[wx0,wx1],yrange=[wy0,wy1],/nodata,ystyle=1,xstyle=1
         angl_arr=interpol([-!Pi,!Pi],200)
         oplot,[wx0,wx1],[0,0],color=0,linestyle=2
-        ;plot plasma and tokamak
+        ;plot plasma and machine
         n_z_int=200
         n_r_int=1000
         rgrid1=r_major-r_minor*1.1
@@ -17306,10 +17710,10 @@ case ev.id of
         [-r_minor*elong*1.4,-r_minor*elong*1.4,r_minor*elong*1.4,r_minor*elong*1.4],thick=2,color=0,linestyle=2
               
 
-        xyouts, 630,380,'Tokamak torus',color=0,/device,charsize=1.5
-        xyouts, 630,360,'Plasma center, inner and outer SOL',color=120,/device,charsize=1.5
+        xyouts, 630,380,'Machine torus',color=0,/device,charsize=1.5
+        xyouts, 630,360,'Plasma center  and plasma enclosure',color=120,/device,charsize=1.5
         ;plot beam port
-        xyouts,-r_minor*3.0-r_major,-0.2,beam_port+' port',color=0,charsize=1.5
+        xyouts,-r_minor*3.0-r_major,-0.4,beam_port+' port',color=0,charsize=1.5
  
         F_diam=(wx1-wx0)/500.0
         F_shift=(wx1-wx0)/100.0
@@ -17777,7 +18181,7 @@ end
 ;-------------------------------------------------------------------------------------------------------------------------
 Pro Plasma_Geometry_Widget_event, ev
 ;The following common block contains the parameters which describe the geometry
-;and position of the tokamak plasma
+;and position of the machine plasma
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
 ; The following common block contains general parameters: which user,
 ; what beam, what shot and time interval
@@ -18132,19 +18536,19 @@ common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
 common draw_request,draw_req
 ;The following common block contains 1D n_e profiles of raw and
 ;smoothed data, 3D n_e and ne_stop_cross_section arrays after they constructed
-common dens_electrons,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
+common dens_electrons,n_e_coord,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
 ;The following common block contains 1D t_e profiles of raw and
 ;smoothed data and 3D t_e array after it constructed.
-common temp_electrons,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
+common temp_electrons,t_e_coord,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
 ;The following common block contains 1D z_eff profiles of raw and
 ;smoothed data and 3D z_eff array after it constructed.
-common effective_charge, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_eff_r,z_eff_arr,z_eff_err_arr
+common effective_charge, z_eff_coord, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_eff_r,z_eff_arr,z_eff_err_arr
 ;The following common block contains X,Y,Z coordinate arrays used for the beam
 ;calculation grid and output 3D arrays of the beam density and excitation fracitons
 common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,beam_port_phi,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains some of the settings for loading of
 ;the input data used for the beam attenuation and penetration
 ;calculation 
@@ -18154,7 +18558,7 @@ ne_type,ne_file,te_type,te_file,z_eff_type,z_eff_file,plasma_geom_type,plasma_ge
 ;calculation of the beam attenuation in the gas.
 common neutral_gas,tank_pressure,torus_pressure,duct_pressure,duct_pressure_loc,n0_arr,n0_stop_cross_section
 ;The following common block contains the parameters which describe the geometry
-;and position of the tokamak plasma
+;and position of the machine plasma
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
 ;The following common block contains the parameters which describe
 ;some relative  global parameters of the plasma 
@@ -18466,6 +18870,10 @@ case ev.id of
          x_grid_focus=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:GRID_FOCUS', status=st20,/quiet)
          y_grid_focus=x_grid_focus
        endif
+       beam_port_phi=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:BEAM_PORT_PHI', status=st21,/quiet)
+       if (not(st21)) then begin
+         beam_port_phi = 0.0
+       endif
        beam_port=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:BEAM_PORT', status=st21,/quiet)
        R_grid=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:R_GRID', status=st22,/quiet)
        Z_grid=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.BEAM_GEOM:Z_GRID', status=st23,/quiet)       
@@ -18533,6 +18941,9 @@ case ev.id of
          endif else limiters_table=limiters_table_1
        endif 
 
+       
+       n_e_coord=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.N_E_PROF:N_E_COORD', status=st54,/quiet)
+       if not st54 then n_e_coord = 0 ; default if no val is saved
        n_e_raw=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.N_E_PROF:N_E_RAW', status=st54,/quiet)
        n_e_raw_r=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.N_E_PROF:N_E_RAW_R', status=st55,/quiet)
        n_e_raw_err=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.N_E_PROF:N_E_RAW_ER', status=st56,/quiet)
@@ -18540,11 +18951,17 @@ case ev.id of
        n_e_r=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.N_E_PROF:N_E_R', status=st58,/quiet)
        n_e_err=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.N_E_PROF:N_E_ER', status=st59,/quiet)
        t_e_raw=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.T_E_PROF:T_E_RAW', status=st60,/quiet)
+
+       t_e_coord=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.N_E_PROF:T_E_COORD', status=st61,/quiet)
+       if not st61 then t_e_coord = 0 ; default if no val is saved
        t_e_raw_r=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.T_E_PROF:T_E_RAW_R', status=st61,/quiet)
        t_e_raw_err=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.T_E_PROF:T_E_RAW_ER', status=st62,/quiet)
        t_e=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.T_E_PROF:T_E', status=st63,/quiet)
        t_e_r=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.T_E_PROF:T_E_R', status=st64,/quiet)
        t_e_err=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.T_E_PROF:T_E_ER', status=st65,/quiet)
+
+       Z_eff_coord=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.N_E_PROF:Z_EFF_COORD', status=st66,/quiet) 
+       if not st66 then z_eff_coord = 0 ; default if no val is saved
        Z_eff_raw=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.Z_Eff_PROF:Z_Eff_RAW', status=st66,/quiet)
        Z_eff_raw_r=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.Z_Eff_PROF:Z_Eff_RAW_R', status=st67,/quiet)
        Z_eff_raw_err=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+'.INPUT.Z_Eff_PROF:Z_Eff_RAW_ER', status=st68,/quiet)
@@ -19183,6 +19600,7 @@ case ev.id of
          MDSTCL,'ADD NODE GRID_AP_DIAM/USAGE=NUMERIC'       ;add grid_ap_diam
          MDSTCL,'ADD NODE X_GRID_FOCUS/USAGE=NUMERIC'       ;add grid_focus node
          MDSTCL,'ADD NODE Y_GRID_FOCUS/USAGE=NUMERIC'       ;add grid_focus node
+         MDSTCL,'ADD NODE BEAM_PORT_PHI/USAGE=NUMERIC'   ;add beam_port_phi node
          MDSTCL,'ADD NODE BEAM_PORT/USAGE=TEXT'   ;add beam_port node
          MDSTCL,'ADD NODE R_GRID/USAGE=NUMERIC'   ;add R_grid node
          MDSTCL,'ADD NODE Z_GRID/USAGE=NUMERIC'   ;add Z_grid node
@@ -19251,6 +19669,8 @@ case ev.id of
          MDSTCL,'SET DEFAULT \DNB::TOP.ALCBEAM.'+user_up+'.'+run_number +'.INPUT'  
          MDSTCL,'ADD NODE N_E_PROF/USAGE=STRUCTURE'  ;add structure
          MDSTCL,'SET DEFAULT \DNB::TOP.ALCBEAM.'+user_up+'.'+run_number+'.INPUT.N_E_PROF'
+
+         MDSTCL,'ADD NODE n_e_coord/USAGE=NUMERIC'   ;add n_e_coord node
          MDSTCL,'ADD NODE n_e_raw/USAGE=NUMERIC'   ;add n_e_raw node
          MDSTCL,'ADD NODE n_e_raw_r/USAGE=NUMERIC'   ;add n_e_raw_r node
          MDSTCL,'ADD NODE n_e_raw_er/USAGE=NUMERIC'   ;add n_e_raw_er node
@@ -19261,6 +19681,8 @@ case ev.id of
          MDSTCL,'SET DEFAULT \DNB::TOP.ALCBEAM.'+user_up+'.'+run_number+'.INPUT'   
          MDSTCL,'ADD NODE T_E_PROF/USAGE=STRUCTURE'  ;add structure
          MDSTCL,'SET DEFAULT \DNB::TOP.ALCBEAM.'+user_up+'.'+run_number+'.INPUT.T_E_PROF'
+
+         MDSTCL,'ADD NODE t_e_coord/USAGE=NUMERIC'   ;add t_e_coord node
          MDSTCL,'ADD NODE t_e_raw/USAGE=NUMERIC'   ;add t_e_raw node
          MDSTCL,'ADD NODE t_e_raw_r/USAGE=NUMERIC'   ;add t_e_raw_r node
          MDSTCL,'ADD NODE t_e_raw_er/USAGE=NUMERIC'   ;add t_e_raw_er node
@@ -19271,6 +19693,8 @@ case ev.id of
          MDSTCL,'SET DEFAULT \DNB::TOP.ALCBEAM.'+user_up+'.'+run_number  +'.INPUT' 
          MDSTCL,'ADD NODE Z_EFF_PROF/USAGE=STRUCTURE'  ;add structure
          MDSTCL,'SET DEFAULT \DNB::TOP.ALCBEAM.'+user_up+'.'+run_number+'.INPUT.Z_Eff_PROF'
+
+         MDSTCL,'ADD NODE z_eff_coord/USAGE=NUMERIC'   ;add z_eff_coord node
          MDSTCL,'ADD NODE z_eff_raw/USAGE=NUMERIC'   ;add z_eff_raw node
          MDSTCL,'ADD NODE z_eff_raw_r/USAGE=NUMERIC'   ;add z_eff_raw_r node
          MDSTCL,'ADD NODE z_eff_raw_er/USAGE=NUMERIC'   ;add z_eff_raw_er node
@@ -19330,6 +19754,7 @@ case ev.id of
          MDSTCL,'ADD NODE GRID_AP_DIAM/USAGE=NUMERIC'       ;add grid_ap_diam
          MDSTCL,'ADD NODE X_GRID_FOCUS/USAGE=NUMERIC'       ;add grid_focus node
          MDSTCL,'ADD NODE Y_GRID_FOCUS/USAGE=NUMERIC'       ;add grid_focus node
+         MDSTCL,'ADD NODE BEAM_PORT_PHI/USAGE=NUMERIC'   ;add beam_port_phi node
          MDSTCL,'ADD NODE BEAM_PORT/USAGE=TEXT'   ;add beam_port node
          MDSTCL,'ADD NODE R_GRID/USAGE=NUMERIC'   ;add R_grid node
          MDSTCL,'ADD NODE Z_GRID/USAGE=NUMERIC'   ;add Z_grid node
@@ -19397,6 +19822,8 @@ case ev.id of
          MDSTCL,'SET DEFAULT \DNB::TOP.ALCBEAM.'+user_up+'.'+run_number +'.INPUT'  
          MDSTCL,'ADD NODE N_E_PROF/USAGE=STRUCTURE'  ;add structure
          MDSTCL,'SET DEFAULT \DNB::TOP.ALCBEAM.'+user_up+'.'+run_number+'.INPUT.N_E_PROF'
+
+         MDSTCL,'ADD NODE n_e_coord/USAGE=NUMERIC'   ;add n_e_coord node
          MDSTCL,'ADD NODE n_e_raw/USAGE=NUMERIC'   ;add n_e_raw node
          MDSTCL,'ADD NODE n_e_raw_r/USAGE=NUMERIC'   ;add n_e_raw_r node
          MDSTCL,'ADD NODE n_e_raw_er/USAGE=NUMERIC'   ;add n_e_raw_er node
@@ -19407,6 +19834,8 @@ case ev.id of
          MDSTCL,'SET DEFAULT \DNB::TOP.ALCBEAM.'+user_up+'.'+run_number+'.INPUT'   
          MDSTCL,'ADD NODE T_E_PROF/USAGE=STRUCTURE'  ;add structure
          MDSTCL,'SET DEFAULT \DNB::TOP.ALCBEAM.'+user_up+'.'+run_number+'.INPUT.T_E_PROF'
+
+         MDSTCL,'ADD NODE t_e_coord/USAGE=NUMERIC'   ;add t_e_coord node
          MDSTCL,'ADD NODE t_e_raw/USAGE=NUMERIC'   ;add t_e_raw node
          MDSTCL,'ADD NODE t_e_raw_r/USAGE=NUMERIC'   ;add t_e_raw_r node
          MDSTCL,'ADD NODE t_e_raw_er/USAGE=NUMERIC'   ;add t_e_raw_er node
@@ -19417,6 +19846,8 @@ case ev.id of
          MDSTCL,'SET DEFAULT \DNB::TOP.ALCBEAM.'+user_up+'.'+run_number+'.INPUT'   
          MDSTCL,'ADD NODE Z_EFF_PROF/USAGE=STRUCTURE'  ;add structure
          MDSTCL,'SET DEFAULT \DNB::TOP.ALCBEAM.'+user_up+'.'+run_number+'.INPUT.Z_Eff_PROF'
+
+         MDSTCL,'ADD NODE z_eff_coord/USAGE=NUMERIC'   ;add z_eff_coord node
          MDSTCL,'ADD NODE z_eff_raw/USAGE=NUMERIC'   ;add z_eff_raw node
          MDSTCL,'ADD NODE z_eff_raw_r/USAGE=NUMERIC'   ;add z_eff_raw_r node
          MDSTCL,'ADD NODE z_eff_raw_er/USAGE=NUMERIC'   ;add z_eff_raw_er node
@@ -19458,6 +19889,7 @@ case ev.id of
 
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.x_grid_focus',"$",x_grid_focus
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.y_grid_focus',"$",y_grid_focus
+       MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.beam_port_phi',"$",beam_port_phi
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.beam_port',"$",beam_port
 
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_GEOM.R_grid',"$",R_grid
@@ -19506,19 +19938,25 @@ case ev.id of
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.PLASMA_PARAM.impur_table',"$",impur_table
 
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_LIMITER.N_LIMITERS',"$",n_limiters  
-       MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_LIMITER.LIM_TABLE',"$",limiters_table      
+       MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.BEAM_LIMITER.LIM_TABLE',"$",limiters_table
+      
+       MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.N_E_PROF.N_E_COORD',"$",n_e_coord
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.N_E_PROF.N_E_RAW',"$",n_e_raw
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.N_E_PROF.N_E_RAW_R',"$",n_e_raw_r
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.N_E_PROF.N_E_RAW_ER',"$",n_e_raw_err
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.N_E_PROF.N_E',"$",n_e
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.N_E_PROF.N_E_R',"$",n_e_r
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.N_E_PROF.n_E_ER',"$",n_e_err
+
+       MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.T_E_PROF.T_E_COORD',"$",t_e_coord
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.T_E_PROF.T_E_RAW',"$",t_e_raw
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.T_E_PROF.T_E_RAW_R',"$",t_e_raw_r
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.T_E_PROF.T_E_RAW_ER',"$",t_e_raw_err
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.T_E_PROF.T_E',"$",t_e
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.T_E_PROF.T_E_R',"$",t_e_r
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.T_E_PROF.T_E_ER',"$",t_e_err
+
+       MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.Z_Eff_PROF.Z_Eff_COORD',"$",z_eff_coord
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.Z_Eff_PROF.Z_Eff_RAW',"$",z_eff_raw
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.Z_Eff_PROF.Z_Eff_RAW_R',"$",z_eff_raw_r
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.Z_Eff_PROF.Z_Eff_RAW_ER',"$",z_eff_raw_err
@@ -19847,6 +20285,21 @@ case ev.id of
        endelse
      endif
      if plasma_geom_type eq 2 then begin
+       load_plasma_geom_vmec_file
+       if st_err eq 0 then begin
+         flux_surf_names=[['VMEC (wout file)  '],['skip']]
+         flux_surf_arr_type=0
+         Widget_control, status_wid, Get_Value=status_tx
+         Widget_Control, status_wid,$
+         Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Plasma Geometry data was loaded successfully.']], Set_text_top_line=n_elements(status_tx)-4
+       endif else begin
+         Widget_control, status_wid, Get_Value=status_tx
+         Widget_Control, status_wid,$
+         Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Error during LOAD Plasma Geometry procedure. Please review previous message.']], Set_text_top_line=n_elements(status_tx)-4
+         return    
+       endelse
+     endif
+     if plasma_geom_type eq 3 then begin
        load_plasma_geom_file
        if st_err eq 0 then begin       
          flux_surf_arr_type=0
@@ -19861,7 +20314,7 @@ case ev.id of
          return    
        endelse
      endif     
-     if plasma_geom_type eq 2 then begin
+     if plasma_geom_type eq 4 then begin
        Widget_control, status_wid, Get_Value=status_tx
        Widget_Control, status_wid,$
        Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Plasma Geometry data was NOT loaded (previous value retained).']], Set_text_top_line=n_elements(status_tx)-4
@@ -20219,34 +20672,6 @@ case ev.id of
        plot_input,ev.top
      endif 
    end
-   ;---------------------------Te_Type Droplist
-   Widget_Info(ev.id, FIND_BY_UNAME='Te_Type'): begin
-     st_err=0
-     Te_type=Widget_Info(Widget_Info(ev.top, FIND_BY_UNAME='Te_Type'), /Droplist_Select)
-     Ne_type=Widget_Info(Widget_Info(ev.top, FIND_BY_UNAME='Ne_Type'), /Droplist_Select)
-     if Te_type ne 1 and Ne_type ne 1 then begin
-       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Fits_Data_Label'),Sensitive=0
-       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Fits_Data_Text'),Sensitive=0
-     endif
-     if Te_type eq 1 or Ne_type eq 1 then begin
-       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Fits_Data_Label'),Sensitive=1
-       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Fits_Data_Text'),Sensitive=1
-     endif
-   end
-   ;---------------------------Ne_Type Droplist
-   Widget_Info(ev.id, FIND_BY_UNAME='Ne_Type'): begin
-     st_err=0
-     Te_type=Widget_Info(Widget_Info(ev.top, FIND_BY_UNAME='Te_Type'), /Droplist_Select)
-     Ne_type=Widget_Info(Widget_Info(ev.top, FIND_BY_UNAME='Ne_Type'), /Droplist_Select)
-     if Te_type ne 1 and Ne_type ne 1 then begin
-       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Fits_Data_Label'),Sensitive=0
-       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Fits_Data_Text'),Sensitive=0
-     endif
-     if Te_type eq 1 or Ne_type eq 1 then begin
-       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Fits_Data_Label'),Sensitive=1
-       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Fits_Data_Text'),Sensitive=1
-     endif
-   end
    ;---------------------Prepare ALCBEAM Driver
     Widget_Info(ev.id, FIND_BY_UNAME='Show_Driver_Button'): begin
     st_err=0
@@ -20588,7 +21013,7 @@ common draw_request,draw_req
 common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
-common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
+common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,beam_port_phi,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains some of the settings for loading of
 ;the input data used for the beam attenuation and penetration
 ;calculation 
@@ -20598,7 +21023,7 @@ ne_file,te_type,te_file,z_eff_type,z_eff_file,plasma_geom_type,plasma_geom_file,
 ;calculation of the beam attenuation in the gas.
 common neutral_gas,tank_pressure,torus_pressure,duct_pressure,duct_pressure_loc,n0_arr,n0_stop_cross_section
 ;The following common block contains the parameters which describe the geometry
-;and position of the tokamak plasma
+;and position of the machine plasma
 common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
 ;The following common block contains some of the settings of how to
 ;run the beam attenuation and penetration calculation.
@@ -20634,7 +21059,7 @@ common settings_file, save_set_file
 ;graph to the file"
 common export_file, export_file,export_sel,export_flag
 
-  alcbeam_ver='4.10'
+  alcbeam_ver='4.11'
   ;debuging parameter (default=1:catch errors, debug=0:pass errors)  
   error_catch=1
   st_err=0;initial error status 0
@@ -20715,7 +21140,7 @@ common export_file, export_file,export_sel,export_flag
   ;grid_arr
   code_grid_arr={z:[0.0,0.0,0.0,0.0,0.0],x:[0.0,0.0,0.0],y:[0.0,0.0,0.0]}
   ;beam_geometry
-  x_bml=0.0 & y_bml=0.0 & grid_ap_diam=0.0 & x_grid_focus=0.0 & y_grid_focus=0.0 & beam_port='?' & r_grid=0.0 & z_grid=0.0 & phi_grid=0.0 & r_wall=0.0 & z_wall=0.0 & phi_wall=0.0 & tank_front_dist=0.0 & tank_size=0.0 & neutr_size=0.0 & tank_diam=0.0 & neutr_diam=0.0 & magnet_diam=0.0 & neutr_front_dist=0.0
+  x_bml=0.0 & y_bml=0.0 & grid_ap_diam=0.0 & x_grid_focus=0.0 & y_grid_focus=0.0 & beam_port='?' & beam_port_phi = 0.0 & r_grid=0.0 & z_grid=0.0 & phi_grid=0.0 & r_wall=0.0 & z_wall=0.0 & phi_wall=0.0 & tank_front_dist=0.0 & tank_size=0.0 & neutr_size=0.0 & tank_diam=0.0 & neutr_diam=0.0 & magnet_diam=0.0 & neutr_front_dist=0.0
   tank_magnet_dist=0.0 & magnet_size=0.0 & tank_cal_dist=0.0
   ;beam_param
   beam_atom='H' & e_full=0.0 & E_frac=[1.0,1.0,1.0,1.0] & I_beam=0.0 & I_frac=[0.0,0.0,0.0,0.0] & I_opt=0.0 & I_dens_par=0.0 & neutr_dens_ns_tot=0.0 & neutr_dens_frac=[0.0,0.0,0.0,0.0] & x_div_bml_opt=0.0 & y_div_bml_opt=0.0 & div_dist_par=0.0
@@ -20821,7 +21246,7 @@ common export_file, export_file,export_sel,export_flag
    
   Param_Label = Widget_Label(Param_Base, UNAME='Param_Label'  $
       ,XOFFSET=8 ,YOFFSET=8 ,XSIZE=415,YSIZE=23 $
-      ,/ALIGN_Center ,VALUE='Preview/Change Input Parameters and Data:', /sunken_frame)
+      ,/ALIGN_Center ,VALUE='Preview/Change Input Parameters and Profiles:', /sunken_frame)
 
   Code_Grid_Button = Widget_Button(Param_Base, UNAME='Code_Grid_Button'  $
       ,XOFFSET=3, YOFFSET=68, SCR_XSIZE=105, SCR_YSIZE=25 $
@@ -20883,7 +21308,7 @@ common export_file, export_file,export_sel,export_flag
 
   Preview_Data_Droplist=Widget_Droplist(Preview_Data_Base, UNAME='Preview_Data_Droplist'$
       ,XOFFSET=245,YOFFSET=0,SCR_XSIZE=90,SCR_YSIZE=37,value=[['All grid apertures'],['Source density dist'],$
-  ['n_e vs R'],['t_e vs R'],['z_eff vs R']])
+  ['n_e'],['t_e'],['z_eff']])
 
 
 
