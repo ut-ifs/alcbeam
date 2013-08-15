@@ -2748,14 +2748,21 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
         dist_all_XY=sqrt((r_wall*cos(phi_wall)-r_grid*cos(phi_grid))^2.0+(r_wall*sin(phi_wall)-r_grid*sin(phi_grid))^2.0)
         cos_pivot_XY=(wall_cent_x-grid_cent_x)/dist_all_XY
         sin_pivot_XY=-(wall_cent_y-grid_cent_y)/dist_all_XY
-        ;dist_all_XYZ=sqrt((r_wall*cos(phi_wall)-r_grid*cos(phi_grid))^2.0+(r_wall*sin(phi_wall)-r_grid*sin(phi_grid))^2.0+(z_wall-z_grid)^2.0)
+        dist_all_YZ=sqrt((r_wall*sin(phi_wall)-r_grid*sin(phi_grid))^2.0+(z_wall-z_grid)^2.0)
+        sin_pivot_YZ=-(wall_cent_z-grid_cent_z)/dist_all_YZ
+        cos_pivot_YZ=(wall_cent_y-grid_cent_y)/dist_all_YZ
+        dist_all_XYZ=sqrt((r_wall*cos(phi_wall)-r_grid*cos(phi_grid))^2.0+(r_wall*sin(phi_wall)-r_grid*sin(phi_grid))^2.0+(z_wall-z_grid)^2.0)
         dist_all_XZ=sqrt((r_wall*cos(phi_wall)-r_grid*cos(phi_grid))^2.0+(z_wall-z_grid)^2.0)
         sin_pivot_XZ=-(wall_cent_z-grid_cent_z)/dist_all_XZ
         cos_pivot_XZ=(wall_cent_x-grid_cent_x)/dist_all_XZ
+        cos_pivot_Z=dist_all_XY/dist_all_XYZ
+        sin_pivot_Z=sqrt(1.0-cos_pivot_Z^2.0)
+        cos_pivot_Y=dist_all_XZ/dist_all_XYZ
+        sin_pivot_Y=sqrt(1.0-cos_pivot_Y^2.0)                
      
 
-        tank_front_x=grid_cent_x+(tank_front_dist)*cos_pivot_XY*cos_pivot_XZ
-        tank_front_y=grid_cent_y-(tank_front_dist)*sin_pivot_XY*cos_pivot_XZ      
+        tank_front_x=grid_cent_x+(tank_front_dist)*cos_pivot_XY*cos_pivot_Z
+        tank_front_y=grid_cent_y-(tank_front_dist)*sin_pivot_XY*cos_pivot_Z      
    
   
         wx0=min([grid_cent_x-neutr_diam/2.0*sin_pivot_XY,-(r_major+r_minor*1.2),tank_front_x-tank_diam/2.0*sin_pivot_XY,tank_front_x-tank_diam/2.0*cos_pivot_XY])-x_marg
@@ -2779,21 +2786,21 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
         ;plot focal point
         F_diam=(wx1-wx0)/500.0
         F_shift=(wx1-wx0)/100.0
-        oplot,grid_cent_x+x_grid_focus*cos_pivot_XY*cos_pivot_XZ+F_diam*cos(angl_arr),$
-        grid_cent_y-x_grid_focus*sin_pivot_XY*cos_pivot_XZ+F_diam*sin(angl_arr),thick=2,color=112
-        oplot,grid_cent_x+y_grid_focus*cos_pivot_XY*cos_pivot_XZ+F_diam*cos(angl_arr),$
-        grid_cent_y-y_grid_focus*sin_pivot_XY*cos_pivot_XZ+F_diam*sin(angl_arr),thick=2,color=112       
+        oplot,grid_cent_x+x_grid_focus*cos_pivot_XY*cos_pivot_Z+F_diam*cos(angl_arr),$
+        grid_cent_y-x_grid_focus*sin_pivot_XY*cos_pivot_Z+F_diam*sin(angl_arr),thick=2,color=112
+        oplot,grid_cent_x+y_grid_focus*cos_pivot_XY*cos_pivot_Z+F_diam*cos(angl_arr),$
+        grid_cent_y-y_grid_focus*sin_pivot_XY*cos_pivot_Z+F_diam*sin(angl_arr),thick=2,color=112       
 
         if x_grid_focus eq y_grid_focus then begin
-          xyouts,grid_cent_x+x_grid_focus*cos_pivot_XY*cos_pivot_XZ+F_shift,$
-          grid_cent_y-x_grid_focus*sin_pivot_XY*cos_pivot_XZ,'F', color=112,charsize=2
+          xyouts,grid_cent_x+x_grid_focus*cos_pivot_XY*cos_pivot_Z+F_shift,$
+          grid_cent_y-x_grid_focus*sin_pivot_XY*cos_pivot_Z,'F', color=112,charsize=2
           xyouts, 400,380,'Grids focal radius (F)',color=112,/device,charsize=1.5
         endif else begin
-          xyouts,grid_cent_x+x_grid_focus*cos_pivot_XY*cos_pivot_XZ+F_shift,$
-          grid_cent_y-x_grid_focus*sin_pivot_XY*cos_pivot_XZ,'Fx', color=112,charsize=2
+          xyouts,grid_cent_x+x_grid_focus*cos_pivot_XY*cos_pivot_Z+F_shift,$
+          grid_cent_y-x_grid_focus*sin_pivot_XY*cos_pivot_Z,'Fx', color=112,charsize=2
           xyouts, 400,380,'Grids focal radii (Fx, Fy)',color=112,/device,charsize=1.5 
-          xyouts,grid_cent_x+y_grid_focus*cos_pivot_XY*cos_pivot_XZ+F_shift,$
-          grid_cent_y-y_grid_focus*sin_pivot_XY*cos_pivot_XZ,'Fy', color=112,charsize=2    
+          xyouts,grid_cent_x+y_grid_focus*cos_pivot_XY*cos_pivot_Z+F_shift,$
+          grid_cent_y-y_grid_focus*sin_pivot_XY*cos_pivot_Z,'Fy', color=112,charsize=2    
         endelse 
         
         ;plot beam centerline and grids
@@ -2802,65 +2809,64 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
 
        ; oplot,[grid_cent_x-max(x_bml)*sin_pivot_XY,grid_cent_x+max(x_bml)*sin_pivot_XY],$
        ; [grid_cent_y-max(x_bml)*cos_pivot_XY,grid_cent_y+max(x_bml)*cos_pivot_XY],color=112,thick=6
-        oplot,grid_cent_x+x_bml*sin_pivot_XY-y_bml*cos_pivot_XY*sin_pivot_XZ,grid_cent_y+x_bml*cos_pivot_XY+y_bml*sin_pivot_XY*sin_pivot_XZ,color=112,psym=3
+        oplot,grid_cent_x+x_bml*sin_pivot_XY-y_bml*cos_pivot_XY*sin_pivot_Z,grid_cent_y+x_bml*cos_pivot_XY+y_bml*sin_pivot_XY*sin_pivot_Z,color=112,psym=3
         
         xyouts, 60,380,'Accelerating grids',color=112,/device,charsize=1.5
         x_c=neutr_diam/2.0*cos(angl_arr)
         y_c=neutr_diam/2.0*sin(angl_arr)
-        neutr_front_x= grid_cent_x+neutr_front_dist*cos_pivot_XY*cos_pivot_XZ
-        neutr_front_y= grid_cent_y-neutr_front_dist*sin_pivot_XY*cos_pivot_XZ
-        oplot,neutr_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,neutr_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=96 ,thick=2
-        oplot,neutr_front_x+neutr_size*cos_pivot_XY*cos_pivot_XZ+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,$
-        neutr_front_y-neutr_size*sin_pivot_XY*cos_pivot_XZ+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=96,thick=2     
-        oplot,[neutr_front_x-neutr_diam/2.0*sin_pivot_XY,neutr_front_x-neutr_diam/2.0*sin_pivot_XY+neutr_size*cos_pivot_XY*cos_pivot_XZ],$
-        [neutr_front_y-neutr_diam/2.0*cos_pivot_XY,neutr_front_y-neutr_diam/2.0*cos_pivot_XY-neutr_size*sin_pivot_XY*cos_pivot_XZ],color=96,thick=2            
-        oplot,[neutr_front_x+neutr_diam/2.0*sin_pivot_XY,neutr_front_x+neutr_diam/2.0*sin_pivot_XY+neutr_size*cos_pivot_XY*cos_pivot_XZ],$
-        [neutr_front_y+neutr_diam/2.0*cos_pivot_XY,neutr_front_y+neutr_diam/2.0*cos_pivot_XY-neutr_size*sin_pivot_XY*cos_pivot_XZ],color=96,thick=2
-
+        neutr_front_x= grid_cent_x+neutr_front_dist*cos_pivot_XY*cos_pivot_Z
+        neutr_front_y= grid_cent_y-neutr_front_dist*sin_pivot_XY*cos_pivot_Z
+        oplot,neutr_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_Z,neutr_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_Z,color=96 ,thick=2
+        oplot,neutr_front_x+neutr_size*cos_pivot_XY*cos_pivot_Z+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_Z,$
+        neutr_front_y-neutr_size*sin_pivot_XY*cos_pivot_Z+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_Z,color=96,thick=2     
+        oplot,[neutr_front_x-neutr_diam/2.0*sin_pivot_XY,neutr_front_x-neutr_diam/2.0*sin_pivot_XY+neutr_size*cos_pivot_XY*cos_pivot_Z],$
+        [neutr_front_y-neutr_diam/2.0*cos_pivot_XY,neutr_front_y-neutr_diam/2.0*cos_pivot_XY-neutr_size*sin_pivot_XY*cos_pivot_Z],color=96,thick=2            
+        oplot,[neutr_front_x+neutr_diam/2.0*sin_pivot_XY,neutr_front_x+neutr_diam/2.0*sin_pivot_XY+neutr_size*cos_pivot_XY*cos_pivot_Z],$
+        [neutr_front_y+neutr_diam/2.0*cos_pivot_XY,neutr_front_y+neutr_diam/2.0*cos_pivot_XY-neutr_size*sin_pivot_XY*cos_pivot_Z],color=96,thick=2
 
         xyouts, 60,360,'Neutralizer tube',color=96,/device,charsize=1.5
         ;plot tank
         x_c=tank_diam/2.0*cos(angl_arr)
         y_c=tank_diam/2.0*sin(angl_arr)
-        tank_front_x=grid_cent_x+(tank_front_dist)*cos_pivot_XY*cos_pivot_XZ
-        tank_front_y=grid_cent_y-(tank_front_dist)*sin_pivot_XY*cos_pivot_XZ     
-        oplot,tank_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,tank_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=0 ,thick=2
-        oplot,tank_front_x+tank_size*cos_pivot_XY*cos_pivot_XZ+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,$
-        tank_front_y-tank_size*sin_pivot_XY*cos_pivot_XZ+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=0,thick=2 
-        oplot,[tank_front_x-tank_diam/2.0*sin_pivot_XY,tank_front_x-tank_diam/2.0*sin_pivot_XY+tank_size*cos_pivot_XY*cos_pivot_XZ],$
-        [tank_front_y-tank_diam/2.0*cos_pivot_XY,tank_front_y-tank_diam/2.0*cos_pivot_XY-tank_size*sin_pivot_XY*cos_pivot_XZ],color=0,thick=2       
-        oplot,[tank_front_x+tank_diam/2.0*sin_pivot_XY,tank_front_x+tank_diam/2.0*sin_pivot_XY+tank_size*cos_pivot_XY*cos_pivot_XZ],$
-        [tank_front_y+tank_diam/2.0*cos_pivot_XY,tank_front_y+tank_diam/2.0*cos_pivot_XY-tank_size*sin_pivot_XY*cos_pivot_XZ],color=0,thick=2
+        tank_front_x=grid_cent_x+(tank_front_dist)*cos_pivot_XY*cos_pivot_Z
+        tank_front_y=grid_cent_y-(tank_front_dist)*sin_pivot_XY*cos_pivot_Z     
+        oplot,tank_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_Z,tank_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_Z,color=0 ,thick=2
+        oplot,tank_front_x+tank_size*cos_pivot_XY*cos_pivot_Z+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_Z,$
+        tank_front_y-tank_size*sin_pivot_XY*cos_pivot_Z+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_Z,color=0,thick=2 
+        oplot,[tank_front_x-tank_diam/2.0*sin_pivot_XY,tank_front_x-tank_diam/2.0*sin_pivot_XY+tank_size*cos_pivot_XY*cos_pivot_Z],$
+        [tank_front_y-tank_diam/2.0*cos_pivot_XY,tank_front_y-tank_diam/2.0*cos_pivot_XY-tank_size*sin_pivot_XY*cos_pivot_Z],color=0,thick=2       
+        oplot,[tank_front_x+tank_diam/2.0*sin_pivot_XY,tank_front_x+tank_diam/2.0*sin_pivot_XY+tank_size*cos_pivot_XY*cos_pivot_Z],$
+        [tank_front_y+tank_diam/2.0*cos_pivot_XY,tank_front_y+tank_diam/2.0*cos_pivot_XY-tank_size*sin_pivot_XY*cos_pivot_Z],color=0,thick=2
  
         xyouts, 230,380,'Beam tank',color=0,/device,charsize=1.5
        ;plot deflection magnet
         if magnet_size ne 0.0 then begin
           x_c=magnet_diam/2.0*cos(angl_arr)
           y_c=magnet_diam/2.0*sin(angl_arr)    
-          magnet_front_x=grid_cent_x+(tank_front_dist+tank_magnet_dist)*cos_pivot_XY*cos_pivot_XZ
-          magnet_front_y=grid_cent_y-(tank_front_dist+tank_magnet_dist)*sin_pivot_XY*cos_pivot_XZ
-          oplot,magnet_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,magnet_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=64 ,thick=2
-          oplot,magnet_front_x+magnet_size*cos_pivot_XY*cos_pivot_XZ+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,$
-          magnet_front_y-magnet_size*sin_pivot_XY*cos_pivot_XZ+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=64,thick=2       
-          oplot,[magnet_front_x-magnet_diam/2.0*sin_pivot_XY,magnet_front_x-magnet_diam/2.0*sin_pivot_XY+magnet_size*cos_pivot_XY*cos_pivot_XZ],$
-          [magnet_front_y-magnet_diam/2.0*cos_pivot_XY,magnet_front_y-magnet_diam/2.0*cos_pivot_XY-magnet_size*sin_pivot_XY*cos_pivot_XZ],color=64 ,thick=2      
-          oplot,[magnet_front_x+magnet_diam/2.0*sin_pivot_XY,magnet_front_x+magnet_diam/2.0*sin_pivot_XY+magnet_size*cos_pivot_XY*cos_pivot_XZ],$
-          [magnet_front_y+magnet_diam/2.0*cos_pivot_XY,magnet_front_y+magnet_diam/2.0*cos_pivot_XY-magnet_size*sin_pivot_XY*cos_pivot_XZ],color=64,thick=2
+          magnet_front_x=grid_cent_x+(tank_front_dist+tank_magnet_dist)*cos_pivot_XY*cos_pivot_Z
+          magnet_front_y=grid_cent_y-(tank_front_dist+tank_magnet_dist)*sin_pivot_XY*cos_pivot_Z
+          oplot,magnet_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_Z,magnet_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_Z,color=64 ,thick=2
+          oplot,magnet_front_x+magnet_size*cos_pivot_XY*cos_pivot_Z+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_Z,$
+          magnet_front_y-magnet_size*sin_pivot_XY*cos_pivot_Z+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_Z,color=64,thick=2       
+          oplot,[magnet_front_x-magnet_diam/2.0*sin_pivot_XY,magnet_front_x-magnet_diam/2.0*sin_pivot_XY+magnet_size*cos_pivot_XY*cos_pivot_Z],$
+          [magnet_front_y-magnet_diam/2.0*cos_pivot_XY,magnet_front_y-magnet_diam/2.0*cos_pivot_XY-magnet_size*sin_pivot_XY*cos_pivot_Z],color=64 ,thick=2      
+          oplot,[magnet_front_x+magnet_diam/2.0*sin_pivot_XY,magnet_front_x+magnet_diam/2.0*sin_pivot_XY+magnet_size*cos_pivot_XY*cos_pivot_Z],$
+          [magnet_front_y+magnet_diam/2.0*cos_pivot_XY,magnet_front_y+magnet_diam/2.0*cos_pivot_XY-magnet_size*sin_pivot_XY*cos_pivot_Z],color=64,thick=2
           xyouts, 230,360,'Deflection magnet',color=64,/device,charsize=1.5
         endif
         ;plot calorimeter
         if tank_cal_dist ne 0.0 then begin
           x_c=cal_diam/2.0*cos(angl_arr)
           y_c=cal_diam/2.0*sin(angl_arr)    
-          cal_front_x=grid_cent_x+(tank_front_dist+tank_size+tank_cal_dist)*cos_pivot_XY*cos_pivot_XZ
-          cal_front_y=grid_cent_y-(tank_front_dist+tank_size+tank_cal_dist)*sin_pivot_XY*cos_pivot_XZ
-          oplot,cal_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,cal_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=160 ,thick=2
-          oplot,cal_front_x+cal_size*cos_pivot_XY*cos_pivot_XZ+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,$
-          cal_front_y-cal_size*sin_pivot_XY*cos_pivot_XZ+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=160,thick=2     
-          oplot,[cal_front_x-cal_diam/2.0*sin_pivot_XY,cal_front_x-cal_diam/2.0*sin_pivot_XY+cal_size*cos_pivot_XY*cos_pivot_XZ],$
-          [cal_front_y-cal_diam/2.0*cos_pivot_XY,cal_front_y-cal_diam/2.0*cos_pivot_XY-cal_size*sin_pivot_XY*cos_pivot_XZ],color=160 ,thick=2     
-          oplot,[cal_front_x+cal_diam/2.0*sin_pivot_XY,cal_front_x+cal_diam/2.0*sin_pivot_XY+cal_size*cos_pivot_XY*cos_pivot_XZ],$
-          [cal_front_y+cal_diam/2.0*cos_pivot_XY,cal_front_y+cal_diam/2.0*cos_pivot_XY-cal_size*sin_pivot_XY*cos_pivot_XZ],color=160,thick=2
+          cal_front_x=grid_cent_x+(tank_front_dist+tank_size+tank_cal_dist)*cos_pivot_XY*cos_pivot_Z
+          cal_front_y=grid_cent_y-(tank_front_dist+tank_size+tank_cal_dist)*sin_pivot_XY*cos_pivot_Z
+          oplot,cal_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_Z,cal_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_Z,color=160 ,thick=2
+          oplot,cal_front_x+cal_size*cos_pivot_XY*cos_pivot_Z+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_Z,$
+          cal_front_y-cal_size*sin_pivot_XY*cos_pivot_Z+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_Z,color=160,thick=2     
+          oplot,[cal_front_x-cal_diam/2.0*sin_pivot_XY,cal_front_x-cal_diam/2.0*sin_pivot_XY+cal_size*cos_pivot_XY*cos_pivot_Z],$
+          [cal_front_y-cal_diam/2.0*cos_pivot_XY,cal_front_y-cal_diam/2.0*cos_pivot_XY-cal_size*sin_pivot_XY*cos_pivot_Z],color=160 ,thick=2     
+          oplot,[cal_front_x+cal_diam/2.0*sin_pivot_XY,cal_front_x+cal_diam/2.0*sin_pivot_XY+cal_size*cos_pivot_XY*cos_pivot_Z],$
+          [cal_front_y+cal_diam/2.0*cos_pivot_XY,cal_front_y+cal_diam/2.0*cos_pivot_XY-cal_size*sin_pivot_XY*cos_pivot_Z],color=160,thick=2
           xyouts, 400,340,'Calorimeter',color=160,/device,charsize=1.5                    
         endif
         ;plot limiters
@@ -2874,45 +2880,45 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
           if finite(r_lim) then begin
             oplot,r_lim*cos(angl_arr),r_lim*sin(angl_arr),color=48,thick=2
           endif else begin
-            lim_front_x=grid_cent_x+(z_pos)*cos_pivot_XY*cos_pivot_XZ
-            lim_front_y=grid_cent_y-(z_pos)*sin_pivot_XY*cos_pivot_XZ
-            lim_back_x=lim_front_x+lim_size*cos_pivot_XY*cos_pivot_XZ
-            lim_back_y=lim_front_y-lim_size*sin_pivot_XY*cos_pivot_XZ     
+            lim_front_x=grid_cent_x+(z_pos)*cos_pivot_XY*cos_pivot_Z
+            lim_front_y=grid_cent_y-(z_pos)*sin_pivot_XY*cos_pivot_Z
+            lim_back_x=lim_front_x+lim_size*cos_pivot_XY*cos_pivot_Z
+            lim_back_y=lim_front_y-lim_size*sin_pivot_XY*cos_pivot_Z     
             if finite(lim_diam) then begin
               x_c=lim_diam/2.0*cos(angl_arr)
               y_c=lim_diam/2.0*sin(angl_arr)
-              oplot,lim_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,lim_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=48 ,thick=2
-              oplot,lim_front_x+lim_size*cos_pivot_XY*cos_pivot_XZ+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,$
-              lim_front_y-lim_size*sin_pivot_XY*cos_pivot_XZ+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=48,thick=2 
+              oplot,lim_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_Z,lim_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_Z,color=48 ,thick=2
+              oplot,lim_front_x+lim_size*cos_pivot_XY*cos_pivot_Z+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_Z,$
+              lim_front_y-lim_size*sin_pivot_XY*cos_pivot_Z+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_Z,color=48,thick=2 
               oplot,[lim_front_x+lim_diam/2.0*sin_pivot_XY,lim_back_x+lim_diam/2.0*sin_pivot_XY],$
               [lim_front_y+lim_diam/2.0*cos_pivot_XY,lim_back_y+lim_diam/2.0*cos_pivot_XY],color=48,thick=2
               oplot,[lim_front_x-lim_diam/2.0*sin_pivot_XY,lim_back_x-lim_diam/2.0*sin_pivot_XY],$
               [lim_front_y-lim_diam/2.0*cos_pivot_XY,lim_back_y-lim_diam/2.0*cos_pivot_XY],color=48,thick=2
             endif else begin 
-              oplot,[lim_front_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_front_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_front_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_front_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_front_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_front_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_front_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_front_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_front_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ,lim_front_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_front_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ,lim_front_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_front_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ,lim_front_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_front_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ,lim_front_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_front_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ,lim_front_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_front_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ,lim_front_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_front_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ,lim_front_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_front_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ,lim_front_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_back_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_back_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_back_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_back_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_back_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_back_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_back_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_back_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
+              oplot,[lim_front_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_Z,lim_back_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_Z],$
+              [lim_front_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_Z,lim_back_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_Z],color=48,thick=2
+              oplot,[lim_front_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_Z,lim_back_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_Z],$
+              [lim_front_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_Z,lim_back_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_Z],color=48,thick=2
+              oplot,[lim_front_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_Z,lim_back_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_Z],$
+              [lim_front_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_Z,lim_back_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_Z],color=48,thick=2
+              oplot,[lim_front_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_Z,lim_back_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_Z],$
+              [lim_front_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_Z,lim_back_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_Z],color=48,thick=2
+              oplot,[lim_front_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_Z,lim_front_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_Z],$
+              [lim_front_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_Z,lim_front_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_Z],color=48,thick=2
+              oplot,[lim_front_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_Z,lim_front_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_Z],$
+              [lim_front_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_Z,lim_front_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_Z],color=48,thick=2
+              oplot,[lim_front_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_Z,lim_front_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_Z],$
+              [lim_front_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_Z,lim_front_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_Z],color=48,thick=2
+              oplot,[lim_front_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_Z,lim_front_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_Z],$
+              [lim_front_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_Z,lim_front_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_Z],color=48,thick=2
+              oplot,[lim_back_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_Z,lim_back_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_Z],$
+              [lim_back_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_Z,lim_back_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_Z],color=48,thick=2
+              oplot,[lim_back_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_Z,lim_back_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_Z],$
+              [lim_back_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_Z,lim_back_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_Z],color=48,thick=2
+              oplot,[lim_back_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_Z,lim_back_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_Z],$
+              [lim_back_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_Z,lim_back_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_Z],color=48,thick=2
+              oplot,[lim_back_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_Z,lim_back_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_Z],$
+              [lim_back_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_Z,lim_back_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_Z],color=48,thick=2
             endelse
          endelse
        endfor
@@ -17490,17 +17496,25 @@ case ev.id of
         grid_cent_z=z_grid
         wall_cent_z=z_wall
        
+
         dist_all_XY=sqrt((r_wall*cos(phi_wall)-r_grid*cos(phi_grid))^2.0+(r_wall*sin(phi_wall)-r_grid*sin(phi_grid))^2.0)
         cos_pivot_XY=(wall_cent_x-grid_cent_x)/dist_all_XY
         sin_pivot_XY=-(wall_cent_y-grid_cent_y)/dist_all_XY
-        ;dist_all_XYZ=sqrt((r_wall*cos(phi_wall)-r_grid*cos(phi_grid))^2.0+(r_wall*sin(phi_wall)-r_grid*sin(phi_grid))^2.0+(z_wall-z_grid)^2.0)
+        dist_all_YZ=sqrt((r_wall*sin(phi_wall)-r_grid*sin(phi_grid))^2.0+(z_wall-z_grid)^2.0)
+        sin_pivot_YZ=-(wall_cent_z-grid_cent_z)/dist_all_YZ
+        cos_pivot_YZ=(wall_cent_y-grid_cent_y)/dist_all_YZ
+        dist_all_XYZ=sqrt((r_wall*cos(phi_wall)-r_grid*cos(phi_grid))^2.0+(r_wall*sin(phi_wall)-r_grid*sin(phi_grid))^2.0+(z_wall-z_grid)^2.0)
         dist_all_XZ=sqrt((r_wall*cos(phi_wall)-r_grid*cos(phi_grid))^2.0+(z_wall-z_grid)^2.0)
         sin_pivot_XZ=-(wall_cent_z-grid_cent_z)/dist_all_XZ
         cos_pivot_XZ=(wall_cent_x-grid_cent_x)/dist_all_XZ
+        cos_pivot_Z=dist_all_XY/dist_all_XYZ
+        sin_pivot_Z=sqrt(1.0-cos_pivot_Z^2.0)
+        cos_pivot_Y=dist_all_XZ/dist_all_XYZ
+        sin_pivot_Y=sqrt(1.0-cos_pivot_Y^2.0)      
 
         if beam_view eq 0 then begin
-        tank_front_x=grid_cent_x+(tank_front_dist)*cos_pivot_XY*cos_pivot_XZ
-        tank_front_y=grid_cent_y-(tank_front_dist)*sin_pivot_XY*cos_pivot_XZ      
+        tank_front_x=grid_cent_x+(tank_front_dist)*cos_pivot_XY*cos_pivot_Z
+        tank_front_y=grid_cent_y-(tank_front_dist)*sin_pivot_XY*cos_pivot_Z      
    
   
         wx0=min([grid_cent_x-neutr_diam/2.0*sin_pivot_XY,-(r_major+r_minor*1.2),tank_front_x-tank_diam/2.0*sin_pivot_XY,tank_front_x-tank_diam/2.0*cos_pivot_XY])-x_marg
@@ -17524,21 +17538,21 @@ case ev.id of
         ;plot focal point
         F_diam=(wx1-wx0)/500.0
         F_shift=(wx1-wx0)/100.0
-        oplot,grid_cent_x+x_grid_focus*cos_pivot_XY*cos_pivot_XZ+F_diam*cos(angl_arr),$
-        grid_cent_y-x_grid_focus*sin_pivot_XY*cos_pivot_XZ+F_diam*sin(angl_arr),thick=2,color=112
-        oplot,grid_cent_x+y_grid_focus*cos_pivot_XY*cos_pivot_XZ+F_diam*cos(angl_arr),$
-        grid_cent_y-y_grid_focus*sin_pivot_XY*cos_pivot_XZ+F_diam*sin(angl_arr),thick=2,color=112       
+        oplot,grid_cent_x+x_grid_focus*cos_pivot_XY*cos_pivot_Z+F_diam*cos(angl_arr),$
+        grid_cent_y-x_grid_focus*sin_pivot_XY*cos_pivot_Z+F_diam*sin(angl_arr),thick=2,color=112
+        oplot,grid_cent_x+y_grid_focus*cos_pivot_XY*cos_pivot_Z+F_diam*cos(angl_arr),$
+        grid_cent_y-y_grid_focus*sin_pivot_XY*cos_pivot_Z+F_diam*sin(angl_arr),thick=2,color=112       
 
         if x_grid_focus eq y_grid_focus then begin
-          xyouts,grid_cent_x+x_grid_focus*cos_pivot_XY*cos_pivot_XZ+F_shift,$
-          grid_cent_y-x_grid_focus*sin_pivot_XY*cos_pivot_XZ,'F', color=112,charsize=2
+          xyouts,grid_cent_x+x_grid_focus*cos_pivot_XY*cos_pivot_Z+F_shift,$
+          grid_cent_y-x_grid_focus*sin_pivot_XY*cos_pivot_Z,'F', color=112,charsize=2
           xyouts, 400,380,'Grids focal radius (F)',color=112,/device,charsize=1.5
         endif else begin
-          xyouts,grid_cent_x+x_grid_focus*cos_pivot_XY*cos_pivot_XZ+F_shift,$
-          grid_cent_y-x_grid_focus*sin_pivot_XY*cos_pivot_XZ,'Fx', color=112,charsize=2
+          xyouts,grid_cent_x+x_grid_focus*cos_pivot_XY*cos_pivot_Z+F_shift,$
+          grid_cent_y-x_grid_focus*sin_pivot_XY*cos_pivot_Z,'Fx', color=112,charsize=2
           xyouts, 400,380,'Grids focal radii (Fx, Fy)',color=112,/device,charsize=1.5 
-          xyouts,grid_cent_x+y_grid_focus*cos_pivot_XY*cos_pivot_XZ+F_shift,$
-          grid_cent_y-y_grid_focus*sin_pivot_XY*cos_pivot_XZ,'Fy', color=112,charsize=2    
+          xyouts,grid_cent_x+y_grid_focus*cos_pivot_XY*cos_pivot_Z+F_shift,$
+          grid_cent_y-y_grid_focus*sin_pivot_XY*cos_pivot_Z,'Fy', color=112,charsize=2    
         endelse 
         
         ;plot beam centerline and grids
@@ -17547,64 +17561,64 @@ case ev.id of
 
        ; oplot,[grid_cent_x-max(x_bml)*sin_pivot_XY,grid_cent_x+max(x_bml)*sin_pivot_XY],$
        ; [grid_cent_y-max(x_bml)*cos_pivot_XY,grid_cent_y+max(x_bml)*cos_pivot_XY],color=112,thick=6
-        oplot,grid_cent_x+x_bml*sin_pivot_XY-y_bml*cos_pivot_XY*sin_pivot_XZ,grid_cent_y+x_bml*cos_pivot_XY+y_bml*sin_pivot_XY*sin_pivot_XZ,color=112,psym=3
+        oplot,grid_cent_x+x_bml*sin_pivot_XY-y_bml*cos_pivot_XY*sin_pivot_Z,grid_cent_y+x_bml*cos_pivot_XY+y_bml*sin_pivot_XY*sin_pivot_Z,color=112,psym=3
         
         xyouts, 60,380,'Accelerating grids',color=112,/device,charsize=1.5
         x_c=neutr_diam/2.0*cos(angl_arr)
         y_c=neutr_diam/2.0*sin(angl_arr)
-        neutr_front_x= grid_cent_x+neutr_front_dist*cos_pivot_XY*cos_pivot_XZ
-        neutr_front_y= grid_cent_y-neutr_front_dist*sin_pivot_XY*cos_pivot_XZ
-        oplot,neutr_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,neutr_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=96 ,thick=2
-        oplot,neutr_front_x+neutr_size*cos_pivot_XY*cos_pivot_XZ+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,$
-        neutr_front_y-neutr_size*sin_pivot_XY*cos_pivot_XZ+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=96,thick=2     
-        oplot,[neutr_front_x-neutr_diam/2.0*sin_pivot_XY,neutr_front_x-neutr_diam/2.0*sin_pivot_XY+neutr_size*cos_pivot_XY*cos_pivot_XZ],$
-        [neutr_front_y-neutr_diam/2.0*cos_pivot_XY,neutr_front_y-neutr_diam/2.0*cos_pivot_XY-neutr_size*sin_pivot_XY*cos_pivot_XZ],color=96,thick=2            
-        oplot,[neutr_front_x+neutr_diam/2.0*sin_pivot_XY,neutr_front_x+neutr_diam/2.0*sin_pivot_XY+neutr_size*cos_pivot_XY*cos_pivot_XZ],$
-        [neutr_front_y+neutr_diam/2.0*cos_pivot_XY,neutr_front_y+neutr_diam/2.0*cos_pivot_XY-neutr_size*sin_pivot_XY*cos_pivot_XZ],color=96,thick=2
+        neutr_front_x= grid_cent_x+neutr_front_dist*cos_pivot_XY*cos_pivot_Z
+        neutr_front_y= grid_cent_y-neutr_front_dist*sin_pivot_XY*cos_pivot_Z
+        oplot,neutr_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_Z,neutr_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_Z,color=96 ,thick=2
+        oplot,neutr_front_x+neutr_size*cos_pivot_XY*cos_pivot_Z+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_Z,$
+        neutr_front_y-neutr_size*sin_pivot_XY*cos_pivot_Z+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_Z,color=96,thick=2     
+        oplot,[neutr_front_x-neutr_diam/2.0*sin_pivot_XY,neutr_front_x-neutr_diam/2.0*sin_pivot_XY+neutr_size*cos_pivot_XY*cos_pivot_Z],$
+        [neutr_front_y-neutr_diam/2.0*cos_pivot_XY,neutr_front_y-neutr_diam/2.0*cos_pivot_XY-neutr_size*sin_pivot_XY*cos_pivot_Z],color=96,thick=2            
+        oplot,[neutr_front_x+neutr_diam/2.0*sin_pivot_XY,neutr_front_x+neutr_diam/2.0*sin_pivot_XY+neutr_size*cos_pivot_XY*cos_pivot_Z],$
+        [neutr_front_y+neutr_diam/2.0*cos_pivot_XY,neutr_front_y+neutr_diam/2.0*cos_pivot_XY-neutr_size*sin_pivot_XY*cos_pivot_Z],color=96,thick=2
    
         xyouts, 60,360,'Neutralizer tube',color=96,/device,charsize=1.5
         ;plot tank
         x_c=tank_diam/2.0*cos(angl_arr)
         y_c=tank_diam/2.0*sin(angl_arr)      
-        tank_front_x=grid_cent_x+(tank_front_dist)*cos_pivot_XY*cos_pivot_XZ
-        tank_front_y=grid_cent_y-(tank_front_dist)*sin_pivot_XY*cos_pivot_XZ     
-        oplot,tank_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,tank_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=0 ,thick=2
-        oplot,tank_front_x+tank_size*cos_pivot_XY*cos_pivot_XZ+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,$
-        tank_front_y-tank_size*sin_pivot_XY*cos_pivot_XZ+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=0,thick=2 
-        oplot,[tank_front_x-tank_diam/2.0*sin_pivot_XY,tank_front_x-tank_diam/2.0*sin_pivot_XY+tank_size*cos_pivot_XY*cos_pivot_XZ],$
-        [tank_front_y-tank_diam/2.0*cos_pivot_XY,tank_front_y-tank_diam/2.0*cos_pivot_XY-tank_size*sin_pivot_XY*cos_pivot_XZ],color=0,thick=2       
-        oplot,[tank_front_x+tank_diam/2.0*sin_pivot_XY,tank_front_x+tank_diam/2.0*sin_pivot_XY+tank_size*cos_pivot_XY*cos_pivot_XZ],$
-        [tank_front_y+tank_diam/2.0*cos_pivot_XY,tank_front_y+tank_diam/2.0*cos_pivot_XY-tank_size*sin_pivot_XY*cos_pivot_XZ],color=0,thick=2
+        tank_front_x=grid_cent_x+(tank_front_dist)*cos_pivot_XY*cos_pivot_Z
+        tank_front_y=grid_cent_y-(tank_front_dist)*sin_pivot_XY*cos_pivot_Z     
+        oplot,tank_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_Z,tank_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_Z,color=0 ,thick=2
+        oplot,tank_front_x+tank_size*cos_pivot_XY*cos_pivot_Z+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_Z,$
+        tank_front_y-tank_size*sin_pivot_XY*cos_pivot_Z+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_Z,color=0,thick=2 
+        oplot,[tank_front_x-tank_diam/2.0*sin_pivot_XY,tank_front_x-tank_diam/2.0*sin_pivot_XY+tank_size*cos_pivot_XY*cos_pivot_Z],$
+        [tank_front_y-tank_diam/2.0*cos_pivot_XY,tank_front_y-tank_diam/2.0*cos_pivot_XY-tank_size*sin_pivot_XY*cos_pivot_Z],color=0,thick=2       
+        oplot,[tank_front_x+tank_diam/2.0*sin_pivot_XY,tank_front_x+tank_diam/2.0*sin_pivot_XY+tank_size*cos_pivot_XY*cos_pivot_Z],$
+        [tank_front_y+tank_diam/2.0*cos_pivot_XY,tank_front_y+tank_diam/2.0*cos_pivot_XY-tank_size*sin_pivot_XY*cos_pivot_Z],color=0,thick=2
  
         xyouts, 230,380,'Beam tank',color=0,/device,charsize=1.5
        ;plot deflection magnet
         if magnet_size ne 0.0 then begin
           x_c=magnet_diam/2.0*cos(angl_arr)
           y_c=magnet_diam/2.0*sin(angl_arr)    
-          magnet_front_x=grid_cent_x+(tank_front_dist+tank_magnet_dist)*cos_pivot_XY*cos_pivot_XZ
-          magnet_front_y=grid_cent_y-(tank_front_dist+tank_magnet_dist)*sin_pivot_XY*cos_pivot_XZ
-          oplot,magnet_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,magnet_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=64 ,thick=2
-          oplot,magnet_front_x+magnet_size*cos_pivot_XY*cos_pivot_XZ+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,$
-          magnet_front_y-magnet_size*sin_pivot_XY*cos_pivot_XZ+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=64,thick=2       
-          oplot,[magnet_front_x-magnet_diam/2.0*sin_pivot_XY,magnet_front_x-magnet_diam/2.0*sin_pivot_XY+magnet_size*cos_pivot_XY*cos_pivot_XZ],$
-          [magnet_front_y-magnet_diam/2.0*cos_pivot_XY,magnet_front_y-magnet_diam/2.0*cos_pivot_XY-magnet_size*sin_pivot_XY*cos_pivot_XZ],color=64 ,thick=2      
-          oplot,[magnet_front_x+magnet_diam/2.0*sin_pivot_XY,magnet_front_x+magnet_diam/2.0*sin_pivot_XY+magnet_size*cos_pivot_XY*cos_pivot_XZ],$
-          [magnet_front_y+magnet_diam/2.0*cos_pivot_XY,magnet_front_y+magnet_diam/2.0*cos_pivot_XY-magnet_size*sin_pivot_XY*cos_pivot_XZ],color=64,thick=2
+          magnet_front_x=grid_cent_x+(tank_front_dist+tank_magnet_dist)*cos_pivot_XY*cos_pivot_Z
+          magnet_front_y=grid_cent_y-(tank_front_dist+tank_magnet_dist)*sin_pivot_XY*cos_pivot_Z
+          oplot,magnet_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_Z,magnet_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_Z,color=64 ,thick=2
+          oplot,magnet_front_x+magnet_size*cos_pivot_XY*cos_pivot_Z+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_Z,$
+          magnet_front_y-magnet_size*sin_pivot_XY*cos_pivot_Z+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_Z,color=64,thick=2       
+          oplot,[magnet_front_x-magnet_diam/2.0*sin_pivot_XY,magnet_front_x-magnet_diam/2.0*sin_pivot_XY+magnet_size*cos_pivot_XY*cos_pivot_Z],$
+          [magnet_front_y-magnet_diam/2.0*cos_pivot_XY,magnet_front_y-magnet_diam/2.0*cos_pivot_XY-magnet_size*sin_pivot_XY*cos_pivot_Z],color=64 ,thick=2      
+          oplot,[magnet_front_x+magnet_diam/2.0*sin_pivot_XY,magnet_front_x+magnet_diam/2.0*sin_pivot_XY+magnet_size*cos_pivot_XY*cos_pivot_Z],$
+          [magnet_front_y+magnet_diam/2.0*cos_pivot_XY,magnet_front_y+magnet_diam/2.0*cos_pivot_XY-magnet_size*sin_pivot_XY*cos_pivot_Z],color=64,thick=2
           xyouts, 230,360,'Deflection magnet',color=64,/device,charsize=1.5
         endif
         ;plot calorimeter
         if tank_cal_dist ne 0.0 then begin
           x_c=cal_diam/2.0*cos(angl_arr)
           y_c=cal_diam/2.0*sin(angl_arr)    
-          cal_front_x=grid_cent_x+(tank_front_dist+tank_size+tank_cal_dist)*cos_pivot_XY*cos_pivot_XZ
-          cal_front_y=grid_cent_y-(tank_front_dist+tank_size+tank_cal_dist)*sin_pivot_XY*cos_pivot_XZ
-          oplot,cal_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,cal_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=160 ,thick=2
-          oplot,cal_front_x+cal_size*cos_pivot_XY*cos_pivot_XZ+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,$
-          cal_front_y-cal_size*sin_pivot_XY*cos_pivot_XZ+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=160,thick=2     
-          oplot,[cal_front_x-cal_diam/2.0*sin_pivot_XY,cal_front_x-cal_diam/2.0*sin_pivot_XY+cal_size*cos_pivot_XY*cos_pivot_XZ],$
-          [cal_front_y-cal_diam/2.0*cos_pivot_XY,cal_front_y-cal_diam/2.0*cos_pivot_XY-cal_size*sin_pivot_XY*cos_pivot_XZ],color=160 ,thick=2     
-          oplot,[cal_front_x+cal_diam/2.0*sin_pivot_XY,cal_front_x+cal_diam/2.0*sin_pivot_XY+cal_size*cos_pivot_XY*cos_pivot_XZ],$
-          [cal_front_y+cal_diam/2.0*cos_pivot_XY,cal_front_y+cal_diam/2.0*cos_pivot_XY-cal_size*sin_pivot_XY*cos_pivot_XZ],color=160,thick=2
+          cal_front_x=grid_cent_x+(tank_front_dist+tank_size+tank_cal_dist)*cos_pivot_XY*cos_pivot_Z
+          cal_front_y=grid_cent_y-(tank_front_dist+tank_size+tank_cal_dist)*sin_pivot_XY*cos_pivot_Z
+          oplot,cal_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_Z,cal_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_Z,color=160 ,thick=2
+          oplot,cal_front_x+cal_size*cos_pivot_XY*cos_pivot_Z+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_Z,$
+          cal_front_y-cal_size*sin_pivot_XY*cos_pivot_Z+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_Z,color=160,thick=2     
+          oplot,[cal_front_x-cal_diam/2.0*sin_pivot_XY,cal_front_x-cal_diam/2.0*sin_pivot_XY+cal_size*cos_pivot_XY*cos_pivot_Z],$
+          [cal_front_y-cal_diam/2.0*cos_pivot_XY,cal_front_y-cal_diam/2.0*cos_pivot_XY-cal_size*sin_pivot_XY*cos_pivot_Z],color=160 ,thick=2     
+          oplot,[cal_front_x+cal_diam/2.0*sin_pivot_XY,cal_front_x+cal_diam/2.0*sin_pivot_XY+cal_size*cos_pivot_XY*cos_pivot_Z],$
+          [cal_front_y+cal_diam/2.0*cos_pivot_XY,cal_front_y+cal_diam/2.0*cos_pivot_XY-cal_size*sin_pivot_XY*cos_pivot_Z],color=160,thick=2
           xyouts, 400,340,'Calorimeter',color=160,/device,charsize=1.5                    
         endif
         ;plot limiters
@@ -17618,45 +17632,45 @@ case ev.id of
           if finite(r_lim) then begin
             oplot,r_lim*cos(angl_arr),r_lim*sin(angl_arr),color=48,thick=2
           endif else begin
-            lim_front_x=grid_cent_x+(z_pos)*cos_pivot_XY*cos_pivot_XZ
-            lim_front_y=grid_cent_y-(z_pos)*sin_pivot_XY*cos_pivot_XZ
-            lim_back_x=lim_front_x+lim_size*cos_pivot_XY*cos_pivot_XZ
-            lim_back_y=lim_front_y-lim_size*sin_pivot_XY*cos_pivot_XZ     
+            lim_front_x=grid_cent_x+(z_pos)*cos_pivot_XY*cos_pivot_Z
+            lim_front_y=grid_cent_y-(z_pos)*sin_pivot_XY*cos_pivot_Z
+            lim_back_x=lim_front_x+lim_size*cos_pivot_XY*cos_pivot_Z
+            lim_back_y=lim_front_y-lim_size*sin_pivot_XY*cos_pivot_Z     
             if finite(lim_diam) then begin
               x_c=lim_diam/2.0*cos(angl_arr)
               y_c=lim_diam/2.0*sin(angl_arr)
-              oplot,lim_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,lim_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=48 ,thick=2
-              oplot,lim_front_x+lim_size*cos_pivot_XY*cos_pivot_XZ+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_XZ,$
-              lim_front_y-lim_size*sin_pivot_XY*cos_pivot_XZ+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_XZ,color=48,thick=2 
+              oplot,lim_front_x+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_Z,lim_front_y+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_Z,color=48 ,thick=2
+              oplot,lim_front_x+lim_size*cos_pivot_XY*cos_pivot_Z+x_c*sin_pivot_XY-y_c*cos_pivot_XY*sin_pivot_Z,$
+              lim_front_y-lim_size*sin_pivot_XY*cos_pivot_Z+x_c*cos_pivot_XY+y_c*sin_pivot_XY*sin_pivot_Z,color=48,thick=2 
               oplot,[lim_front_x+lim_diam/2.0*sin_pivot_XY,lim_back_x+lim_diam/2.0*sin_pivot_XY],$
               [lim_front_y+lim_diam/2.0*cos_pivot_XY,lim_back_y+lim_diam/2.0*cos_pivot_XY],color=48,thick=2
               oplot,[lim_front_x-lim_diam/2.0*sin_pivot_XY,lim_back_x-lim_diam/2.0*sin_pivot_XY],$
               [lim_front_y-lim_diam/2.0*cos_pivot_XY,lim_back_y-lim_diam/2.0*cos_pivot_XY],color=48,thick=2
             endif else begin 
-              oplot,[lim_front_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_front_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_front_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_front_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_front_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_front_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_front_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_front_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_front_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ,lim_front_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_front_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ,lim_front_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_front_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ,lim_front_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_front_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ,lim_front_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_front_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ,lim_front_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_front_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ,lim_front_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_front_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ,lim_front_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_front_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ,lim_front_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_back_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_back_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_back_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_back_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_back_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_back_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
-              oplot,[lim_back_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ,lim_back_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_XZ],$
-              [lim_back_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ,lim_back_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_XZ],color=48,thick=2
+              oplot,[lim_front_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_Z,lim_back_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_Z],$
+              [lim_front_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_Z,lim_back_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_Z],color=48,thick=2
+              oplot,[lim_front_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_Z,lim_back_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_Z],$
+              [lim_front_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_Z,lim_back_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_Z],color=48,thick=2
+              oplot,[lim_front_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_Z,lim_back_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_Z],$
+              [lim_front_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_Z,lim_back_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_Z],color=48,thick=2
+              oplot,[lim_front_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_Z,lim_back_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_Z],$
+              [lim_front_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_Z,lim_back_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_Z],color=48,thick=2
+              oplot,[lim_front_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_Z,lim_front_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_Z],$
+              [lim_front_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_Z,lim_front_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_Z],color=48,thick=2
+              oplot,[lim_front_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_Z,lim_front_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_Z],$
+              [lim_front_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_Z,lim_front_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_Z],color=48,thick=2
+              oplot,[lim_front_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_Z,lim_front_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_Z],$
+              [lim_front_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_Z,lim_front_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_Z],color=48,thick=2
+              oplot,[lim_front_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_Z,lim_front_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_Z],$
+              [lim_front_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_Z,lim_front_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_Z],color=48,thick=2
+              oplot,[lim_back_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_Z,lim_back_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_Z],$
+              [lim_back_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_Z,lim_back_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_Z],color=48,thick=2
+              oplot,[lim_back_x-x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_Z,lim_back_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_Z],$
+              [lim_back_y-x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_Z,lim_back_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_Z],color=48,thick=2
+              oplot,[lim_back_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_Z,lim_back_x+x_size*sin_pivot_XY-y_size*cos_pivot_XY*sin_pivot_Z],$
+              [lim_back_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_Z,lim_back_y+x_size*cos_pivot_XY+y_size*sin_pivot_XY*sin_pivot_Z],color=48,thick=2
+              oplot,[lim_back_x+x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_Z,lim_back_x-x_size*sin_pivot_XY+y_size*cos_pivot_XY*sin_pivot_Z],$
+              [lim_back_y+x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_Z,lim_back_y-x_size*cos_pivot_XY-y_size*sin_pivot_XY*sin_pivot_Z],color=48,thick=2
             endelse
          endelse
        endfor
@@ -17664,8 +17678,8 @@ case ev.id of
        endif
        if beam_view eq 1 then begin
 
-        tank_front_x=grid_cent_x+(tank_front_dist)*cos_pivot_XY*cos_pivot_XZ
-        tank_front_z=grid_cent_z-(tank_front_dist)*sin_pivot_XY*cos_pivot_XZ      
+        tank_front_x=grid_cent_x+(tank_front_dist)*cos_pivot_XZ*cos_pivot_Y
+        tank_front_z=grid_cent_z-(tank_front_dist)*sin_pivot_XZ*cos_pivot_Y      
    
         wx0=min([grid_cent_x-neutr_diam/2.0*sin_pivot_XZ,-(r_major+r_minor*1.2),tank_front_x-tank_diam/2.0*sin_pivot_XZ,tank_front_x-tank_diam/2.0*cos_pivot_XZ])-x_marg
         wx1=max([-r_wall*cos(phi_grid),-(r_major-r_minor*1.2),tank_front_x+tank_diam/2.0*sin_pivot_XZ,tank_front_x+tank_diam/2.0*cos_pivot_XZ])+x_marg
@@ -17717,21 +17731,21 @@ case ev.id of
  
         F_diam=(wx1-wx0)/500.0
         F_shift=(wx1-wx0)/100.0
-        oplot,grid_cent_x+x_grid_focus*cos_pivot_XZ*cos_pivot_XY+F_diam*cos(angl_arr),$
-        grid_cent_z-x_grid_focus*sin_pivot_XZ*cos_pivot_XY+F_diam*sin(angl_arr),thick=2,color=112
-        oplot,grid_cent_x+y_grid_focus*cos_pivot_XZ*cos_pivot_XY+F_diam*cos(angl_arr),$
-        grid_cent_z-y_grid_focus*sin_pivot_XZ*cos_pivot_XY+F_diam*sin(angl_arr),thick=2,color=112       
+        oplot,grid_cent_x+x_grid_focus*cos_pivot_XZ*cos_pivot_Y+F_diam*cos(angl_arr),$
+        grid_cent_z-x_grid_focus*sin_pivot_XZ*cos_pivot_Y+F_diam*sin(angl_arr),thick=2,color=112
+        oplot,grid_cent_x+y_grid_focus*cos_pivot_XZ*cos_pivot_Y+F_diam*cos(angl_arr),$
+        grid_cent_z-y_grid_focus*sin_pivot_XZ*cos_pivot_Y+F_diam*sin(angl_arr),thick=2,color=112       
 
         if x_grid_focus eq y_grid_focus then begin
-          xyouts,grid_cent_x+x_grid_focus*cos_pivot_XZ*cos_pivot_XY+F_shift,$
-          grid_cent_z-x_grid_focus*sin_pivot_XZ*cos_pivot_XY,'F', color=112,charsize=2
+          xyouts,grid_cent_x+x_grid_focus*cos_pivot_XZ*cos_pivot_Y+F_shift,$
+          grid_cent_z-x_grid_focus*sin_pivot_XZ*cos_pivot_Y,'F', color=112,charsize=2
           xyouts, 400,380,'Grids focal radius (F)',color=112,/device,charsize=1.5
         endif else begin
-          xyouts,grid_cent_x+x_grid_focus*cos_pivot_XZ*cos_pivot_XY+F_shift,$
-          grid_cent_z-x_grid_focus*sin_pivot_XZ*cos_pivot_XY,'Fx', color=112,charsize=2
+          xyouts,grid_cent_x+x_grid_focus*cos_pivot_XZ*cos_pivot_Y+F_shift,$
+          grid_cent_z-x_grid_focus*sin_pivot_XZ*cos_pivot_Y,'Fx', color=112,charsize=2
           xyouts, 400,380,'Grids focal radii (Fx, Fy)',color=112,/device,charsize=1.5 
-          xyouts,grid_cent_x+y_grid_focus*cos_pivot_XZ*cos_pivot_XY+F_shift,$
-          grid_cent_z-y_grid_focus*sin_pivot_XZ*cos_pivot_XY,'Fy', color=112,charsize=2    
+          xyouts,grid_cent_x+y_grid_focus*cos_pivot_XZ*cos_pivot_Y+F_shift,$
+          grid_cent_z-y_grid_focus*sin_pivot_XZ*cos_pivot_Y,'Fy', color=112,charsize=2    
         endelse 
       
         ;plot beam centerline and grids
@@ -17740,64 +17754,64 @@ case ev.id of
 
        ; oplot,[grid_cent_x-max(x_bml)*sin_pivot_XZ,grid_cent_x+max(x_bml)*sin_pivot_XZ],$
        ; [grid_cent_z-max(x_bml)*cos_pivot_XZ,grid_cent_z+max(x_bml)*cos_pivot_XZ],color=112,thick=6
-        oplot,grid_cent_x+x_bml*sin_pivot_XZ-y_bml*cos_pivot_XZ*sin_pivot_XY,grid_cent_z+x_bml*cos_pivot_XZ+y_bml*sin_pivot_XZ*sin_pivot_XY,color=112,psym=3
+        oplot,grid_cent_x+x_bml*sin_pivot_XZ-y_bml*cos_pivot_XZ*sin_pivot_Y,grid_cent_z+x_bml*cos_pivot_XZ+y_bml*sin_pivot_XZ*sin_pivot_Y,color=112,psym=3
         
         xyouts, 60,380,'Accelerating grids',color=112,/device,charsize=1.5
         x_c=neutr_diam/2.0*cos(angl_arr)
         y_c=neutr_diam/2.0*sin(angl_arr)
-        neutr_front_x= grid_cent_x+neutr_front_dist*cos_pivot_XZ*cos_pivot_XY
-        neutr_front_z= grid_cent_z-neutr_front_dist*sin_pivot_XZ*cos_pivot_XY
-        oplot,neutr_front_x+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_XY,neutr_front_z+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_XY,color=96 ,thick=2
-        oplot,neutr_front_x+neutr_size*cos_pivot_XZ*cos_pivot_XY+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_XY,$
-        neutr_front_z-neutr_size*sin_pivot_XZ*cos_pivot_XY+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_XY,color=96,thick=2     
-        oplot,[neutr_front_x-neutr_diam/2.0*sin_pivot_XZ,neutr_front_x-neutr_diam/2.0*sin_pivot_XZ+neutr_size*cos_pivot_XZ*cos_pivot_XY],$
-        [neutr_front_z-neutr_diam/2.0*cos_pivot_XZ,neutr_front_z-neutr_diam/2.0*cos_pivot_XZ-neutr_size*sin_pivot_XZ*cos_pivot_XY],color=96,thick=2            
-        oplot,[neutr_front_x+neutr_diam/2.0*sin_pivot_XZ,neutr_front_x+neutr_diam/2.0*sin_pivot_XZ+neutr_size*cos_pivot_XZ*cos_pivot_XY],$
-        [neutr_front_z+neutr_diam/2.0*cos_pivot_XZ,neutr_front_z+neutr_diam/2.0*cos_pivot_XZ-neutr_size*sin_pivot_XZ*cos_pivot_XY],color=96,thick=2
+        neutr_front_x= grid_cent_x+neutr_front_dist*cos_pivot_XZ*cos_pivot_Y
+        neutr_front_z= grid_cent_z-neutr_front_dist*sin_pivot_XZ*cos_pivot_Y
+        oplot,neutr_front_x+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_Y,neutr_front_z+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_Y,color=96 ,thick=2
+        oplot,neutr_front_x+neutr_size*cos_pivot_XZ*cos_pivot_Y+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_Y,$
+        neutr_front_z-neutr_size*sin_pivot_XZ*cos_pivot_Y+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_Y,color=96,thick=2     
+        oplot,[neutr_front_x-neutr_diam/2.0*sin_pivot_XZ,neutr_front_x-neutr_diam/2.0*sin_pivot_XZ+neutr_size*cos_pivot_XZ*cos_pivot_Y],$
+        [neutr_front_z-neutr_diam/2.0*cos_pivot_XZ,neutr_front_z-neutr_diam/2.0*cos_pivot_XZ-neutr_size*sin_pivot_XZ*cos_pivot_Y],color=96,thick=2            
+        oplot,[neutr_front_x+neutr_diam/2.0*sin_pivot_XZ,neutr_front_x+neutr_diam/2.0*sin_pivot_XZ+neutr_size*cos_pivot_XZ*cos_pivot_Y],$
+        [neutr_front_z+neutr_diam/2.0*cos_pivot_XZ,neutr_front_z+neutr_diam/2.0*cos_pivot_XZ-neutr_size*sin_pivot_XZ*cos_pivot_Y],color=96,thick=2
        
         xyouts, 60,360,'Neutralizer tube',color=96,/device,charsize=1.5
         ;plot tank
         x_c=tank_diam/2.0*cos(angl_arr)
         y_c=tank_diam/2.0*sin(angl_arr)     
-        tank_front_x=grid_cent_x+(tank_front_dist)*cos_pivot_XZ*cos_pivot_XY
-        tank_front_z=grid_cent_z-(tank_front_dist)*sin_pivot_XZ*cos_pivot_XY     
-        oplot,tank_front_x+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_XY,tank_front_z+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_XY,color=0 ,thick=2
-        oplot,tank_front_x+tank_size*cos_pivot_XZ*cos_pivot_XY+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_XY,$
-        tank_front_z-tank_size*sin_pivot_XZ*cos_pivot_XY+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_XY,color=0,thick=2 
-        oplot,[tank_front_x-tank_diam/2.0*sin_pivot_XZ,tank_front_x-tank_diam/2.0*sin_pivot_XZ+tank_size*cos_pivot_XZ*cos_pivot_XY],$
-        [tank_front_z-tank_diam/2.0*cos_pivot_XZ,tank_front_z-tank_diam/2.0*cos_pivot_XZ-tank_size*sin_pivot_XZ*cos_pivot_XY],color=0,thick=2       
-        oplot,[tank_front_x+tank_diam/2.0*sin_pivot_XZ,tank_front_x+tank_diam/2.0*sin_pivot_XZ+tank_size*cos_pivot_XZ*cos_pivot_XY],$
-        [tank_front_z+tank_diam/2.0*cos_pivot_XZ,tank_front_z+tank_diam/2.0*cos_pivot_XZ-tank_size*sin_pivot_XZ*cos_pivot_XY],color=0,thick=2
+        tank_front_x=grid_cent_x+(tank_front_dist)*cos_pivot_XZ*cos_pivot_Y
+        tank_front_z=grid_cent_z-(tank_front_dist)*sin_pivot_XZ*cos_pivot_Y     
+        oplot,tank_front_x+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_Y,tank_front_z+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_Y,color=0 ,thick=2
+        oplot,tank_front_x+tank_size*cos_pivot_XZ*cos_pivot_Y+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_Y,$
+        tank_front_z-tank_size*sin_pivot_XZ*cos_pivot_Y+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_Y,color=0,thick=2 
+        oplot,[tank_front_x-tank_diam/2.0*sin_pivot_XZ,tank_front_x-tank_diam/2.0*sin_pivot_XZ+tank_size*cos_pivot_XZ*cos_pivot_Y],$
+        [tank_front_z-tank_diam/2.0*cos_pivot_XZ,tank_front_z-tank_diam/2.0*cos_pivot_XZ-tank_size*sin_pivot_XZ*cos_pivot_Y],color=0,thick=2       
+        oplot,[tank_front_x+tank_diam/2.0*sin_pivot_XZ,tank_front_x+tank_diam/2.0*sin_pivot_XZ+tank_size*cos_pivot_XZ*cos_pivot_Y],$
+        [tank_front_z+tank_diam/2.0*cos_pivot_XZ,tank_front_z+tank_diam/2.0*cos_pivot_XZ-tank_size*sin_pivot_XZ*cos_pivot_Y],color=0,thick=2
  
         xyouts, 230,380,'Beam tank',color=0,/device,charsize=1.5
        ;plot deflection magnet
         if magnet_size ne 0.0 then begin
           x_c=magnet_diam/2.0*cos(angl_arr)
           y_c=magnet_diam/2.0*sin(angl_arr)    
-          magnet_front_x=grid_cent_x+(tank_front_dist+tank_magnet_dist)*cos_pivot_XZ*cos_pivot_XY
-          magnet_front_z=grid_cent_z-(tank_front_dist+tank_magnet_dist)*sin_pivot_XZ*cos_pivot_XY
-          oplot,magnet_front_x+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_XY,magnet_front_z+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_XY,color=64 ,thick=2
-          oplot,magnet_front_x+magnet_size*cos_pivot_XZ*cos_pivot_XY+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_XY,$
-          magnet_front_z-magnet_size*sin_pivot_XZ*cos_pivot_XY+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_XY,color=64,thick=2       
-          oplot,[magnet_front_x-magnet_diam/2.0*sin_pivot_XZ,magnet_front_x-magnet_diam/2.0*sin_pivot_XZ+magnet_size*cos_pivot_XZ*cos_pivot_XY],$
-          [magnet_front_z-magnet_diam/2.0*cos_pivot_XZ,magnet_front_z-magnet_diam/2.0*cos_pivot_XZ-magnet_size*sin_pivot_XZ*cos_pivot_XY],color=64 ,thick=2      
-          oplot,[magnet_front_x+magnet_diam/2.0*sin_pivot_XZ,magnet_front_x+magnet_diam/2.0*sin_pivot_XZ+magnet_size*cos_pivot_XZ*cos_pivot_XY],$
-          [magnet_front_z+magnet_diam/2.0*cos_pivot_XZ,magnet_front_z+magnet_diam/2.0*cos_pivot_XZ-magnet_size*sin_pivot_XZ*cos_pivot_XY],color=64,thick=2
+          magnet_front_x=grid_cent_x+(tank_front_dist+tank_magnet_dist)*cos_pivot_XZ*cos_pivot_Y
+          magnet_front_z=grid_cent_z-(tank_front_dist+tank_magnet_dist)*sin_pivot_XZ*cos_pivot_Y
+          oplot,magnet_front_x+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_Y,magnet_front_z+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_Y,color=64 ,thick=2
+          oplot,magnet_front_x+magnet_size*cos_pivot_XZ*cos_pivot_Y+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_Y,$
+          magnet_front_z-magnet_size*sin_pivot_XZ*cos_pivot_Y+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_Y,color=64,thick=2       
+          oplot,[magnet_front_x-magnet_diam/2.0*sin_pivot_XZ,magnet_front_x-magnet_diam/2.0*sin_pivot_XZ+magnet_size*cos_pivot_XZ*cos_pivot_Y],$
+          [magnet_front_z-magnet_diam/2.0*cos_pivot_XZ,magnet_front_z-magnet_diam/2.0*cos_pivot_XZ-magnet_size*sin_pivot_XZ*cos_pivot_Y],color=64 ,thick=2      
+          oplot,[magnet_front_x+magnet_diam/2.0*sin_pivot_XZ,magnet_front_x+magnet_diam/2.0*sin_pivot_XZ+magnet_size*cos_pivot_XZ*cos_pivot_Y],$
+          [magnet_front_z+magnet_diam/2.0*cos_pivot_XZ,magnet_front_z+magnet_diam/2.0*cos_pivot_XZ-magnet_size*sin_pivot_XZ*cos_pivot_Y],color=64,thick=2
           xyouts, 230,360,'Deflection magnet',color=64,/device,charsize=1.5
         endif
         ;plot calorimeter
         if tank_cal_dist ne 0.0 then begin
           x_c=cal_diam/2.0*cos(angl_arr)
           y_c=cal_diam/2.0*sin(angl_arr)    
-          cal_front_x=grid_cent_x+(tank_front_dist+tank_size+tank_cal_dist)*cos_pivot_XZ*cos_pivot_XY
-          cal_front_z=grid_cent_z-(tank_front_dist+tank_size+tank_cal_dist)*sin_pivot_XZ*cos_pivot_XY
-          oplot,cal_front_x+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_XY,cal_front_z+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_XY,color=160 ,thick=2
-          oplot,cal_front_x+cal_size*cos_pivot_XZ*cos_pivot_XY+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_XY,$
-          cal_front_z-cal_size*sin_pivot_XZ*cos_pivot_XY+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_XY,color=160,thick=2     
-          oplot,[cal_front_x-cal_diam/2.0*sin_pivot_XZ,cal_front_x-cal_diam/2.0*sin_pivot_XZ+cal_size*cos_pivot_XZ*cos_pivot_XY],$
-          [cal_front_z-cal_diam/2.0*cos_pivot_XZ,cal_front_z-cal_diam/2.0*cos_pivot_XZ-cal_size*sin_pivot_XZ*cos_pivot_XY],color=160 ,thick=2     
-          oplot,[cal_front_x+cal_diam/2.0*sin_pivot_XZ,cal_front_x+cal_diam/2.0*sin_pivot_XZ+cal_size*cos_pivot_XZ*cos_pivot_XY],$
-          [cal_front_z+cal_diam/2.0*cos_pivot_XZ,cal_front_z+cal_diam/2.0*cos_pivot_XZ-cal_size*sin_pivot_XZ*cos_pivot_XY],color=160,thick=2
+          cal_front_x=grid_cent_x+(tank_front_dist+tank_size+tank_cal_dist)*cos_pivot_XZ*cos_pivot_Y
+          cal_front_z=grid_cent_z-(tank_front_dist+tank_size+tank_cal_dist)*sin_pivot_XZ*cos_pivot_Y
+          oplot,cal_front_x+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_Y,cal_front_z+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_Y,color=160 ,thick=2
+          oplot,cal_front_x+cal_size*cos_pivot_XZ*cos_pivot_Y+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_Y,$
+          cal_front_z-cal_size*sin_pivot_XZ*cos_pivot_Y+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_Y,color=160,thick=2     
+          oplot,[cal_front_x-cal_diam/2.0*sin_pivot_XZ,cal_front_x-cal_diam/2.0*sin_pivot_XZ+cal_size*cos_pivot_XZ*cos_pivot_Y],$
+          [cal_front_z-cal_diam/2.0*cos_pivot_XZ,cal_front_z-cal_diam/2.0*cos_pivot_XZ-cal_size*sin_pivot_XZ*cos_pivot_Y],color=160 ,thick=2     
+          oplot,[cal_front_x+cal_diam/2.0*sin_pivot_XZ,cal_front_x+cal_diam/2.0*sin_pivot_XZ+cal_size*cos_pivot_XZ*cos_pivot_Y],$
+          [cal_front_z+cal_diam/2.0*cos_pivot_XZ,cal_front_z+cal_diam/2.0*cos_pivot_XZ-cal_size*sin_pivot_XZ*cos_pivot_Y],color=160,thick=2
           xyouts, 400,340,'Calorimeter',color=160,/device,charsize=1.5                    
         endif
         ;plot limiters
@@ -17811,45 +17825,45 @@ case ev.id of
           if finite(r_lim) then begin
             oplot,[-r_lim,-r_lim],[-r_minor*elong*1.4,r_minor*elong*1.4],color=48,thick=2
           endif else begin
-            lim_front_x=grid_cent_x+(z_pos)*cos_pivot_XZ*cos_pivot_XY
-            lim_front_z=grid_cent_z-(z_pos)*sin_pivot_XZ*cos_pivot_XY
-            lim_back_x=lim_front_x+lim_size*cos_pivot_XZ*cos_pivot_XY
-            lim_back_z=lim_front_z-lim_size*sin_pivot_XZ*cos_pivot_XY     
+            lim_front_x=grid_cent_x+(z_pos)*cos_pivot_XZ*cos_pivot_Y
+            lim_front_z=grid_cent_z-(z_pos)*sin_pivot_XZ*cos_pivot_Y
+            lim_back_x=lim_front_x+lim_size*cos_pivot_XZ*cos_pivot_Y
+            lim_back_z=lim_front_z-lim_size*sin_pivot_XZ*cos_pivot_Y     
             if finite(lim_diam) then begin
               x_c=lim_diam/2.0*cos(angl_arr)
               y_c=lim_diam/2.0*sin(angl_arr)
-              oplot,lim_front_x+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_XY,lim_front_z+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_XY,color=48 ,thick=2
-              oplot,lim_front_x+lim_size*cos_pivot_XZ*cos_pivot_XY+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_XY,$
-              lim_front_z-lim_size*sin_pivot_XZ*cos_pivot_XY+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_XY,color=48,thick=2 
+              oplot,lim_front_x+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_Y,lim_front_z+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_Y,color=48 ,thick=2
+              oplot,lim_front_x+lim_size*cos_pivot_XZ*cos_pivot_Y+x_c*sin_pivot_XZ-y_c*cos_pivot_XZ*sin_pivot_Y,$
+              lim_front_z-lim_size*sin_pivot_XZ*cos_pivot_Y+x_c*cos_pivot_XZ+y_c*sin_pivot_XZ*sin_pivot_Y,color=48,thick=2 
               oplot,[lim_front_x+lim_diam/2.0*sin_pivot_XZ,lim_back_x+lim_diam/2.0*sin_pivot_XZ],$
               [lim_front_z+lim_diam/2.0*cos_pivot_XZ,lim_back_z+lim_diam/2.0*cos_pivot_XZ],color=48,thick=2
               oplot,[lim_front_x-lim_diam/2.0*sin_pivot_XZ,lim_back_x-lim_diam/2.0*sin_pivot_XZ],$
               [lim_front_z-lim_diam/2.0*cos_pivot_XZ,lim_back_z-lim_diam/2.0*cos_pivot_XZ],color=48,thick=2
             endif else begin 
-              oplot,[lim_front_x-y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_XY,lim_back_x-y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_XY],$
-              [lim_front_z-y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_XY,lim_back_z-y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_XY],color=48,thick=2
-              oplot,[lim_front_x-y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_XY,lim_back_x-y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_XY],$
-              [lim_front_z-y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_XY,lim_back_z-y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_XY],color=48,thick=2
-              oplot,[lim_front_x+y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_XY,lim_back_x+y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_XY],$
-              [lim_front_z+y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_XY,lim_back_z+y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_XY],color=48,thick=2
-              oplot,[lim_front_x+y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_XY,lim_back_x+y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_XY],$
-              [lim_front_z+y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_XY,lim_back_z+y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_XY],color=48,thick=2
-              oplot,[lim_front_x-y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_XY,lim_front_x-y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_XY],$
-              [lim_front_z-y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_XY,lim_front_z-y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_XY],color=48,thick=2
-              oplot,[lim_front_x-y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_XY,lim_front_x+y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_XY],$
-              [lim_front_z-y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_XY,lim_front_z+y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_XY],color=48,thick=2
-              oplot,[lim_front_x+y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_XY,lim_front_x+y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_XY],$
-              [lim_front_z+y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_XY,lim_front_z+y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_XY],color=48,thick=2
-              oplot,[lim_front_x+y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_XY,lim_front_x-y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_XY],$
-              [lim_front_z+y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_XY,lim_front_z-y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_XY],color=48,thick=2
-              oplot,[lim_back_x-y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_XY,lim_back_x-y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_XY],$
-              [lim_back_z-y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_XY,lim_back_z-y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_XY],color=48,thick=2
-              oplot,[lim_back_x-y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_XY,lim_back_x+y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_XY],$
-              [lim_back_z-y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_XY,lim_back_z+y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_XY],color=48,thick=2
-              oplot,[lim_back_x+y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_XY,lim_back_x+y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_XY],$
-              [lim_back_z+y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_XY,lim_back_z+y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_XY],color=48,thick=2
-              oplot,[lim_back_x+y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_XY,lim_back_x-y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_XY],$
-              [lim_back_z+y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_XY,lim_back_z-y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_XY],color=48,thick=2
+              oplot,[lim_front_x-y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_Y,lim_back_x-y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_Y],$
+              [lim_front_z-y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_Y,lim_back_z-y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_Y],color=48,thick=2
+              oplot,[lim_front_x-y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_Y,lim_back_x-y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_Y],$
+              [lim_front_z-y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_Y,lim_back_z-y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_Y],color=48,thick=2
+              oplot,[lim_front_x+y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_Y,lim_back_x+y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_Y],$
+              [lim_front_z+y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_Y,lim_back_z+y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_Y],color=48,thick=2
+              oplot,[lim_front_x+y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_Y,lim_back_x+y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_Y],$
+              [lim_front_z+y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_Y,lim_back_z+y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_Y],color=48,thick=2
+              oplot,[lim_front_x-y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_Y,lim_front_x-y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_Y],$
+              [lim_front_z-y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_Y,lim_front_z-y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_Y],color=48,thick=2
+              oplot,[lim_front_x-y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_Y,lim_front_x+y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_Y],$
+              [lim_front_z-y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_Y,lim_front_z+y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_Y],color=48,thick=2
+              oplot,[lim_front_x+y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_Y,lim_front_x+y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_Y],$
+              [lim_front_z+y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_Y,lim_front_z+y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_Y],color=48,thick=2
+              oplot,[lim_front_x+y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_Y,lim_front_x-y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_Y],$
+              [lim_front_z+y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_Y,lim_front_z-y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_Y],color=48,thick=2
+              oplot,[lim_back_x-y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_Y,lim_back_x-y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_Y],$
+              [lim_back_z-y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_Y,lim_back_z-y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_Y],color=48,thick=2
+              oplot,[lim_back_x-y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_Y,lim_back_x+y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_Y],$
+              [lim_back_z-y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_Y,lim_back_z+y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_Y],color=48,thick=2
+              oplot,[lim_back_x+y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_Y,lim_back_x+y_size*sin_pivot_XZ-x_size*cos_pivot_XZ*sin_pivot_Y],$
+              [lim_back_z+y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_Y,lim_back_z+y_size*cos_pivot_XZ+x_size*sin_pivot_XZ*sin_pivot_Y],color=48,thick=2
+              oplot,[lim_back_x+y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_Y,lim_back_x-y_size*sin_pivot_XZ+x_size*cos_pivot_XZ*sin_pivot_Y],$
+              [lim_back_z+y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_Y,lim_back_z-y_size*cos_pivot_XZ-x_size*sin_pivot_XZ*sin_pivot_Y],color=48,thick=2
             endelse
          endelse
        endfor
@@ -21059,7 +21073,7 @@ common settings_file, save_set_file
 ;graph to the file"
 common export_file, export_file,export_sel,export_flag
 
-  alcbeam_ver='4.11'
+  alcbeam_ver='4.12'
   ;debuging parameter (default=1:catch errors, debug=0:pass errors)  
   error_catch=1
   st_err=0;initial error status 0
