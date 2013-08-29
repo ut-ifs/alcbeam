@@ -2528,7 +2528,7 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
       ,VALUE= 'Parameters specifying the geometry and location of the beam injector' ,XSIZE=5 ,YSIZE=23, /Align_Center,/sunken_frame)   
   
       Beam_Port_Text = Widget_text(Beam_Geometry_Base, UNAME='Beam_Port_Text'  $
-      ,XOFFSET=426, YOFFSET=35,SCR_XSIZE=28 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=396, YOFFSET=35,SCR_XSIZE=58 ,SCR_YSIZE=30,/editable $
       ,VALUE=beam_port ,XSIZE=20 ,YSIZE=1)
 
       Beam_Port_Phi_Text = Widget_text(Beam_Geometry_Base, UNAME='Beam_Port_Phi_Text'  $
@@ -2537,7 +2537,7 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
 
       Beam_Port_Label = Widget_Label(Beam_Geometry_Base, UNAME='Beam_Port_Label'  $
       ,XOFFSET=8, YOFFSET=35, SCR_XSIZE=447 , SCR_YSIZE=33 $
-      ,VALUE= 'Toroidal angles are relative to the phi0, deg             -   Port: ' , /align_left, XSIZE=5 ,YSIZE=1) 
+      ,VALUE= 'Toroidal angles are relative to the phi0, deg          -   Port: ' , /align_left, XSIZE=5 ,YSIZE=1) 
 
       X_Grids_Focus_Text = Widget_text(Beam_Geometry_Base, UNAME='X_Grids_Focus_Text'  $
       ,XOFFSET=306, YOFFSET=66,SCR_XSIZE=48 ,SCR_YSIZE=30,/editable $
@@ -11796,16 +11796,10 @@ if plot_val eq 2 then begin
    x_tor2=-z_beam1*cos_pivot+x_beam1*sin_pivot+r_grid*cos(phi_grid)
    y_tor2=-z_beam1*sin_pivot-x_beam1*cos_pivot-r_grid*sin(phi_grid)
    r_tor2=sqrt(x_tor2^2.0+y_tor2^2.0)
-   ind1=n_z-1-locate(reverse(r_tor2),r_major)
-   if ind1 eq n_z then begin
-      Widget_control, status_wid, Get_Value=status_tx
-      Widget_Control, status_wid,$
-      Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Cannot plot vs r_major, since beam axis does not reach plasma core']], Set_text_top_line=n_elements(status_tx)-4
-      st_err=1
-      return 
-   endif
-   ind2=n_z-1-locate(reverse(r_tor2),r_major+r_minor*1.2)
-   r_output=(reverse(r_tor2))(n_z-1-ind1:n_z-1-ind2)
+   ind_all = where(r_tor2 gt r_major-r_minor*1.2 and r_tor2 lt r_major+r_minor*1.2)
+   ind1 = max(ind_all)
+   ind2 = min(ind_all)
+   r_output=reverse(r_tor2(ind_all))
    ;---------------------------------------------------------------
    n_beam_linear=fltarr(n_energy_sel,n_z);1/cm
    for i=0,n_energy_sel-1 do begin
@@ -11822,7 +11816,7 @@ if plot_val eq 2 then begin
    xtitl='Major radius, m'
    ytitl='Beam line density, x10!U'+strtrim(string(scale_coef,format='(I2)'),1)+' !Ncm!U-1!N'
    plot, r_output, r_output,color=0,/nodata,background=-1,ystyle=0,xstyle=1,yrange=[0,max_val*10.0^(-scale_coef)],charsize=1.5,$
-   xtitle=xtitl,ytitle=ytitl,title=titl
+   xtitle=xtitl,ytitle=ytitl,title=titl,xrange=[r_major-1.2*r_minor,r_major+1.2*r_minor]
    for i=0, n_energy_sel-1 do begin
      if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
      e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
@@ -12493,16 +12487,10 @@ if plot_val eq 9 then begin
    x_tor2=-z_beam1*cos_pivot+x_beam1*sin_pivot+r_grid*cos(phi_grid)
    y_tor2=-z_beam1*sin_pivot-x_beam1*cos_pivot-r_grid*sin(phi_grid)
    r_tor2=sqrt(x_tor2^2.0+y_tor2^2.0)
-   ind1=n_z-1-locate(reverse(r_tor2),r_major)
-   if ind1 eq n_z then begin
-      Widget_control, status_wid, Get_Value=status_tx
-      Widget_Control, status_wid,$
-      Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Cannot plot vs r_major, since beam axis does not reach plasma core']], Set_text_top_line=n_elements(status_tx)-4
-      st_err=1
-      return 
-   endif
-   ind2=n_z-1-locate(reverse(r_tor2),r_major+r_minor*1.2)
-   r_output=(reverse(r_tor2))(n_z-1-ind1:n_z-1-ind2)
+   ind_all = where(r_tor2 gt r_major-r_minor*1.2 and r_tor2 lt r_major+r_minor*1.2)
+   ind1 = max(ind_all)
+   ind2 = min(ind_all)
+   r_output=reverse(r_tor2(ind_all))   
    ;---------------------------------------------------------------
 
    !X.Margin=[7,3]
@@ -12515,7 +12503,7 @@ if plot_val eq 9 then begin
    xtitl='Major radius, m'
    ytitl='Beam density, x10!U'+strtrim(string(scale_coef,format='(I2)'),1)+' !Ncm!U-3!N'
    plot, r_output, r_output,color=0,/nodata,background=-1,ystyle=2,xstyle=1,yrange=[0,max_val*10.0^(-scale_coef)],charsize=1.5,$
-   xtitle=xtitl,ytitle=ytitl,title=titl
+   xtitle=xtitl,ytitle=ytitl,title=titl,xrange=[r_major-1.2*r_minor,r_major+1.2*r_minor]
    for i=0, n_energy_sel-1 do begin
      if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
      e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
@@ -14039,18 +14027,10 @@ if preview_val eq 3 then begin
    x_tor2=-z_beam1*cos_pivot+x_beam1*sin_pivot+r_grid*cos(phi_grid)
    y_tor2=-z_beam1*sin_pivot-x_beam1*cos_pivot-r_grid*sin(phi_grid)
    r_tor2=sqrt(x_tor2^2.0+y_tor2^2.0)
-   ind1=n_z-1-locate(reverse(r_tor2),r_major)
-   if ind1 eq n_z then begin
-      Widget_control, status_wid, Get_Value=status_tx
-      Widget_Control, status_wid,$
-      Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Cannot plot vs r_major, since beam axis does not reach plasma core']], Set_text_top_line=n_elements(status_tx)-4
-      st_err=1
-      return 
-   endif
-
-   ind2=n_z-1-locate(reverse(r_tor2),r_major+r_minor*1.2)
-   r_output=(reverse(r_tor2))(n_z-1-ind1:n_z-1-ind2)
-
+   ind_all = where(r_tor2 gt r_major-r_minor*1.2 and r_tor2 lt r_major+r_minor*1.2)
+   ind1 = max(ind_all)
+   ind2 = min(ind_all)
+   r_output=reverse(r_tor2(ind_all))   
    ;---------------------------------------------------------------
    if scale_check eq 1 then max_val=max(n_e_arr(ind2:ind1,*,*)) else max_val=max(n_e_arr(ind2:ind1,X_B_Slider_val,Y_B_Slider_val))
    scale_coef=fix(alog10(max_val))
@@ -14058,7 +14038,7 @@ if preview_val eq 3 then begin
    xtitl='Major Radius, m'
    ytitl='Electron density, x10!U'+strtrim(string(scale_coef,format='(I2)'),1)+'!Ncm!U-3!N'
    plot, r_output, reverse(n_e_arr(ind2:ind1,X_B_Slider_val,Y_B_Slider_val),1)*10.0^(-scale_coef),color=0,background=-1,ystyle=2,xstyle=1,yrange=[0,max_val*10.0^(-scale_coef)],charsize=1.5,$
-   xtitle=xtitl,ytitle=ytitl,title=titl
+   xtitle=xtitl,ytitle=ytitl,title=titl,xrange=[r_major-1.2*r_minor,r_major+1.2*r_minor]
    xyouts,330,360,'X coordinate: '+strtrim(string(x_beam(X_B_Slider_val),format='(F10.3)'),1)+' m',/device,color=0,charsize=1.3
    xyouts,330,340,'Y coordinate: '+strtrim(string(y_beam(Y_B_Slider_val),format='(F10.3)'),1)+' m',/device,color=0,charsize=1.3
    xyouts,70,360,'Beam: '+beam,/device,color=0,charsize=1.3
@@ -14450,23 +14430,17 @@ if preview_val eq 8 then begin
    x_tor2=-z_beam1*cos_pivot+x_beam1*sin_pivot+r_grid*cos(phi_grid)
    y_tor2=-z_beam1*sin_pivot-x_beam1*cos_pivot-r_grid*sin(phi_grid)
    r_tor2=sqrt(x_tor2^2.0+y_tor2^2.0)
-   ind1=n_z-1-locate(reverse(r_tor2),r_major)
-   if ind1 eq n_z then begin
-      Widget_control, status_wid, Get_Value=status_tx
-      Widget_Control, status_wid,$
-      Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Cannot plot vs r_major, since beam axis does not reach plasma core']], Set_text_top_line=n_elements(status_tx)-4
-      st_err=1
-      return 
-   endif
-   ind2=n_z-1-locate(reverse(r_tor2),r_major+r_minor*1.2)
-   r_output=(reverse(r_tor2))(n_z-1-ind1:n_z-1-ind2)
+   ind_all = where(r_tor2 gt r_major-r_minor*1.2 and r_tor2 lt r_major+r_minor*1.2)
+   ind1 = max(ind_all)
+   ind2 = min(ind_all)
+   r_output=reverse(r_tor2(ind_all))
    ;---------------------------------------------------------------
    if scale_check eq 1 then max_val=max(t_e_arr(ind2:ind1,*,*)) else max_val=max(t_e_arr(ind2:ind1,X_B_Slider_val,Y_B_Slider_val))
    titl='Electron temperature'
    xtitl='Major Radius, m'
    ytitl='Electron temperature, keV'
    plot, r_output, reverse(t_e_arr(ind2:ind1,X_B_Slider_val,Y_B_Slider_val),1),color=0,background=-1,ystyle=2,xstyle=1,yrange=[0,max_val],charsize=1.5,$
-   xtitle=xtitl,ytitle=ytitl,title=titl
+   xtitle=xtitl,ytitle=ytitl,title=titl,xrange=[r_major-1.2*r_minor,r_major+1.2*r_minor]
    xyouts,330,360,'X coordinate: '+strtrim(string(x_beam(X_B_Slider_val),format='(F10.3)'),1)+' m',/device,color=0,charsize=1.3
    xyouts,330,340,'Y coordinate: '+strtrim(string(y_beam(Y_B_Slider_val),format='(F10.3)'),1)+' m',/device,color=0,charsize=1.3
    xyouts,70,360,'Beam: '+beam,/device,color=0,charsize=1.3
@@ -15543,16 +15517,10 @@ if preview_val eq 17 then begin
    x_tor2=-z_beam1*cos_pivot+x_beam1*sin_pivot+r_grid*cos(phi_grid)
    y_tor2=-z_beam1*sin_pivot-x_beam1*cos_pivot-r_grid*sin(phi_grid)
    r_tor2=sqrt(x_tor2^2.0+y_tor2^2.0)
-   ind1=n_z-1-locate(reverse(r_tor2),r_major)
-   if ind1 eq n_z then begin
-      Widget_control, status_wid, Get_Value=status_tx
-      Widget_Control, status_wid,$
-      Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Cannot plot vs r_major, since beam axis does not reach plasma core']], Set_text_top_line=n_elements(status_tx)-4
-      st_err=1
-      return 
-   endif
-   ind2=n_z-1-locate(reverse(r_tor2),r_major+r_minor*1.2)
-   r_output=(reverse(r_tor2))(n_z-1-ind1:n_z-1-ind2)
+   ind_all = where(r_tor2 gt r_major-r_minor*1.2 and r_tor2 lt r_major+r_minor*1.2)
+   ind1 = max(ind_all)
+   ind2 = min(ind_all)
+   r_output=reverse(r_tor2(ind_all))
    ;---------------------------------------------------------------
    if scale_check eq 1 then max_val=max(exc_n2_frac(e_b_val,ind2:ind1,*,*)) else max_val=max(exc_n2_frac(e_b_val,ind2:ind1,X_B_Slider_val,Y_B_Slider_val))
    scale_coef=fix(alog10(max_val))-1
@@ -15562,7 +15530,7 @@ if preview_val eq 17 then begin
    xtitl='Major Radius, m'
    ytitl='Fraction of atoms in n=2 excited state x10!U'+strtrim(string(scale_coef,format='(I2)'),1)
    plot, r_output, r_output,color=0,/nodata,background=-1,ystyle=2,xstyle=1,yrange=[0,max_val*10.0^(-scale_coef)],charsize=1.5,$
-   xtitle=xtitl,ytitle=ytitl,title=titl
+   xtitle=xtitl,ytitle=ytitl,title=titl,xrange=[r_major-1.2*r_minor,r_major+1.2*r_minor]
    for i=0, n_energy_sel-1 do begin
      if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
      e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
@@ -16122,16 +16090,10 @@ if preview_val eq 17 then begin
    x_tor2=-z_beam1*cos_pivot+x_beam1*sin_pivot+r_grid*cos(phi_grid)
    y_tor2=-z_beam1*sin_pivot-x_beam1*cos_pivot-r_grid*sin(phi_grid)
    r_tor2=sqrt(x_tor2^2.0+y_tor2^2.0)
-   ind1=n_z-1-locate(reverse(r_tor2),r_major)
-   if ind1 eq n_z then begin
-      Widget_control, status_wid, Get_Value=status_tx
-      Widget_Control, status_wid,$
-      Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Cannot plot vs r_major, since beam axis does not reach plasma core']], Set_text_top_line=n_elements(status_tx)-4
-      st_err=1
-      return 
-   endif
-   ind2=n_z-1-locate(reverse(r_tor2),r_major+r_minor*1.2)
-   r_output=(reverse(r_tor2))(n_z-1-ind1:n_z-1-ind2)
+   ind_all = where(r_tor2 gt r_major-r_minor*1.2 and r_tor2 lt r_major+r_minor*1.2)
+   ind1 = max(ind_all)
+   ind2 = min(ind_all)
+   r_output=reverse(r_tor2(ind_all))
    ;---------------------------------------------------------------
    if scale_check eq 1 then max_val=max(exc_n3_frac(e_b_val,ind2:ind1,*,*)) else max_val=max(exc_n3_frac(e_b_val,ind2:ind1,X_B_Slider_val,Y_B_Slider_val))
    scale_coef=fix(alog10(max_val))-1
@@ -16141,7 +16103,7 @@ if preview_val eq 17 then begin
    xtitl='Major Radius, m'
    ytitl='Fraction of atoms in n=3 excited state x10!U'+strtrim(string(scale_coef,format='(I2)'),1)
    plot, r_output, r_output,color=0,/nodata,background=-1,ystyle=2,xstyle=1,yrange=[0,max_val*10.0^(-scale_coef)],charsize=1.5,$
-   xtitle=xtitl,ytitle=ytitl,title=titl
+   xtitle=xtitl,ytitle=ytitl,title=titl,xrange=[r_major-1.2*r_minor,r_major+1.2*r_minor]
    for i=0, n_energy_sel-1 do begin
      if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
      e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
@@ -21073,7 +21035,7 @@ common settings_file, save_set_file
 ;graph to the file"
 common export_file, export_file,export_sel,export_flag
 
-  alcbeam_ver='4.12'
+  alcbeam_ver='4.13'
   ;debuging parameter (default=1:catch errors, debug=0:pass errors)  
   error_catch=1
   st_err=0;initial error status 0
