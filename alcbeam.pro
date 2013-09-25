@@ -11796,10 +11796,13 @@ if plot_val eq 2 then begin
    x_tor2=-z_beam1*cos_pivot+x_beam1*sin_pivot+r_grid*cos(phi_grid)
    y_tor2=-z_beam1*sin_pivot-x_beam1*cos_pivot-r_grid*sin(phi_grid)
    r_tor2=sqrt(x_tor2^2.0+y_tor2^2.0)
-   ind_all = where(r_tor2 gt r_major-r_minor*1.2 and r_tor2 lt r_major+r_minor*1.2)
+   min_r_tor2 = min(r_tor2,min_ind)
+   r_tor3 = r_tor2(0:min_ind)
+   ind_all = where(r_tor3 gt r_major-r_minor*1.2 and r_tor3 lt r_major+r_minor*1.2)
+   
    ind1 = max(ind_all)
    ind2 = min(ind_all)
-   r_output=reverse(r_tor2(ind_all))
+   r_output=reverse(r_tor3(ind_all))
    ;---------------------------------------------------------------
    n_beam_linear=fltarr(n_energy_sel,n_z);1/cm
    for i=0,n_energy_sel-1 do begin
@@ -11807,7 +11810,7 @@ if plot_val eq 2 then begin
       n_beam_linear(i,j)=total(n_beam_val(e_b_val(i),j,*,*))*(x_beam(1)-x_beam(0))*(y_beam(1)-y_beam(0))*1e4 ;1/cm
     endfor
    endfor
-   !X.Margin=[7,3]
+  !X.Margin=[7,3]
    !Y.Margin=[3,2]
    max_val=max(n_beam_linear)
    scale_coef=fix(alog10(max_val))
@@ -12487,10 +12490,13 @@ if plot_val eq 9 then begin
    x_tor2=-z_beam1*cos_pivot+x_beam1*sin_pivot+r_grid*cos(phi_grid)
    y_tor2=-z_beam1*sin_pivot-x_beam1*cos_pivot-r_grid*sin(phi_grid)
    r_tor2=sqrt(x_tor2^2.0+y_tor2^2.0)
-   ind_all = where(r_tor2 gt r_major-r_minor*1.2 and r_tor2 lt r_major+r_minor*1.2)
+   min_r_tor2 = min(r_tor2,min_ind)
+   r_tor3 = r_tor2(0:min_ind)
+   ind_all = where(r_tor3 gt r_major-r_minor*1.2 and r_tor3 lt r_major+r_minor*1.2)
+   
    ind1 = max(ind_all)
    ind2 = min(ind_all)
-   r_output=reverse(r_tor2(ind_all))   
+   r_output=reverse(r_tor3(ind_all))   
    ;---------------------------------------------------------------
 
    !X.Margin=[7,3]
@@ -14027,10 +14033,13 @@ if preview_val eq 3 then begin
    x_tor2=-z_beam1*cos_pivot+x_beam1*sin_pivot+r_grid*cos(phi_grid)
    y_tor2=-z_beam1*sin_pivot-x_beam1*cos_pivot-r_grid*sin(phi_grid)
    r_tor2=sqrt(x_tor2^2.0+y_tor2^2.0)
-   ind_all = where(r_tor2 gt r_major-r_minor*1.2 and r_tor2 lt r_major+r_minor*1.2)
+   min_r_tor2 = min(r_tor2,min_ind)
+   r_tor3 = r_tor2(0:min_ind)
+   ind_all = where(r_tor3 gt r_major-r_minor*1.2 and r_tor3 lt r_major+r_minor*1.2)
+   
    ind1 = max(ind_all)
    ind2 = min(ind_all)
-   r_output=reverse(r_tor2(ind_all))   
+   r_output=reverse(r_tor3(ind_all))
    ;---------------------------------------------------------------
    if scale_check eq 1 then max_val=max(n_e_arr(ind2:ind1,*,*)) else max_val=max(n_e_arr(ind2:ind1,X_B_Slider_val,Y_B_Slider_val))
    scale_coef=fix(alog10(max_val))
@@ -14430,10 +14439,13 @@ if preview_val eq 8 then begin
    x_tor2=-z_beam1*cos_pivot+x_beam1*sin_pivot+r_grid*cos(phi_grid)
    y_tor2=-z_beam1*sin_pivot-x_beam1*cos_pivot-r_grid*sin(phi_grid)
    r_tor2=sqrt(x_tor2^2.0+y_tor2^2.0)
-   ind_all = where(r_tor2 gt r_major-r_minor*1.2 and r_tor2 lt r_major+r_minor*1.2)
+   min_r_tor2 = min(r_tor2,min_ind)
+   r_tor3 = r_tor2(0:min_ind)
+   ind_all = where(r_tor3 gt r_major-r_minor*1.2 and r_tor3 lt r_major+r_minor*1.2)
+   
    ind1 = max(ind_all)
    ind2 = min(ind_all)
-   r_output=reverse(r_tor2(ind_all))
+   r_output=reverse(r_tor3(ind_all)) 
    ;---------------------------------------------------------------
    if scale_check eq 1 then max_val=max(t_e_arr(ind2:ind1,*,*)) else max_val=max(t_e_arr(ind2:ind1,X_B_Slider_val,Y_B_Slider_val))
    titl='Electron temperature'
@@ -15517,10 +15529,13 @@ if preview_val eq 17 then begin
    x_tor2=-z_beam1*cos_pivot+x_beam1*sin_pivot+r_grid*cos(phi_grid)
    y_tor2=-z_beam1*sin_pivot-x_beam1*cos_pivot-r_grid*sin(phi_grid)
    r_tor2=sqrt(x_tor2^2.0+y_tor2^2.0)
-   ind_all = where(r_tor2 gt r_major-r_minor*1.2 and r_tor2 lt r_major+r_minor*1.2)
+   min_r_tor2 = min(r_tor2,min_ind)
+   r_tor3 = r_tor2(0:min_ind)
+   ind_all = where(r_tor3 gt r_major-r_minor*1.2 and r_tor3 lt r_major+r_minor*1.2)
+   
    ind1 = max(ind_all)
    ind2 = min(ind_all)
-   r_output=reverse(r_tor2(ind_all))
+   r_output=reverse(r_tor3(ind_all)) 
    ;---------------------------------------------------------------
    if scale_check eq 1 then max_val=max(exc_n2_frac(e_b_val,ind2:ind1,*,*)) else max_val=max(exc_n2_frac(e_b_val,ind2:ind1,X_B_Slider_val,Y_B_Slider_val))
    scale_coef=fix(alog10(max_val))-1
@@ -16090,10 +16105,13 @@ if preview_val eq 17 then begin
    x_tor2=-z_beam1*cos_pivot+x_beam1*sin_pivot+r_grid*cos(phi_grid)
    y_tor2=-z_beam1*sin_pivot-x_beam1*cos_pivot-r_grid*sin(phi_grid)
    r_tor2=sqrt(x_tor2^2.0+y_tor2^2.0)
-   ind_all = where(r_tor2 gt r_major-r_minor*1.2 and r_tor2 lt r_major+r_minor*1.2)
+   min_r_tor2 = min(r_tor2,min_ind)
+   r_tor3 = r_tor2(0:min_ind)
+   ind_all = where(r_tor3 gt r_major-r_minor*1.2 and r_tor3 lt r_major+r_minor*1.2)
+   
    ind1 = max(ind_all)
    ind2 = min(ind_all)
-   r_output=reverse(r_tor2(ind_all))
+   r_output=reverse(r_tor3(ind_all)) 
    ;---------------------------------------------------------------
    if scale_check eq 1 then max_val=max(exc_n3_frac(e_b_val,ind2:ind1,*,*)) else max_val=max(exc_n3_frac(e_b_val,ind2:ind1,X_B_Slider_val,Y_B_Slider_val))
    scale_coef=fix(alog10(max_val))-1
@@ -18662,7 +18680,7 @@ case ev.id of
      cd,cur_dir
      run_files=output_files
      for i=0,n_elements(run_files)-1 do begin
-        if strlen(run_files(i)) gt 26 then run_files(i) = strmid(run_files(i),0,14)+'...'+strmid(run_files(i),strlen(run_files(i))-6,8)
+        if strlen(run_files(i)) gt 24 then run_files(i) = strmid(run_files(i),0,14)+'...'+strmid(run_files(i),strlen(run_files(i))-6,8)
      end
      if output_files(0) ne "" then begin
         if all_runs(0) eq ' ' then  begin
@@ -21035,7 +21053,7 @@ common settings_file, save_set_file
 ;graph to the file"
 common export_file, export_file,export_sel,export_flag
 
-  alcbeam_ver='4.13'
+  alcbeam_ver='4.14'
   ;debuging parameter (default=1:catch errors, debug=0:pass errors)  
   error_catch=1
   st_err=0;initial error status 0
