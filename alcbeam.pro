@@ -6893,7 +6893,7 @@ Pro neutralization
      neutr = exp(interpol(alog(neut_frac), energy_keV, E_beam/m_atom)) ;fit to log is better  
      if I_beam lt 0.0 then neutr(*)=1.0 ;neutralization fractions for negative ions are equal to 1.0
      neutr_nS=source_nS*neutr*n_at
-assert,total(neutr lt 0) eq 0
+;assert,total(neutr lt 0) eq 0
 
 
      neutr_dens_frac=neutr_nS/total(neutr_nS)
@@ -6975,7 +6975,7 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
        I_frac=I_frac_tot
        E_full = e_energy(0)
      endelse
-assert,total(i_frac lt 0 and i_frac gt 1) eq 0
+;assert,total(i_frac lt 0 and i_frac gt 1) eq 0
      
      ;e_frac_time_ind=locate(interpol(e_frac_time,n_int),(t1+t2)/2.0)/(n_int-1)*(n_elements(e_frac_time)-1)
      ;I_frac=interpolate(I_frac_tot,e_frac_time_ind,cubic=-0.5)
@@ -10784,7 +10784,7 @@ if driver_val eq 'Back to NORMAL mode' then driver_on=1
       endfor
     endif else begin
       dens_bml = neutr_dens_ns_tot*neutr_dens_frac/n_bml
-assert,total(dens_bml lt 0) eq 0
+;assert,total(dens_bml lt 0) eq 0
     endelse 
     prfl_bm = make_array(n_ebeam,n_x,n_y)
 
@@ -11046,7 +11046,7 @@ assert,total(dens_bml lt 0) eq 0
           endif
         endelse
       endfor
-assert,total(n_beam lt 0) eq 0
+;assert,total(n_beam lt 0) eq 0
         
       ;------------------------
 
