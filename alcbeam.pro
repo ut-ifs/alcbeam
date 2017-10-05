@@ -3254,7 +3254,7 @@ while ~EOF(1) do begin
 readf,1,val
 if val eq 'z_eff_coord:' then begin 
   readf,1,val
-  z_eff_coord=int(val)
+  z_eff_coord=fix(val)
 endif
 if val eq 'z_eff_raw_r:' then begin 
   readf,1,val
@@ -3925,7 +3925,7 @@ while ~EOF(1) do begin
 readf,1,val
 if val eq 'n_e_coord:' then begin 
   readf,1,val
-  n_e_coord=int(val)
+  n_e_coord=fix(val)
 endif
 if val eq 'n_e_raw_r:' then begin 
   readf,1,val
@@ -4321,7 +4321,7 @@ while ~EOF(1) do begin
 readf,1,val
 if val eq 't_e_coord:' then begin 
   readf,1,val
-  t_e_coord=int(val)
+  t_e_coord=fix(val)
 endif
 if val eq 't_e_raw_r:' then begin 
   readf,1,val
@@ -9612,7 +9612,7 @@ endif
 ;load used input profiles electron density
 if val eq 'n_e_coord:' then begin 
   readf,1,val
-  n_e_coord=int(val)
+  n_e_coord=fix(val)
 endif
 if val eq 'n_e_raw_r:' then begin 
   readf,1,val
@@ -9649,7 +9649,7 @@ endif
 ;load used input profiles electron temperature
 if val eq 't_e_coord:' then begin 
   readf,1,val
-  t_e_coord=int(val)
+  t_e_coord=fix(val)
 endif
 if val eq 't_e_raw_r:' then begin 
   readf,1,val
@@ -9685,7 +9685,7 @@ endif
 ;load input profiles of Z_eff
 if val eq 'z_eff_coord:' then begin 
   readf,1,val
-  z_eff_coord=int(val)
+  z_eff_coord=fix(val)
 endif
 if val eq 'z_eff_raw_r:' then begin 
   readf,1,val
