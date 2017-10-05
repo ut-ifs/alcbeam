@@ -1,4 +1,20 @@
-;dum functions for code to compile on a platform where no MDPSLUS installed
+;Changes:
+; KTL 4/22/2015 fix saved run detection for new MDSTCL behavior
+; KTL 8/14/2015 fix beam limiters load, problem with number of spaces after :
+;       added more space for outputting larger Te profiles in abi file
+; KTL 8/18/2015 fix bug in rho calculation when 'midplane' is not at Z=0 (ITER)
+;       add shafranov shift in Miller flux surface calculation
+;       R_0(r) = R_0(a) - a*R_0'/2*(1-(r/a)^2), where R_0' must be given
+;       change triangularity calculation to scale with rovera^2
+;          old code assumed triangularity constant with rovera
+;       added more space for outputting larger Te and E_b in abo file
+; KTL 9/22/2015 change shafranov parameter to R_0, which is generally positive
+;       R_0(r) = R_0(a) + a*R_0*(1-(r/a)^2), where R_0 must be given
+; KTL 9/24/2015 fix bug regarding loading of long filenames
+; KTL 10/12/2015 Add halo calculation
+; KTL 9/2/2016 fix shot number update in alcbeam driver
+
+;dummy functions for code to compile on a platform where no MDPSLUS installed
 ;-----------------------------------------------------------------------
 function mdsvalue,a
   return,a
@@ -186,7 +202,7 @@ adas_str(0)=data_form
 for i=0, n_impur-1 do begin
   ;extraction of the files for the impurity 
   ;adas_file1='*'+(strsplit(exc_plasma_type_names(where(strmatch(exc_plasma_type_names,'*ADAS*') eq 1)),' ',/extract))(1)+'*'+impur_table(i,0)+file_ext+'.pass'
-  adas_file1='*'+(strsplit(adas_lbl,' ',/extract))(1)+'*'+impur_table(i,0)+file_ext+'.pass
+  adas_file1='*'+(strsplit(adas_lbl,' ',/extract))(1)+'*'+impur_table(i,0)+file_ext+'.pass'
   if strmid(adas_dir,strlen(adas_dir)-1,1) eq '/' then adas_dir=strmid(adas_dir,0,strlen(adas_dir)-1) 
   adas_file=adas_dir+'/'+adas_file1
   get_adas_adf21_22,adas_file=adas_file,e_ref=e_ref,e_arr=e_arr, t_ref=t_ref,t_arr=t_arr,n_ref=n_ref,n_arr=n_arr, fract_arr=fract_arr, ref_fract_arr=ref_fract_arr
@@ -617,7 +633,7 @@ ENDIF ELSE BEGIN
 
 
 ;-------------------------------------------------------------------------------------------------------------------------
-;Fuction is used to average the 2D array over the second dimension, NANs
+;Function is used to average the 2D array over the second dimension, NANs
 ;are not included in the averading 
 ;------------------------------------------------------------------------------------------------------------------------- 
 function mean2d, arr
@@ -649,7 +665,7 @@ end
 
 
 ;-------------------------------------------------------------------------------------------------------------------------
-;Fuction is used to calculate the n=2,3 excitation fractions of the
+;Function is used to calculate the n=2,3 excitation fractions of the
 ;beam traveling through plasma defined by local parameters of ne,te,z_eff
 ;------------------------------------------------------------------------------------------------------------------------- 
 function exc_adas,E,n_e,t_e,z_eff
@@ -748,7 +764,7 @@ end
 
 
 ;-------------------------------------------------------------------------------------------------------------------------
-;Fuction is used to calculate the n=2,3 excitation fractions of the
+;Function is used to calculate the n=2,3 excitation fractions of the
 ;beam traveling through plasma defined by local parameters of ne,te,z_eff
 ;------------------------------------------------------------------------------------------------------------------------- 
 function exc_hutch,E,n_e,t_e,z_eff
@@ -1036,7 +1052,7 @@ end
 
 
 ;-------------------------------------------------------------------------------------------------------------------------
-;Fuction is used to calculate the stoppping of the
+;Function is used to calculate the stoppping of the
 ;beam traveling through plasma defined by local parameters of
 ;ne,te Suzuki, Plasma Physics and Controlled Fusion, 40(1988)
 ;------------------------------------------------------------------------------------------------------------------------- 
@@ -1115,7 +1131,7 @@ end
 ;-------------------------------------------------------------------------------------------------------------------------
 
 ;-------------------------------------------------------------------------------------------------------------------------
-;Fuction is used to calculate the stoppping of the
+;Function is used to calculate the stoppping of the
 ;beam traveling through plasma defined by local parameters of
 ;ne,te,z_eff (ADAS data)
 ;------------------------------------------------------------------------------------------------------------------------- 
@@ -1197,7 +1213,6 @@ for i=0,n_impur do begin
   st_c=interpolate(adas_stop(i).fract_arr,interpol(indgen(n_elements(adas_stop(i).E_arr)),adas_stop(i).E_arr,E),interpol(indgen(n_elements(adas_stop(i).n_arr)),adas_stop(i).n_arr,n_e_equiv),/Grid)*$
   interpol(adas_stop(i).ref_fract_arr,adas_stop(i).t_arr,T_e)/$
   interpol(adas_stop(i).ref_fract_arr,adas_stop(i).t_arr,adas_stop(i).t_ref)
-
   stop_total=stop_total+ion_z(i)*ion_fr(i).fr*st_c/sum1
 
 endfor
@@ -1826,7 +1841,7 @@ pro show_calc_settings_window, main_base
 ; what beam, what shot and time interval
 common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
 ;The following common block contains some of the settings for beam attenuation and penetration calculation
-common run_settings, div_type,div_type_names,atten_type,atten_type_names, vel_dis_type, vel_dis_names,save_output_type,save_output_file
+common run_settings, div_type,div_type_names,atten_type,atten_type_names, vel_dis_type, vel_dis_names,calc_halo_type,calc_halo_names,save_output_type,save_output_file
 ;The following common block is used to transfer the pointer to the
 ;status window and availability states of each data set
 common status, status_wid,error_catch,st_err  
@@ -1849,10 +1864,10 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
     geom=Widget_Info(main_base,/Geometry)
     IF XREGISTERED('Calc_Settings_Widget') EQ 0 then begin
       Calc_Settings_Widget = WIDGET_BASE(/COLUMN, TITLE='Perform Calculation - Settings', Uname='Calc_Settings_Widget',$
-/ALIGN_CENTER,XOFFSET=geom.xoffset+300,YOFFSET=geom.yoffset+geom.ysize-626,xsize=603,ysize=225)
+/ALIGN_CENTER,XOFFSET=geom.xoffset+300,YOFFSET=geom.yoffset+geom.ysize-626,xsize=603,ysize=257)
       Calc_Settings_Base = Widget_base(Calc_Settings_Widget, UNAME='Calc_Settings_Base'  $
       ,XOFFSET=0,YOFFSET=0,Frame=0$
-      ,XSIZE=603,YSIZE=225)
+      ,XSIZE=603,YSIZE=257)
       Calc_Settings_label = Widget_Label(Calc_Settings_Base, UNAME='Calc_Settings_Label'  $
       ,XOFFSET=1, YOFFSET=1, SCR_XSIZE=600 , SCR_YSIZE=33 $
       ,VALUE= 'Choose settings for beam divergence and attenuation calculation' ,XSIZE=5 ,YSIZE=23, /Align_Center,/sunken_frame)
@@ -1885,12 +1900,21 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
       
       Widget_Control, Vel_Dis_Droplist,Set_droplist_select=vel_dis_type 
 
-      Save_Output_label = Widget_Label(Calc_Settings_Base, UNAME='Save Output_Label'  $
+      calc_halo_label = Widget_Label(Calc_Settings_Base, UNAME='calc_halo_label'  $
       ,XOFFSET=3, YOFFSET=136, SCR_XSIZE=190 , SCR_YSIZE=33 $
+      ,VALUE= 'Calc Halo:    ' ,XSIZE=5 ,YSIZE=23,/Align_left)   
+      
+      calc_halo_droplist =Widget_Droplist(Calc_Settings_Base, UNAME='calc_halo_droplist'$
+      ,XOFFSET=190,YOFFSET=135,XSIZE=100,YSIZE=15,value=calc_halo_names)
+      
+      Widget_Control, calc_halo_droplist,Set_droplist_select=calc_halo_type
+
+      Save_Output_label = Widget_Label(Calc_Settings_Base, UNAME='Save Output_Label'  $
+      ,XOFFSET=3, YOFFSET=168, SCR_XSIZE=190 , SCR_YSIZE=33 $
       ,VALUE= 'Save output to:       ' ,XSIZE=5 ,YSIZE=23,/Align_left)
  
       Save_Output_Type_Droplist=Widget_Droplist(Calc_Settings_Base, UNAME='Save_Output_Type_Droplist'$
-      ,XOFFSET=190,YOFFSET=135,XSIZE=100,YSIZE=15,value=[['MDSPLUS'],['*.abo output file'],['skip']])
+      ,XOFFSET=190,YOFFSET=167,XSIZE=100,YSIZE=15,value=[['MDSPLUS'],['*.abo output file'],['skip']])
 
       Widget_Control, Save_Output_Type_Droplist,Set_droplist_select=save_output_type    
       
@@ -1899,18 +1923,18 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
       ;save_output_file=file_dir+'/'+beam+'_'+strtrim(string(run),2)+'.abo'
  
       Save_output_File_text = Widget_text(Calc_Settings_Base, UNAME='Save_Output_File_Text'  $
-      ,XOFFSET=350, YOFFSET=137,SCR_XSIZE=255 ,SCR_YSIZE=30,/editable $
+      ,XOFFSET=350, YOFFSET=169,SCR_XSIZE=255 ,SCR_YSIZE=30,/editable $
       ,VALUE=save_output_file ,XSIZE=20 ,YSIZE=1) 
       save_output_sens=[0,1,0]
       Widget_Control, Save_Output_File_text,Sensitive=save_output_sens(save_output_type)
      
    
       Calc_Settings_Save_Button = Widget_Button(Calc_Settings_Base, UNAME='Calc_Settings_Save_Button'  $
-      ,XOFFSET=1, YOFFSET=197, SCR_XSIZE=80, SCR_YSIZE=25 $
+      ,XOFFSET=1, YOFFSET=229, SCR_XSIZE=80, SCR_YSIZE=25 $
       ,VALUE= 'Save' ,XSIZE=25 ,YSIZE=25, /Align_Center)
     
       Calc_Settings_Close_Button = Widget_Button(Calc_Settings_Base, UNAME='Calc_Settings_Close_Button'  $
-      ,XOFFSET=105, YOFFSET=197, SCR_XSIZE=80, SCR_YSIZE=25 $
+      ,XOFFSET=105, YOFFSET=229, SCR_XSIZE=80, SCR_YSIZE=25 $
       ,VALUE= 'Close' ,XSIZE=25 ,YSIZE=25, /Align_Center)
 
       WIDGET_CONTROL, Calc_Settings_Base, /REALIZE
@@ -2280,7 +2304,7 @@ end
 pro show_plasma_geometry_window, main_base
 ;The following common block contains the parameters which describe the geometry
 ;and position of the machine  plasma
-common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
+common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower,shaf_shift
 ;The following common block is used to transfer the pointer to the
 ;status window and availability states of each data set
 common status, status_wid,error_catch,st_err  
@@ -2304,10 +2328,10 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
     geom=Widget_Info(Main_Base,/Geometry)
     IF XREGISTERED('Plasma_Geometry_Widget') EQ 0 then begin
       Plasma_Geometry_Widget = WIDGET_BASE(/COLUMN, TITLE='Plasma Geometry', Uname='Plasma_Geometry_Widget',$
-/ALIGN_CENTER,XOFFSET=geom.xoffset+300,YOFFSET=geom.yoffset+geom.ysize-626,xsize=423,ysize=283)
+/ALIGN_CENTER,XOFFSET=geom.xoffset+300,YOFFSET=geom.yoffset+geom.ysize-626,xsize=423,ysize=313)
       Plasma_Geometry_Base = Widget_base(Plasma_Geometry_Widget, UNAME='Plasma_Geometry_Base'  $
       ,XOFFSET=5,YOFFSET=5,Frame=1$
-      ,XSIZE=410,YSIZE=280)
+      ,XSIZE=410,YSIZE=310)
     
       Plasma_Geometry_label = Widget_Label(Plasma_Geometry_Base, UNAME='Plasma_Geometry_Label'  $
       ,XOFFSET=3, YOFFSET=1, SCR_XSIZE=407 , SCR_YSIZE=33 $
@@ -2360,15 +2384,23 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
       Triang_L_Text = Widget_text(Plasma_Geometry_Base, UNAME='Triang_L_Text'  $
       ,XOFFSET=356, YOFFSET=190,SCR_XSIZE=58 ,SCR_YSIZE=30,/editable $
       ,VALUE=strtrim(string(triang_lower,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
+  
+      Shaf_Shift_Label = Widget_Label(Plasma_Geometry_Base, UNAME='Shaf_Shift_Label'  $
+      ,XOFFSET=8, YOFFSET=220, SCR_XSIZE=347 , SCR_YSIZE=33 $
+      ,VALUE= "Shafranov shift D; R(r) = R0 + a*D*(1-(r/a)^2)" ,XSIZE=5 ,YSIZE=1)
+ 
+      Shaf_Shift_Text = Widget_text(Plasma_Geometry_Base, UNAME='Shaf_Shift_Text'  $
+      ,XOFFSET=356, YOFFSET=220,SCR_XSIZE=58 ,SCR_YSIZE=30,/editable $
+      ,VALUE=strtrim(string(shaf_shift,format='(F10.3)'),1) ,XSIZE=20 ,YSIZE=1)
 
 
 
       Plasma_Geometry_Save_Button = Widget_Button(Plasma_Geometry_Base, UNAME='Plasma_Geometry_Save_Button'  $
-      ,XOFFSET=4, YOFFSET=250, SCR_XSIZE=80, SCR_YSIZE=25 $
+      ,XOFFSET=4, YOFFSET=280, SCR_XSIZE=80, SCR_YSIZE=25 $
       ,VALUE= 'Save' ,XSIZE=25 ,YSIZE=25, /Align_Center)
     
       Plasma_Geometry_Close_Button = Widget_Button(Plasma_Geometry_Base, UNAME='Plasma_Geometry_Close_Button'  $
-      ,XOFFSET=108, YOFFSET=250, SCR_XSIZE=80, SCR_YSIZE=25 $
+      ,XOFFSET=108, YOFFSET=280, SCR_XSIZE=80, SCR_YSIZE=25 $
       ,VALUE= 'Close' ,XSIZE=25 ,YSIZE=25, /Align_Center)      
  
       WIDGET_CONTROL, Plasma_Geometry_Base, /REALIZE
@@ -2493,7 +2525,7 @@ pro show_beam_geometry_window, main_base
 common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,beam_port_phi,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains the parameters which describe the geometry
 ;and position of the machine  plasma
-common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
+common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower,shaf_shift
 ;The following common block contains the parameters which describe the
 ;positions and sizes of the beam limiters. This block also holds the
 ;3D array of the Limiters positions after is constructed
@@ -3321,7 +3353,7 @@ common dens_electrons,n_e_coord,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,
 ;and position of the machine  plasma. This block is used here to
 ;extrapolate z_eff pofile to the range starting form center of the
 ;plasma to the edge.
-common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
+common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower,shaf_shift
 ;The following common block contains some of the settings for loading of
 ;the input data used for the beam attenuation and penetration
 ;calculation. This block is used here to get the z_eff_type parameter
@@ -3529,7 +3561,7 @@ common dens_electrons,n_e_coord,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,
 ;and position of the machine  plasma. This block is used here to
 ;extrapolate n_e pofile to the range starting form center of the
 ;plasma to the edge.
-common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
+common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower,shaf_shift
 ; The following common block contains general parameters: which user,
 ; what beam, what shot and time interval
 common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
@@ -3609,7 +3641,7 @@ common temp_electrons,t_e_coord,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,
 ;and position of the machine  plasma. This block is used here to
 ;extrapolate t_e pofile to the range starting form center of the
 ;plasma to the edge.
-common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
+common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower,shaf_shift
 ; The following common block contains general parameters: which user,
 ; what beam, what shot and time interval
 common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
@@ -3985,7 +4017,7 @@ common dens_electrons,n_e_coord,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,
 ;and position of the machine  plasma. This block is used here to
 ;extrapolate n_e pofile to the range starting form center of the
 ;plasma to the edge
-common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower 
+common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower,shaf_shift
 ; The following common block contains general parameters: which user,
 ; what beam, what shot and time interval
 common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
@@ -4165,7 +4197,7 @@ common dens_electrons,n_e_coord,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,
 ;and position of the machine  plasma. This block is used here to
 ;extrapolate n_e pofile to the range starting form center of the
 ;plasma to the edge
-common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower 
+common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower,shaf_shift
 ; The following common block contains general parameters: which user,
 ; what beam, what shot and time interval
 common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
@@ -4383,7 +4415,7 @@ common temp_electrons,t_e_coord,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,
 ;and position of the machine  plasma. This block is used here to
 ;extrapolate t_e pofile to the range starting form center of the
 ;plasma to the edge
-common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower 
+common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower,shaf_shift
 ; The following common block contains general parameters: which user,
 ; what beam, what shot and time interval
 common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
@@ -4565,7 +4597,7 @@ common temp_electrons,t_e_coord,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,
 ;and position of the machine  plasma. This block is used here to
 ;extrapolate n_e pofile to the range starting form center of the
 ;plasma to the edge
-common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower 
+common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower,shaf_shift
 ; The following common block contains general parameters: which user,
 ; what beam, what shot and time interval
 common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
@@ -4647,7 +4679,7 @@ common temp_electrons,t_e_coord,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,
 ;and position of the machine  plasma. This block is used here to
 ;extrapolate t_e pofile to the range starting form center of the
 ;plasma to the edge
-common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower 
+common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower,shaf_shift
 ; The following common block contains general parameters: which user,
 ; what beam, what shot and time interval
 common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
@@ -4736,7 +4768,7 @@ end
 Pro load_plasma_geom_file
 ;The following common block contains the parameters which describe the geometry
 ;and position of the machine  plasma.
-common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower 
+common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower,shaf_shift
 ;The following common block contains the name of the input file from which the input
 ;data is extracted 
 common load_settings, load_set_def,load_choice,general_type, general_file, beam_geom_type,beam_geom_file,beam_lim_type,beam_lim_file,beam_param_type,beam_param_file,$
@@ -4811,13 +4843,18 @@ if val eq 'triang_lower:' then begin
   triang_lower=float(val)
   if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
 endif
+if val eq 'shaf_shift:' then begin 
+  readf,1,val
+  shaf_shift=float(val)
+  if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
+endif
 
 endwhile
-if st ne 6 then begin
+if st ne 7 then begin
   Widget_control, status_wid, Get_Value=status_tx
   Widget_Control, status_wid,$
   Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+$
-' : Some Electron Temperature input data is missing in the file']], Set_text_top_line=n_elements(status_tx)-4
+' : Some Plasma Geometry input data is missing in the file']], Set_text_top_line=n_elements(status_tx)-4
   st_err=1
 endif
 
@@ -4834,7 +4871,7 @@ end
 Pro load_plasma_geom
 ;The following common block contains the parameters which describe the geometry
 ;and position of the machine  plasma.
-common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower 
+common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower,shaf_shift
 ; The following common block contains general parameters: which user,
 ; what beam, what shot and time interval
 common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
@@ -4916,7 +4953,7 @@ end
 Pro load_plasma_geom_efit_file
 ;The following common block contains the parameters which describe the geometry
 ;and position of the machine  plasma.
-common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
+common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower,shaf_shift
 
 ;The following common block contains some of the settings for loading of
 ;the input data used for the beam attenuation and penetration
@@ -5007,7 +5044,7 @@ end
 Pro load_plasma_geom_vmec_file
 ;The following common block contains the parameters which describe the geometry
 ;and position of the machine  plasma.
-common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
+common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower,shaf_shift
 
 ;The following common block contains some of the settings for loading of
 ;the input data used for the beam attenuation and penetration
@@ -5094,7 +5131,7 @@ common grid_arr, code_grid_arr
 ;The following common block contains the parameters which describe the geometry
 ;and position of the machine plasma. These parameters are used here to
 ;construct rho array based on the equillibrium formula.
-common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
+common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower,shaf_shift
 ;The following common block contains X,Y,Z coordinate arrays for the beam
 ;calculation grid and output 3D arrays of the beam density and excitation fracitons
 common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
@@ -5162,7 +5199,7 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
     t1_ind=(locate(t_efit,t1))(0)
     t2_ind=(locate(t_efit,t2))(0)
 
-    psirz = total(psirz(*,*,t1_ind:t2_ind),3)/(t2_ind-t1_ind+1)
+    if t1_ind eq t2_ind then psirz = psirz(*,*,t1_ind:t2_ind) else psirz = total(psirz(*,*,t1_ind:t2_ind),3)/(t2_ind-t1_ind+1)
     simag = mean(simag(t1_ind:t2_ind))
     sibry = mean(sibry(t1_ind:t2_ind))
     n_z_int=201
@@ -5469,21 +5506,22 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
     n_theta=5000
     theta_arr=interpol([-!Pi,!Pi],n_theta)    
     triang=fltarr(n_theta)
-    triang(where(theta_arr gt 0))=triang_upper
-    triang(where(theta_arr le 0))=triang_lower
+    triang(where(theta_arr gt 0))=triang_upper/0.95^2
+    triang(where(theta_arr le 0))=triang_lower/0.95^2
+    rovera = r_minor_arr/r_minor
     for i=0,n_r_minor-1 do begin   
-        if sel eq 2 then r_new=r_major+r_minor_arr(i)*cos(theta_arr+sin(theta_arr)*asin(triang))
+        if sel eq 2 then r_new=r_major+r_minor_arr(i)*cos(theta_arr+sin(theta_arr)*asin(triang*rovera[i]^2)) + r_minor*shaf_shift*(1.0-rovera[i]^2.0)
         if sel eq 2 then z_new=elong*r_minor_arr(i)*sin(theta_arr)+z_major
         if sel eq 3 then r_add=r_minor_arr(i)*(1-((elong-1.0)/2.0)*(cos(2.0*theta_arr)-1)+(triang/4.0)*(cos(3.0*theta_arr)-cos(theta_arr)))
         if sel eq 3 then r_new=r_major+r_add*cos(theta_arr)
         if sel eq 3 then z_new=r_add*sin(theta_arr)+z_major
-        rho_grid(locate(rgrid_arr,r_new),locate(zgrid_arr,z_new))=r_minor_arr(i)/r_minor
+        rho_grid(locate(rgrid_arr,r_new),locate(zgrid_arr,z_new))=rovera[i]
     endfor 
  endif
 
   ;calculation rho values at the machine midplane
   rgrid_midplane=rgrid_arr
-  rho_grid_midplane=rho_grid(*,locate(zgrid_arr,0.0))
+  rho_grid_midplane=rho_grid(*,locate(zgrid_arr,z_major)) ;fixed
     ;---------------------------
     for ix=0,n_x-1 do begin
       for iy=0,n_y-1 do begin 
@@ -6136,7 +6174,7 @@ Pro make_lim_arr
 common beam_limiters, n_limiters, limiters_table,limiters_arr
 ;The following common block contains the parameters which describe the geometry
 ;and position of the machine plasma
-common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lowe
+common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower,shaf_shift
 ;The following common block contains the parameters which describe the geometry
 ;and position of the beam tank and all components needed for calculation.
 common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,beam_port_phi,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
@@ -6398,7 +6436,7 @@ common grid_arr, code_grid_arr
 common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,beam_port_phi,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains the parameters which describe the geometry
 ;and position of the machine plasma
-common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
+common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower,shaf_shift
 ;The following common block is used to transfer the pointer to the
 ;status window and availability states of each data set
 common status, status_wid,error_catch,st_err  
@@ -6816,9 +6854,6 @@ Pro neutralization
      ;The following common block contains the parameters which describe the non-geometrical
      ;parameters of the beam (particle and energy distribution)
      common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
-     ;The following common block contains the parameters which describe the non-geometrical
-     ;parameters of the beam (particle and energy distribution)
-     common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
      ;E_beam is loaded here to the following common block
      common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
      
@@ -6828,16 +6863,16 @@ Pro neutralization
      beam_atom_mass=[1.0,2.0,3.0]
      m_atom=(beam_atom_mass(where(beam_atom_table eq beam_atom)))(0)
 
-     E_beam=e_full*e_frac 
+     E_beam=e_full*e_frac
      vel=SQRT(2.0*1.602E-19*E_beam*1000.0/1.673E-27/m_atom)*100 ; cm/sec
 
      source_neutr=1.0
      ; by default beam is hydrogen
-     n_at=fltarr(n_elements(e_frac))
+     n_at=fltarr(n_elements(e_frac)) ;neutral H generated per ion
      for i=0,n_elements(n_at)-1 do begin
        if e_frac(i) eq 1.0 then n_at(i)=1.0 ; H+ ion
        if e_frac(i) eq 1/2.0 then n_at(i)=2.0 ; H2+ ion
-       if round(1/e_frac(i)) eq 3 then n_at(i)=3.4 ; H3+ ion
+       if round(1/e_frac(i)) eq 3 then n_at(i)=3.4 ; H3+ ion    !!! KTL: why is this 3.4 and not 3.0? Surely it wasn't a typo
        if round(1/e_frac(i)) eq 18 then n_at(i)=2.0 ; H20 ion
        if round(1/e_frac(i)) eq 16 then n_at(i)=4.0 ; CH4 ion
        if round(1/e_frac(i)) eq 20 then n_at(i)=4.0 ; ????
@@ -6858,11 +6893,15 @@ Pro neutralization
      neutr = exp(interpol(alog(neut_frac), energy_keV, E_beam/m_atom)) ;fit to log is better  
      if I_beam lt 0.0 then neutr(*)=1.0 ;neutralization fractions for negative ions are equal to 1.0
      neutr_nS=source_nS*neutr*n_at
+assert,total(neutr lt 0) eq 0
 
 
      neutr_dens_frac=neutr_nS/total(neutr_nS)
    
      neutr_dens_ns_tot=total(neutr_nS) ;cm-1
+
+     ;hack for loading data with halo
+     if (size(n_beam,/dim))[0] gt n_elements(E_beam) then e_beam = [e_beam, -1]
 end
 ;------------------------------------------------------------------------------------------------------------------------------
 
@@ -6936,6 +6975,7 @@ strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line
        I_frac=I_frac_tot
        E_full = e_energy(0)
      endelse
+assert,total(i_frac lt 0 and i_frac gt 1) eq 0
      
      ;e_frac_time_ind=locate(interpol(e_frac_time,n_int),(t1+t2)/2.0)/(n_int-1)*(n_elements(e_frac_time)-1)
      ;I_frac=interpolate(I_frac_tot,e_frac_time_ind,cubic=-0.5)
@@ -7075,7 +7115,7 @@ common effective_charge, z_eff_coord, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,
 common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
 ;The following common block contains the parameters which describe the geometry
 ;and position of the machine plasma
-common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
+common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower,shaf_shift
 ;The following common block contains the parameters which describe
 ;some relative  global parameters of the plasma 
 common plasma_param, main_ion,n_impur,impur_table
@@ -7085,7 +7125,7 @@ common grid_arr, code_grid_arr
 ;The following common block contains some of the settings of how to
 ;run the beam attenuation and penetration calculation. ;The following
 ;common block contains the name of the output save file
-common run_settings, div_type,div_type_names,atten_type, atten_type_names, vel_dis_type,vel_dis_names,save_output_type,save_output_file
+common run_settings, div_type,div_type_names,atten_type, atten_type_names, vel_dis_type,vel_dis_names,calc_halo_type,calc_halo_names,save_output_type,save_output_file
 ;The following common block contains the parameters which describe the
 ;positions and sizes of the beam limiters.
 common beam_limiters, n_limiters, limiters_table,limiters_arr
@@ -7153,6 +7193,10 @@ printf,1,''
 printf,1,';Velocity Distribution'
 printf,1,'vel_dis_type:'
 printf,1,vel_dis_names(vel_dis_type)
+printf,1,''
+printf,1,';Calc Halo Distribution'
+printf,1,'calc_halo_type:'
+printf,1,calc_halo_names(calc_halo_type)
 printf,1,''
 printf,1,';Plasma stopping cross sections source'
 printf,1,'stop_plsm_cs:'
@@ -7274,7 +7318,7 @@ printf,1,'e_full:'
 printf,1,strtrim(string(e_full,format='(F10.3)'),1)
 printf,1,''
 printf,1,';Beam energy components (fractions)'
-form='('+strtrim(string(n_elements(e_frac)),2)+'(F5.3,", "))'
+form='('+strtrim(string(n_elements(e_frac)),2)+'(F6.3,", "))'
 e_frac_str=string(e_frac,format=form)
 e_frac_str=strmid(e_frac_str,0,strlen(e_frac_str)-2)
 printf,1,'e_frac:'
@@ -7285,7 +7329,7 @@ printf,1,'i_beam:'
 printf,1,strtrim(string(I_beam,format='(F10.3)'),1)
 printf,1,''
 printf,1,';Current fraction of each component'
-form='('+strtrim(string(n_elements(I_frac)),2)+'(F5.3,", "))'
+form='('+strtrim(string(n_elements(I_frac)),2)+'(F6.3,", "))'
 I_frac_str=string(I_frac,format=form)
 I_frac_str=strmid(I_frac_str,0,strlen(I_frac_str)-2)
 printf,1,'i_frac:'
@@ -7371,13 +7415,17 @@ printf,1,';Elongation of the plasma'
 printf,1,'elong:'
 printf,1,strtrim(string(elong,format='(F10.3)'),1)
 printf,1,''
-printf,1,';Upper triangularity of the plasma'
+printf,1,';Upper triangularity of the plasma at rho=0.95'
 printf,1,'triang_upper:'
 printf,1,strtrim(string(triang_upper,format='(F10.3)'),1)
 printf,1,''
-printf,1,';Lower triangularity of the plasma'
+printf,1,';Lower triangularity of the plasma at rho=0.95'
 printf,1,'triang_lower:'
 printf,1,strtrim(string(triang_lower,format='(F10.3)'),1)
+printf,1,''
+printf,1,";Shafranov shift D: R(r) = R0 + a*D*(1-(r/a)^2)"
+printf,1,'shaf_shift:'
+printf,1,strtrim(string(shaf_shift,format='(F10.3)'),1)
 
 ;Saving plasma parameters info
 ;plasma parameters
@@ -7482,42 +7530,42 @@ printf,1, strtrim(string(t_e_coord,format='(I10)'),2)
 printf,1,''
 printf,1,';Temperature of electrons, radial position for raw data'
 printf,1,'t_e_raw_r:'
-form='('+strtrim(string(n_elements(t_e_raw_r)),2)+'(F6.4,", "))'
+form='('+strtrim(string(n_elements(t_e_raw_r)),2)+'(F7.4,", "))'
 t_e_raw_r_str=string(t_e_raw_r,format=form)
 t_e_raw_r_str=strmid(t_e_raw_r_str,0,strlen(t_e_raw_r_str)-2)
 printf,1,t_e_raw_r_str
 printf,1,''
 printf,1,';Temperature of electrons, raw data, keV'
 printf,1,'t_e_raw:'
-form='('+strtrim(string(n_elements(t_e_raw)),2)+'(F6.4,", "))'
+form='('+strtrim(string(n_elements(t_e_raw)),2)+'(F7.4,", "))'
 t_e_raw_str=string(t_e_raw,format=form)
 t_e_raw_str=strmid(t_e_raw_str,0,strlen(t_e_raw_str)-2)
 printf,1,t_e_raw_str
 printf,1,''
 printf,1,';Temperature of electrons, errors of the raw data, keV'
 printf,1,'t_e_raw_err:'
-form='('+strtrim(string(n_elements(t_e_raw_err)),2)+'(F6.4,", "))'
+form='('+strtrim(string(n_elements(t_e_raw_err)),2)+'(F7.4,", "))'
 t_e_raw_err_str=string(t_e_raw_err,format=form)
 t_e_raw_err_str=strmid(t_e_raw_err_str,0,strlen(t_e_raw_err_str)-2)
 printf,1,t_e_raw_err_str
 printf,1,''
 printf,1,';Temperature of electrons, radial position for smoothed data'
 printf,1,'t_e_r:'
-form='('+strtrim(string(n_elements(t_e_r)),2)+'(F6.4,", "))'
+form='('+strtrim(string(n_elements(t_e_r)),2)+'(F7.4,", "))'
 t_e_r_str=string(t_e_r,format=form)
 t_e_r_str=strmid(t_e_r_str,0,strlen(t_e_r_str)-2)
 printf,1,t_e_r_str
 printf,1,''
 printf,1,';Temperature of electrons, smoothed data, keV'
 printf,1,'t_e:'
-form='('+strtrim(string(n_elements(t_e)),2)+'(F6.4,", "))'
+form='('+strtrim(string(n_elements(t_e)),2)+'(F7.4,", "))'
 t_e_str=string(t_e,format=form)
 t_e_str=strmid(t_e_str,0,strlen(t_e_str)-2)
 printf,1,t_e_str
 printf,1,''
 printf,1,';Temperature of electrons, errors of the smoothed data, keV'
 printf,1,'t_e_err:'
-form='('+strtrim(string(n_elements(t_e_err)),2)+'(F6.4,", "))'
+form='('+strtrim(string(n_elements(t_e_err)),2)+'(F7.4,", "))'
 t_e_err_str=string(t_e_err,format=form)
 t_e_err_str=strmid(t_e_err_str,0,strlen(t_e_err_str)-2)
 printf,1,t_e_err_str
@@ -7579,7 +7627,7 @@ printf,1,z_eff_err_str
 printf,1,''
 printf,1,';Energy components of the beam, keV'
 printf,1,'e_beam:'
-form='('+strtrim(string(n_elements(e_beam)),2)+'(F6.3,", "))'
+form='('+strtrim(string(n_elements(e_beam)),2)+'(F9.3,", "))'
 e_beam_str=string(e_beam,format=form)
 e_beam_str=strmid(e_beam_str,0,strlen(e_beam_str)-2)
 printf,1,e_beam_str
@@ -7684,7 +7732,7 @@ common effective_charge, z_eff_coord, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,
 common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
 ;The following common block contains the parameters which describe the geometry
 ;and position of the machine plasma
-common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
+common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower,shaf_shift
 ;The following common block contains the parameters which describe
 ;some relative  global parameters of the plasma 
 common plasma_param, main_ion,n_impur,impur_table
@@ -7855,7 +7903,7 @@ printf,1,'e_full:'
 printf,1,strtrim(string(e_full,format='(F10.3)'),1)
 printf,1,''
 printf,1,';Beam energy components (fractions)'
-form='('+strtrim(string(n_elements(e_frac)),2)+'(F5.3,", "))'
+form='('+strtrim(string(n_elements(e_frac)),2)+'(F6.3,", "))'
 e_frac_str=string(e_frac,format=form)
 e_frac_str=strmid(e_frac_str,0,strlen(e_frac_str)-2)
 printf,1,'e_frac:'
@@ -7866,7 +7914,7 @@ printf,1,'i_beam:'
 printf,1,strtrim(string(I_beam,format='(F10.3)'),1)
 printf,1,''
 printf,1,';Current fraction of each component'
-form='('+strtrim(string(n_elements(I_frac)),2)+'(F5.3,", "))'
+form='('+strtrim(string(n_elements(I_frac)),2)+'(F6.3,", "))'
 I_frac_str=string(I_frac,format=form)
 I_frac_str=strmid(I_frac_str,0,strlen(I_frac_str)-2)
 printf,1,'i_frac:'
@@ -8010,7 +8058,7 @@ printf,1, strtrim(string(n_e_coord,format='(I10)'),2)
 printf,1,''
 printf,1,';Density of electrons, radial position for raw data'
 printf,1,'n_e_raw_r:'
-form='('+strtrim(string(n_elements(n_e_raw_r)),2)+'(F6.4,", "))'
+form='('+strtrim(string(n_elements(n_e_raw_r)),2)+'(F7.4,", "))'
 n_e_raw_r_str=string(n_e_raw_r,format=form)
 n_e_raw_r_str=strmid(n_e_raw_r_str,0,strlen(n_e_raw_r_str)-2)
 printf,1,n_e_raw_r_str
@@ -8031,7 +8079,7 @@ printf,1,n_e_raw_err_str
 printf,1,''
 printf,1,';Density of electrons, radial position for smoothed data'
 printf,1,'n_e_r:'
-form='('+strtrim(string(n_elements(n_e_r)),2)+'(F6.4,", "))'
+form='('+strtrim(string(n_elements(n_e_r)),2)+'(F7.4,", "))'
 n_e_r_str=string(n_e_r,format=form)
 n_e_r_str=strmid(n_e_r_str,0,strlen(n_e_r_str)-2)
 printf,1,n_e_r_str
@@ -8059,42 +8107,42 @@ printf,1, strtrim(string(t_e_coord,format='(I10)'),2)
 printf,1,''
 printf,1,';Temperature of electrons, radial position for raw data'
 printf,1,'t_e_raw_r:'
-form='('+strtrim(string(n_elements(t_e_raw_r)),2)+'(F6.4,", "))'
+form='('+strtrim(string(n_elements(t_e_raw_r)),2)+'(F7.4,", "))'
 t_e_raw_r_str=string(t_e_raw_r,format=form)
 t_e_raw_r_str=strmid(t_e_raw_r_str,0,strlen(t_e_raw_r_str)-2)
 printf,1,t_e_raw_r_str
 printf,1,''
 printf,1,';Temperature of electrons, raw data, keV'
 printf,1,'t_e_raw:'
-form='('+strtrim(string(n_elements(t_e_raw)),2)+'(F6.4,", "))'
+form='('+strtrim(string(n_elements(t_e_raw)),2)+'(F7.4,", "))'
 t_e_raw_str=string(t_e_raw,format=form)
 t_e_raw_str=strmid(t_e_raw_str,0,strlen(t_e_raw_str)-2)
 printf,1,t_e_raw_str
 printf,1,''
 printf,1,';Temperature of electrons, errors of the raw data, keV'
 printf,1,'t_e_raw_err:'
-form='('+strtrim(string(n_elements(t_e_raw_err)),2)+'(F6.4,", "))'
+form='('+strtrim(string(n_elements(t_e_raw_err)),2)+'(F7.4,", "))'
 t_e_raw_err_str=string(t_e_raw_err,format=form)
 t_e_raw_err_str=strmid(t_e_raw_err_str,0,strlen(t_e_raw_err_str)-2)
 printf,1,t_e_raw_err_str
 printf,1,''
 printf,1,';Temperature of electrons, radial position for smoothed data'
 printf,1,'t_e_r:'
-form='('+strtrim(string(n_elements(t_e_r)),2)+'(F6.4,", "))'
+form='('+strtrim(string(n_elements(t_e_r)),2)+'(F7.4,", "))'
 t_e_r_str=string(t_e_r,format=form)
 t_e_r_str=strmid(t_e_r_str,0,strlen(t_e_r_str)-2)
 printf,1,t_e_r_str
 printf,1,''
 printf,1,';Temperature of electrons, smoothed data, keV'
 printf,1,'t_e:'
-form='('+strtrim(string(n_elements(t_e)),2)+'(F6.4,", "))'
+form='('+strtrim(string(n_elements(t_e)),2)+'(F7.4,", "))'
 t_e_str=string(t_e,format=form)
 t_e_str=strmid(t_e_str,0,strlen(t_e_str)-2)
 printf,1,t_e_str
 printf,1,''
 printf,1,';Temperature of electrons, errors of the smoothed data, keV'
 printf,1,'t_e_err:'
-form='('+strtrim(string(n_elements(t_e_err)),2)+'(F6.4,", "))'
+form='('+strtrim(string(n_elements(t_e_err)),2)+'(F7.4,", "))'
 t_e_err_str=string(t_e_err,format=form)
 t_e_err_str=strmid(t_e_err_str,0,strlen(t_e_err_str)-2)
 printf,1,t_e_err_str
@@ -8176,7 +8224,7 @@ common load_settings, load_set_def,load_choice,general_type, general_file, beam_
 ne_type,ne_file,te_type,te_file,z_eff_type,z_eff_file,plasma_geom_type,plasma_geom_file,gas_type,gas_file,grid_type,grid_file,plasma_param_type,plasma_param_file
 ;The following common block contains some of the settings of how to
 ;run the beam attenuation and penetration calculation.
-common run_settings, div_type,div_type_names,atten_type, atten_type_names, vel_dis_type,vel_dis_names,save_output_type,save_output_file
+common run_settings, div_type,div_type_names,atten_type, atten_type_names, vel_dis_type,vel_dis_names,calc_halo_type,calc_halo_names,save_output_type,save_output_file
 ;The following common block contains some of the settings for construction
 ;of the arrays used for the beam attenuation and penetration
 ;calculation. flux_surf_arr_type parameter defines which way to
@@ -8422,6 +8470,17 @@ str=string(transpose(vel_dis_names),format=form)
 str=strmid(str,0,strlen(str)-2)
 printf,1,str
 printf,1,''
+printf,1,';Calculate halo distribution'
+printf,1,'calc_halo_type:'
+printf,1,strtrim(string(calc_halo_type,format='(I10)'),1)
+printf,1,''
+printf,1,';Calculate halo distribution names'
+printf,1,'calc_halo_names:'
+form='('+strtrim(string(n_elements(calc_halo_names)),2)+'(A-,", "))'
+str=string(transpose(calc_halo_names),format=form)
+str=strmid(str,0,strlen(str)-2)
+printf,1,str
+printf,1,''
 printf,1,';Save output type'
 printf,1,'save_output_type:'
 printf,1,strtrim(string(save_output_type,format='(I10)'),1)
@@ -8456,7 +8515,7 @@ common load_settings, load_set_def,load_choice,general_type, general_file, beam_
 ne_type,ne_file,te_type,te_file,z_eff_type,z_eff_file,plasma_geom_type,plasma_geom_file,gas_type,gas_file,grid_type,grid_file,plasma_param_type,plasma_param_file
 ;The following common block contains some of the settings of how to
 ;run the beam attenuation and penetration calculation.
-common run_settings, div_type,div_type_names,atten_type, atten_type_names, vel_dis_type,vel_dis_names,save_output_type,save_output_file
+common run_settings, div_type,div_type_names,atten_type, atten_type_names, vel_dis_type,vel_dis_names,calc_halo_type,calc_halo_names,save_output_type,save_output_file
 ;The following common block contains some of the settings for construction
 ;of the arrays used for the beam attenuation and penetration
 ;calculation. flux_surf_arr_type parameter defines which way to
@@ -8729,6 +8788,16 @@ if val eq 'vel_dis_names:' then begin
   vel_dis_names=transpose(strsplit(val,', ',/extract,/regex))
   if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
 endif
+if val eq 'calc_halo_type:' then begin 
+  readf,1,val
+  calc_halo_type=fix(val)
+  if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
+endif
+if val eq 'calc_halo_names:' then begin 
+  readf,1,val
+  calc_halo_names=transpose(strsplit(val,', ',/extract,/regex))
+  if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
+endif
 if val eq 'save_output_type:' then begin 
   readf,1,val
   save_output_type=fix(val)
@@ -8994,7 +9063,7 @@ if val eq 'limiters_table:'then begin
     limiters_table(*,*)='NAN'
     for i=0, n_limiters-1 do begin
       readf,1,val
-      limiters_table(0:lim_l-1,i)=(strsplit(val,':   ',/extract,/regex))
+      limiters_table(0:lim_l-1,i)=strtrim(strsplit(val,':',/extract,/regex),2)
     endfor
   endelse
   if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
@@ -9118,7 +9187,7 @@ common neutral_gas,tank_pressure,torus_pressure,duct_pressure,duct_pressure_loc,
 common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
 ;The following common block contains the parameters which describe the geometry
 ;and position of the machine plasma
-common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
+common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower,shaf_shift
 ;The following common block contains the parameters which describe
 ;some relative  global parameters of the plasma 
 common plasma_param, main_ion,n_impur,impur_table
@@ -9140,7 +9209,7 @@ common effective_charge, z_eff_coord, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,
 ;The following common block contains some of the settings of how to
 ;run the beam attenuation and penetration calculation. ;The following
 ;common block contains the name of the output save file
-common run_settings, div_type,div_type_names,atten_type, atten_type_names, vel_dis_type,vel_dis_names,save_output_type,save_output_file
+common run_settings, div_type,div_type_names,atten_type, atten_type_names, vel_dis_type,vel_dis_names,calc_halo_type,calc_halo_names,save_output_type,save_output_file
 ;The following common block contains some of the settings for construction
 ;of the arrays used for the beam attenuation and penetration
 ;calculation.
@@ -9227,6 +9296,12 @@ if val eq 'vel_dis_type:' then begin
   readf,1,val
   vel_dis_type_val=strtrim(val,2)
   vel_dis_type=where(strtrim(vel_dis_names,2) eq vel_dis_type_val)
+  if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
+endif
+if val eq 'calc_halo_type:' then begin 
+  readf,1,val
+  calc_halo_type_val=strtrim(val,2)
+  calc_halo_type=where(strtrim(calc_halo_names,2) eq calc_halo_type_val)
   if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
 endif
 if val eq 'stop_plsm_cs:' then begin 
@@ -9372,7 +9447,7 @@ endif
 if val eq 'e_frac:' then begin 
   readf,1,val
   e_frac=float(strsplit(val,', ',/extract))
-  e_beam=e_full*e_frac
+  ;e_beam=e_full*e_frac
   if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
 endif
 if val eq 'i_beam:' then begin 
@@ -9431,7 +9506,7 @@ if val eq 'limiters_table:'then begin
     limiters_table(*,*)='NAN'
     for i=0, n_limiters-1 do begin
       readf,1,val
-      limiters_table(0:lim_l-1,i)=(strsplit(val,':   ',/extract,/regex))
+      limiters_table(0:lim_l-1,i)=strtrim((strsplit(val,':',/extract,/regex)),2)
     endfor
   endelse
   if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
@@ -9486,6 +9561,11 @@ endif
 if val eq 'triang_lower:' then begin 
   readf,1,val
   triang_lower=float(val)
+  if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
+endif
+if val eq 'shaf_shift:' then begin 
+  readf,1,val
+  shaf_shift=float(val)
   if strlen(val) gt 0 and strmid(val,1,1) ne ';' then st=st+1
 endif
 
@@ -9702,7 +9782,7 @@ if val eq 'vel_vec_y:' then begin
   if n_elements(vel_vec_y) gt 100 then st=st+1
 endif
 if val eq 'vel_vec_coef:' then begin
-  n_ebeam=n_elements(e_beam)  
+  n_ebeam=n_elements(e_beam[where(e_beam gt 0)]) ;fix for data with halo
   n_z=n_elements(z_beam)
   n_x=n_elements(x_beam)
   n_y=n_elements(y_beam) 
@@ -9961,7 +10041,7 @@ common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_po
 common beam_limiters, n_limiters, limiters_table,limiters_arr
 ;The following common block contains the parameters which describe the geometry
 ;and position of the machine plasma
-common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
+common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower,shaf_shift
 ;status window and availability states of each data set
 common status, status_wid,error_catch,st_err  
 
@@ -10499,27 +10579,27 @@ if driver_val eq 'Back to NORMAL mode' then driver_on=1
       inc_coef_y=vecp_y/z_beam(i)/y_step   
            
       if atten_type ne 5 then begin
-      for j=ind_magnet,i do begin
-          x_inc=ind_x-fix((z_beam(i)-z_beam(j))*inc_coef_x); may be put round instead of fix
-          y_inc=ind_y-fix((z_beam(i)-z_beam(j))*inc_coef_y); may be put round instead of fix
-          length_coef=z_length_arr(j)*geom_fact; changed from z-1 to z on 31 Aug 2012
-          for k=0, n_ebeam-1 do begin
-            att_fac(k,*,*,*)=att_fac(k,*,*,*)+n_tot_sigma(e_inc+k,z_inc,x_inc,y_inc)*length_coef
-            ;calculate distribution of lost atoms from beam (postponed)
-            ;if i eq n_z-1 then begin
-            ;  for i1=0, n_x-1 do begin
-            ;    for i2=0, n_y-1 do begin
-            ;      for i3=0, n_bml-1 do begin
-            ;        n_loss(e_inc(i1,i2,i3)+k,z_inc(i1,i2,i3),x_inc(i1,i2,i3),y_inc(i1,i2,i3))=n_loss(e_inc(i1,i2,i3)+k,z_inc(i1,i2,i3),x_inc(i1,i2,i3),y_inc(i1,i2,i3))+$
-            ;        gauss_int_iter(i1,i2,i3)*(1.0-exp(-double(reform(n_tot_sigma(e_inc(i1,i2,i3)+k,z_inc(i1,i2,i3),x_inc(i1,i2,i3),y_inc(i1,i2,i3))*length_coef(i1,i2,i3)))))
-            ;      endfor
-            ;    endfor
-            ;  endfor
-            ;  gauss_int_iter=gauss_int_iter*(-exp(-double(reform(n_tot_sigma(e_inc+k,z_inc,x_inc,y_inc)*length_coef))))
-            ;endif
-          endfor
-          z_inc=z_inc+1
-      endfor
+        for j=ind_magnet,i do begin
+            x_inc=ind_x-fix((z_beam(i)-z_beam(j))*inc_coef_x); may be put round instead of fix
+            y_inc=ind_y-fix((z_beam(i)-z_beam(j))*inc_coef_y); may be put round instead of fix
+            length_coef=z_length_arr(j)*geom_fact; changed from z-1 to z on 31 Aug 2012
+            for k=0, n_ebeam-1 do begin
+              att_fac(k,*,*,*)=att_fac(k,*,*,*)+n_tot_sigma(e_inc+k,z_inc,x_inc,y_inc)*length_coef
+              ;calculate distribution of lost atoms from beam (postponed)
+              ;if i eq n_z-1 then begin
+              ;  for i1=0, n_x-1 do begin
+              ;    for i2=0, n_y-1 do begin
+              ;      for i3=0, n_bml-1 do begin
+              ;        n_loss(e_inc(i1,i2,i3)+k,z_inc(i1,i2,i3),x_inc(i1,i2,i3),y_inc(i1,i2,i3))=n_loss(e_inc(i1,i2,i3)+k,z_inc(i1,i2,i3),x_inc(i1,i2,i3),y_inc(i1,i2,i3))+$
+              ;        gauss_int_iter(i1,i2,i3)*(1.0-exp(-double(reform(n_tot_sigma(e_inc(i1,i2,i3)+k,z_inc(i1,i2,i3),x_inc(i1,i2,i3),y_inc(i1,i2,i3))*length_coef(i1,i2,i3)))))
+              ;      endfor
+              ;    endfor
+              ;  endfor
+              ;  gauss_int_iter=gauss_int_iter*(-exp(-double(reform(n_tot_sigma(e_inc+k,z_inc,x_inc,y_inc)*length_coef))))
+              ;endif
+            endfor
+            z_inc=z_inc+1
+        endfor
       endif
       for k=0, n_ebeam-1 do begin
         if I_dens_par eq 0 then begin  ; if uniform source dens distribution
@@ -10704,6 +10784,7 @@ if driver_val eq 'Back to NORMAL mode' then driver_on=1
       endfor
     endif else begin
       dens_bml = neutr_dens_ns_tot*neutr_dens_frac/n_bml
+assert,total(dens_bml lt 0) eq 0
     endelse 
     prfl_bm = make_array(n_ebeam,n_x,n_y)
 
@@ -10965,6 +11046,7 @@ if driver_val eq 'Back to NORMAL mode' then driver_on=1
           endif
         endelse
       endfor
+assert,total(n_beam lt 0) eq 0
         
       ;------------------------
 
@@ -11101,8 +11183,8 @@ if error_catch then begin
   for i=1, n_elements(e_beam)-1 do begin
     Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Label_'+strtrim(string(i+1),2)) ,Sensitive=1
     Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),Sensitive=1
-    Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Label_'+strtrim(string(i+1),2)) ,$
-    set_value='E/'+strtrim(string(round(e_beam(0)/e_beam(i)),format='(I2)'),2)+': '+strtrim(string(e_beam(i),format='(F5.1)'),2)
+    if e_beam[i] gt 0 then str = 'E/'+strtrim(string(round(e_beam(0)/e_beam(i)),format='(I2)'),2)+': '+strtrim(string(e_beam(i),format='(F5.1)'),2) else str = 'halo'
+    Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Label_'+strtrim(string(i+1),2)) ,set_value=str
     Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),Set_Value=0
   endfor
  
@@ -11144,7 +11226,7 @@ if error_catch then begin
 ;-----------------------------------------------------
  plot_val=Widget_Info(Widget_Info(Main_base, FIND_BY_UNAME='Plot_Choice_Droplist'), /Droplist_Select)
  case plot_val of
- 0: begin
+ 0: begin ;n_beam volume
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Z_B_Slider'),Sensitive=0
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='X_B_Slider'),Sensitive=0
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Y_B_Slider'),Sensitive=0
@@ -11156,7 +11238,7 @@ if error_catch then begin
         Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),Sensitive=1
       endfor 
     end 
- 1: begin
+ 1: begin ;n_beam contour
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Z_B_Slider'),Sensitive=1
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='X_B_Slider'),Sensitive=0
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Y_B_Slider'),Sensitive=0
@@ -11168,7 +11250,7 @@ if error_catch then begin
         Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),Sensitive=1
       endfor 
     end  
- 2: begin
+ 2: begin ;beam line density vs z_beam
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Z_B_Slider'),Sensitive=0
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='X_B_Slider'),Sensitive=0
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Y_B_Slider'),Sensitive=0
@@ -11180,7 +11262,7 @@ if error_catch then begin
         Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),Sensitive=1
       endfor 
     end
- 3: begin
+ 3: begin ;beam line density vs r_major
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Z_B_Slider'),Sensitive=0
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='X_B_Slider'),Sensitive=0
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Y_B_Slider'),Sensitive=0
@@ -11192,7 +11274,7 @@ if error_catch then begin
         Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),Sensitive=1
       endfor 
    end
- 4: begin
+ 4: begin ;beam line density vs rho
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Z_B_Slider'),Sensitive=0
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='X_B_Slider'),Sensitive=0
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Y_B_Slider'),Sensitive=0
@@ -11204,7 +11286,19 @@ if error_catch then begin
         Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),Sensitive=1
       endfor 
    end
- 5: begin
+ 5: begin ;beam deposition vs rho
+      Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Z_B_Slider'),Sensitive=0
+      Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='X_B_Slider'),Sensitive=0
+      Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Y_B_Slider'),Sensitive=0
+      Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Label_top'),Sensitive=1
+      Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='exc_B_Label_top'),Sensitive=1   
+      Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='exc_B_Check'),Sensitive=1
+       for i=0, n_elements(e_beam)-1 do begin
+        Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Label_'+strtrim(string(i+1),2)) ,Sensitive=1
+        Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),Sensitive=1
+      endfor 
+   end
+ 6: begin ;total beam power (in atoms)
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Z_B_Slider'),Sensitive=0
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='X_B_Slider'),Sensitive=0
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Y_B_Slider'),Sensitive=0
@@ -11217,7 +11311,7 @@ if error_catch then begin
         Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),Sensitive=0
       endfor 
    end 
- 6: begin
+ 7: begin ;beam horizontal width
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Z_B_Slider'),Sensitive=0
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='X_B_Slider'),Sensitive=0
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Y_B_Slider'),Sensitive=0
@@ -11229,7 +11323,7 @@ if error_catch then begin
         Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),Sensitive=1
       endfor 
     end  
- 7: begin
+ 8: begin ;beam vertical width
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Z_B_Slider'),Sensitive=0
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='X_B_Slider'),Sensitive=0
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Y_B_Slider'),Sensitive=0
@@ -11241,7 +11335,7 @@ if error_catch then begin
         Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),Sensitive=1
       endfor 
     end  
- 8: begin
+ 9: begin ;n_beam vs z_beam
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Z_B_Slider'),Sensitive=0
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='X_B_Slider'),Sensitive=1
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Y_B_Slider'),Sensitive=1
@@ -11253,7 +11347,7 @@ if error_catch then begin
         Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),Sensitive=1
       endfor 
     end  
- 9: begin
+ 10: begin ;n_beam vs r_major
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Z_B_Slider'),Sensitive=0
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='X_B_Slider'),Sensitive=1
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Y_B_Slider'),Sensitive=1
@@ -11265,7 +11359,7 @@ if error_catch then begin
         Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),Sensitive=1
       endfor 
     end 
- 10: begin
+ 11: begin ;n_beam vs x_beam
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Z_B_Slider'),Sensitive=1
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='X_B_Slider'),Sensitive=0
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Y_B_Slider'),Sensitive=1
@@ -11277,7 +11371,7 @@ if error_catch then begin
         Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),Sensitive=1
       endfor 
     end 
- 11: begin
+ 12: begin ;n_beam vs y_beam
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Z_B_Slider'),Sensitive=1
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='X_B_Slider'),Sensitive=1
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Y_B_Slider'),Sensitive=0
@@ -11289,7 +11383,7 @@ if error_catch then begin
         Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),Sensitive=1
       endfor 
     end
- 12: begin
+ 13: begin ;lost atoms line density
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Z_B_Slider'),Sensitive=0
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='X_B_Slider'),Sensitive=0
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Y_B_Slider'),Sensitive=0
@@ -11302,7 +11396,7 @@ if error_catch then begin
         Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),Sensitive=1
       endfor 
     end
- 13: begin
+ 14: begin ;beam power loss
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Z_B_Slider'),Sensitive=0
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='X_B_Slider'),Sensitive=0
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Y_B_Slider'),Sensitive=0
@@ -11315,7 +11409,7 @@ if error_catch then begin
         Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),Sensitive=0
       endfor 
    end
-   14: begin
+   15: begin ;velocity contour
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Z_B_Slider'),Sensitive=1
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='X_B_Slider'),Sensitive=1
       Widget_Control, Widget_Info(Main_base, FIND_BY_UNAME='Y_B_Slider'),Sensitive=1
@@ -11332,6 +11426,24 @@ endcase
 end
 ;-------------------------------------------------------------------------------------------------------------------------
 
+;-------------------------------------------------------------------------------------------------------------------------
+;Procedure to print a short string for the beam component
+;-------------------------------------------------------------------------------------------------------------------------
+function e_frac_str,e_b_val,style
+common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
+common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
+
+   if keyword_set(style) then begin ; example: 'E/3: 16.7 keV'
+      if e_b_val ge n_elements(e_frac) then return,'Halo'
+      if e_b_val eq 0 then return,'E!Dfull!N: '+strtrim(string(e_beam(e_b_val),format='(F5.1)'),2)+' keV'
+      return,'E/'+strtrim(string(round(1.0/e_frac(e_b_val)),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val),format='(F5.1)'),2)+' keV'
+   endif else begin ; example 'E/3'
+      if e_b_val eq 0 then return,'E!Dfull!N'
+      if e_b_val ge n_elements(e_frac) then return,'Halo'
+      return,'E/'+strtrim(string(round(1.0/e_frac(e_b_val)),format='(I2)'),2)
+   endelse
+end
+;-------------------------------------------------------------------------------------------------------------------------
 
 ;-------------------------------------------------------------------------------------------------------------------------
 ;Procedure which plots output results. Plot button under the graph window
@@ -11345,7 +11457,7 @@ common export_file, export_file,export_sel,export_flag
 common draw_request,draw_req
 ;The following common block contains the parameters which describe the geometry
 ;and position of the machine plasma
-common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
+common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower,shaf_shift
 ;The following commong block contains the rho arrays which used for
 ;mapping of 1D Ne,Te,Z_eff arrays to the machine 3D coordinated and
 ;eventually to the beam coordinates.
@@ -11428,7 +11540,7 @@ common status, status_wid,error_catch,st_err
         exc_titl=' (n=3: 2nd excited)'
       end
  endcase
-if plot_val eq 0 then begin
+if plot_val eq 0 then begin ;n_beam volume
    e_check=make_array(n_elements(e_beam))
    for i=0, n_elements(e_beam)-1 do begin
      Widget_control,Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),get_value=dum
@@ -11458,7 +11570,7 @@ if plot_val eq 0 then begin
    min_val=min(n_beam_linear)
    cont_val=max(n_beam_val(e_b_val,*,*,*))/30.0
    scale_coef=fix(alog10(max_val))
-   if e_b_val eq 0 then e_str='(E!Dfull!N energy)' else e_str='(E/'+strtrim(string(round(1.0/e_frac(e_b_val)),format='(I2)'),2)+' energy)'
+   e_str = '('+e_frac_str(e_b_val)+' comp.)'
    titl='Line density and shape of '+e_str+exc_titl
    xtitl='Z beam, m'
    ytitl='X beam, m'
@@ -11544,7 +11656,7 @@ if plot_val eq 0 then begin
      endelse
    endif    
  endif 
-if plot_val eq 1 then begin
+if plot_val eq 1 then begin ;n_beam contour
    e_check=make_array(n_elements(e_beam))
    for i=0, n_elements(e_beam)-1 do begin
      Widget_control,Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),get_value=dum
@@ -11577,7 +11689,7 @@ if plot_val eq 1 then begin
    endelse
    if min_val eq max_val then max_val=min_val+1
    scale_coef=fix(alog10(max_val))
-   if e_b_val eq 0 then e_str='(E!Dfull!N energy)' else e_str='(E/'+strtrim(string(round(1.0/e_frac(e_b_val)),format='(I2)'),2)+' energy)'
+   e_str = '('+e_frac_str(e_b_val)+' comp.)'
    titl='Beam density of '+e_str+exc_titl
    xtitl='Beam X coordinate, m'
    ytitl='Beam Y coordinate, m'
@@ -11657,7 +11769,7 @@ if plot_val eq 1 then begin
      endelse
    endif    
  endif
-if plot_val eq 2 then begin
+if plot_val eq 2 then begin ;beam line density vs z_beam
    e_check=make_array(n_elements(e_beam))
    for i=0, n_elements(e_beam)-1 do begin
      Widget_control,Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),get_value=dum
@@ -11693,10 +11805,8 @@ if plot_val eq 2 then begin
    plot, z_beam, z_beam,color=0,/nodata,background=-1,ystyle=2,xstyle=1,yrange=[0,max_val*10.0^(-scale_coef)],charsize=1.5,$
    xtitle=xtitl,ytitle=ytitl,title=titl
    for i=0, n_energy_sel-1 do begin
-     if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
-     e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
      oplot, z_beam, n_beam_linear(i,*)*10.0^(-scale_coef),color=color_ind(e_b_val(i))
-     xyouts,70,130-i*20,e_str,/device,color=color_ind(e_b_val(i)),charsize=1.3
+     xyouts,70,130-i*20,e_frac_str(e_b_val[i],1),/device,color=color_ind(e_b_val(i)),charsize=1.3
    endfor 
    xyouts,70,360,'Beam: '+beam,/device,color=0,charsize=1.3
    xyouts,70,340,'Shot: '+strtrim(string(shot),2),/device,color=0,charsize=1.3
@@ -11738,10 +11848,8 @@ if plot_val eq 2 then begin
        printf,3,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV'
        printf,3,''
        for i=0, n_energy_sel-1 do begin
-         if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
-         e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
          printf,3,';Text'
-         printf,3,e_str
+         printf,3,e_frac_str(e_b_val[i],1)
          printf,3,''
          printf,3,';Plotx'
          printf,3,z_beam
@@ -11754,7 +11862,7 @@ if plot_val eq 2 then begin
      endelse
    endif 
  endif 
- if plot_val eq 3 then begin
+ if plot_val eq 3 then begin ;beam line density vs r_major
    e_check=make_array(n_elements(e_beam))
    for i=0, n_elements(e_beam)-1 do begin
      Widget_control,Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),get_value=dum
@@ -11796,13 +11904,10 @@ if plot_val eq 2 then begin
    x_tor2=-z_beam1*cos_pivot+x_beam1*sin_pivot+r_grid*cos(phi_grid)
    y_tor2=-z_beam1*sin_pivot-x_beam1*cos_pivot-r_grid*sin(phi_grid)
    r_tor2=sqrt(x_tor2^2.0+y_tor2^2.0)
-   min_r_tor2 = min(r_tor2,min_ind)
-   r_tor3 = r_tor2(0:min_ind)
-   ind_all = where(r_tor3 gt r_major-r_minor*1.2 and r_tor3 lt r_major+r_minor*1.2)
-   
+   ind_all = where(r_tor2 gt r_major-r_minor*1.2 and r_tor2 lt r_major+r_minor*1.2)
    ind1 = max(ind_all)
    ind2 = min(ind_all)
-   r_output=reverse(r_tor3(ind_all))
+   r_output=reverse(r_tor2(ind_all))
    ;---------------------------------------------------------------
    n_beam_linear=fltarr(n_energy_sel,n_z);1/cm
    for i=0,n_energy_sel-1 do begin
@@ -11810,7 +11915,7 @@ if plot_val eq 2 then begin
       n_beam_linear(i,j)=total(n_beam_val(e_b_val(i),j,*,*))*(x_beam(1)-x_beam(0))*(y_beam(1)-y_beam(0))*1e4 ;1/cm
     endfor
    endfor
-  !X.Margin=[7,3]
+   !X.Margin=[7,3]
    !Y.Margin=[3,2]
    max_val=max(n_beam_linear)
    scale_coef=fix(alog10(max_val))
@@ -11821,10 +11926,8 @@ if plot_val eq 2 then begin
    plot, r_output, r_output,color=0,/nodata,background=-1,ystyle=0,xstyle=1,yrange=[0,max_val*10.0^(-scale_coef)],charsize=1.5,$
    xtitle=xtitl,ytitle=ytitl,title=titl,xrange=[r_major-1.2*r_minor,r_major+1.2*r_minor]
    for i=0, n_energy_sel-1 do begin
-     if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
-     e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
      oplot, r_output, reverse(n_beam_linear(i,ind2:ind1),2)*10.0^(-scale_coef),color=color_ind(e_b_val(i))
-     xyouts,70,230-i*20,e_str,/device,color=color_ind(e_b_val(i)),charsize=1.3
+     xyouts,70,230-i*20,e_frac_str(e_b_val[i],1),/device,color=color_ind(e_b_val(i)),charsize=1.3
    endfor 
    xyouts,70,360,'Beam: '+beam,/device,color=0,charsize=1.3
    xyouts,70,340,'Shot: '+strtrim(string(shot),2),/device,color=0,charsize=1.3
@@ -11866,10 +11969,8 @@ if plot_val eq 2 then begin
        printf,3,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV'
        printf,3,''
        for i=0, n_energy_sel-1 do begin
-         if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
-         e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
          printf,3,';Text'
-         printf,3,e_str
+         printf,3,e_frac_str(e_b_val[i],1)
          printf,3,''
          printf,3,';Plotx'
          printf,3,r_output
@@ -11882,7 +11983,136 @@ if plot_val eq 2 then begin
      endelse
    endif 
  endif 
-  if plot_val eq 4 then begin
+ if plot_val eq 4 then begin ;beam line density vs rho
+   e_check=make_array(n_elements(e_beam))
+   for i=0, n_elements(e_beam)-1 do begin
+     Widget_control,Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),get_value=dum
+     e_check(i)=dum
+   endfor
+   if total(e_check) eq 0 then begin
+     Widget_control, status_wid, Get_Value=status_tx
+     Widget_Control, status_wid,$
+     Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Please choose energy component to plot.']], Set_text_top_line=n_elements(status_tx)-4
+     erase
+     st_err=1
+     return
+   endif
+   E_B_Val=where(e_check gt 0)
+   n_z=n_elements(z_beam)
+   n_x=n_elements(x_beam)
+   n_y=n_elements(y_beam)
+   n_energy_sel=n_elements(E_B_Val)
+
+   ; check if construct arrays are existed
+   if n_elements(rho_arr_beam_coord) eq 0 then begin
+     Widget_control, status_wid, Get_Value=status_tx
+     Widget_Control, status_wid,$
+     Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : This plot is only available just after recent ALCBEAM run.']], Set_text_top_line=n_elements(status_tx)-4    
+     return
+   endif
+;rewrite this questionable code
+;   r_sort_ind=sort(rho_arr_beam_coord)
+;    ;bin size eq 0.05 of rho
+;    n_bin=20.0
+;    rho_sort_round=(round(rho_arr_beam_coord(r_sort_ind)*n_bin+0.5)-0.5)/n_bin
+;    rho_sort_uniq=rho_sort_round(uniq(rho_sort_round))
+;
+;    rho=rho_sort_uniq(where(rho_sort_uniq lt 1.0)); ceters of the flux zones
+;
+;   ;---------------------------------------------------------------
+;   n_beam_sort=fltarr(n_elements(e_beam),n_elements(z_beam)*n_elements(x_beam)*n_elements(y_beam))
+;   for p=0, n_elements(e_beam)-1 do n_beam_sort(p,*)=(n_beam(p,*,*,*))(r_sort_ind)
+;
+;   n_beam_linear=fltarr(n_energy_sel,n_elements(rho));1/cm
+;
+;    for p=0, n_elements(e_beam)-1 do begin
+;    for i=0, n_elements(rho)-1 do begin
+;         n_beam_linear(p,i)=total(n_beam_sort(p,where(rho_sort_round eq rho(i))))
+;    endfor
+;    endfor
+   n_bin = 16 ;lots of quantization artifacts in rho mapping
+   rho = interpol([0.0,1.0],n_bin+1) ;one extra cell for putting rho>1 entries
+   n_beam_linear=fltarr(n_energy_sel,n_elements(rho))
+   r_sort_ind = reform(value_locate(rho,rho_arr_beam_coord),n_elements(rho_arr_beam_coord))
+   for p=0, n_elements(e_beam)-1 do begin
+      n_beam_sort = reform(n_beam[p,*,*,*],n_elements(rho_arr_beam_coord))
+      for i=0l, n_elements(rho_arr_beam_coord)-1 do begin
+         n_beam_linear(p,r_sort_ind[i]) += n_beam_sort[i]
+      endfor
+   endfor
+   ;remove last item of rho
+   rho = (rho[0:n_elements(rho)-2] + rho[1:n_elements(rho)-1])/2
+   n_beam_linear = n_beam_linear[*,0:n_elements(rho)-1]
+
+   !X.Margin=[7,3]
+   !Y.Margin=[3,2]
+   max_val=max(n_beam_linear)
+   scale_coef=fix(alog10(max_val))
+   color_ind=[0,48,64,112,160]
+   titl='Beam Line Density, x10!U'+strtrim(string(scale_coef,format='(I2)'),1)+' !Ncm!U-1!N'+exc_titl
+   xtitl='sqrt(normalized tor flux), rho'
+   ytitl='Beam line density, x10!U'+strtrim(string(scale_coef,format='(I2)'),1)+' !Ncm!U-1!N'
+   plot, rho, rho,color=0,/nodata,background=-1,ystyle=0,xstyle=1,yrange=[0,max_val*10.0^(-scale_coef)],charsize=1.5,$
+   xtitle=xtitl,ytitle=ytitl,title=titl,xrange=[0,1]
+   for i=0, n_energy_sel-1 do begin
+     oplot, rho, n_beam_linear/1e11,color=color_ind(e_b_val(i))
+     xyouts,70,230-i*20,e_frac_str(e_b_val[i],1),/device,color=color_ind(e_b_val(i)),charsize=1.3
+   endfor 
+   xyouts,70,360,'Beam: '+beam,/device,color=0,charsize=1.3
+   xyouts,70,340,'Shot: '+strtrim(string(shot),2),/device,color=0,charsize=1.3
+   xyouts,70,320,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec',/device,color=0,charsize=1.3
+   xyouts,70,300,'Beam atom: '+strtrim(beam_atom),/device,color=0,charsize=1.3
+   xyouts,70,280,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV',/device,color=0,charsize=1.3
+   if export_flag then begin
+     if export_sel eq 0 then begin
+       a_img=tvrd(true=1) 
+       tvlct,r_img,g_img,b_img,/get 
+       write_png,export_file,a_img,r_img,g_img,b_img 
+     endif else begin
+       printf,3,''
+       printf,3,';Plot type'      
+       printf,3,plot_text
+       printf,3,''
+       printf,3,';Title'
+       printf,3,titl
+       printf,3,''
+       printf,3,';Xtitle'
+       printf,3,xtitl
+       printf,3,''
+       printf,3,';Ytitle'
+       printf,3,ytitl
+       printf,3,''
+       printf,3,';Text'
+       printf,3,'Beam: '+beam
+       printf,3,''
+       printf,3,';Text'
+       printf,3,'Shot: '+strtrim(string(shot),2)
+       printf,3,''
+       printf,3,';Text'
+       printf,3,'Time: ['+strtrim(string(t1,format='(F5.3)'),2)+'-'+strtrim(string(t2,format='(F5.3)'),2)+'] sec'
+       printf,3,''
+       printf,3,';Text'
+       printf,3,'Beam atom: '+strtrim(beam_atom)       
+       printf,3,''
+       printf,3,';Text'
+       printf,3,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV'
+       printf,3,''
+       for i=0, n_energy_sel-1 do begin
+         printf,3,';Text'
+         printf,3,e_frac_str(e_b_val[i],1)
+         printf,3,''
+         printf,3,';Plotx'
+         printf,3,r_output
+         printf,3,''
+         printf,3,';Ploty'
+         printf,3,reform(reverse(n_beam_linear(i,ind2:ind1),2))*10.0^(-scale_coef)
+         printf,3,''
+       endfor      
+       close,3      
+     endelse
+   endif 
+ endif 
+  if plot_val eq 5 then begin ;beam deposition vs rho
    e_check=make_array(n_elements(e_beam))
    for i=0, n_elements(e_beam)-1 do begin
      Widget_control,Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),get_value=dum
@@ -11969,10 +12199,8 @@ if plot_val eq 2 then begin
    plot, rho, rho,color=0,/nodata,background=-1,ystyle=2,xstyle=1,yrange=[0,max_val*10.0^(-scale_coef)],charsize=1.5,$
    xtitle=xtitl,ytitle=ytitl,title=titl
    for i=0, n_energy_sel-1 do begin
-     if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
-     e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
      oplot, rho, n_dep_rate(e_b_val(i),*)*10.0^(-scale_coef),color=color_ind(e_b_val(i))
-     xyouts,70,230-i*20,e_str,/device,color=color_ind(e_b_val(i)),charsize=1.3
+     xyouts,70,230-i*20,e_frac_str(e_b_val[i],1),/device,color=color_ind(e_b_val(i)),charsize=1.3
    endfor 
    xyouts,70,360,'Beam: '+beam,/device,color=0,charsize=1.3
    xyouts,70,340,'Shot: '+strtrim(string(shot),2),/device,color=0,charsize=1.3
@@ -12014,10 +12242,8 @@ if plot_val eq 2 then begin
        printf,3,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV'
        printf,3,''
        for i=0, n_energy_sel-1 do begin
-         if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
-         e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
          printf,3,';Text'
-         printf,3,e_str
+         printf,3,e_frac_str(e_b_val[i],1)
          printf,3,''
          printf,3,';Plotx'
          printf,3,rho
@@ -12030,7 +12256,7 @@ if plot_val eq 2 then begin
      endelse
    endif 
  endif 
- if plot_val eq 5 then begin
+ if plot_val eq 6 then begin ;total beam power (in atoms)
    n_z=n_elements(z_beam)
    n_x=n_elements(x_beam)
    n_y=n_elements(y_beam)
@@ -12106,7 +12332,7 @@ if plot_val eq 2 then begin
      endelse
    endif  
  endif 
- if plot_val eq 6 then begin
+ if plot_val eq 7 then begin ;beam horizontal width
    e_check=make_array(n_elements(e_beam))
    for i=0, n_elements(e_beam)-1 do begin
      Widget_control,Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),get_value=dum
@@ -12161,13 +12387,11 @@ if plot_val eq 2 then begin
    z_cal=tank_front_dist+tank_size+tank_cal_dist
    xyouts,300,160,'Z cal = '+strtrim(string(z_cal,format='(F10.3)'),2)+' m',/device,color=0,charsize=1.3
    for i=0, n_energy_sel-1 do begin
-     if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
-     e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
      oplot, z_beam, x_fwhm(i,*),color=color_ind(e_b_val(i))
      oplot, z_beam, x_fwhm1,color=color_ind(e_b_val(i)),linestyle=2
      oplot, z_beam, x_fwhm2,color=color_ind(e_b_val(i)),linestyle=2   
      oplot,[z_cal,z_cal],[interpol(x_fwhm(i,*),z_beam,z_cal),interpol(x_fwhm(i,*),z_beam,z_cal)],psym=4,symsize=1.4,color=color_ind(e_b_val(i))
-     xyouts,70,130-i*20,e_str,/device,color=color_ind(e_b_val(i)),charsize=1.3
+     xyouts,70,130-i*20,e_frac_str(e_b_val[i],1),/device,color=color_ind(e_b_val(i)),charsize=1.3
      xyouts,300,130-i*20,'X_FWHM @ cal = '+strtrim(string(interpol(x_fwhm(i,*),z_beam,z_cal),format='(F10.2)'),2)+' cm',/device,color=color_ind(e_b_val(i)),charsize=1.3
    endfor 
    xyouts,70,360,'Beam: '+beam,/device,color=0,charsize=1.3
@@ -12213,10 +12437,8 @@ if plot_val eq 2 then begin
        printf,3,'Z cal = '+strtrim(string(z_cal,format='(F10.3)'),2)+' m'
        printf,3,''
        for i=0, n_energy_sel-1 do begin
-         if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
-         e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
          printf,3,';Text'
-         printf,3,e_str
+         printf,3,e_frac_str(e_b_val[i],1)
          printf,3,''
          printf,3,';Plotx'
          printf,3,z_beam
@@ -12229,7 +12451,7 @@ if plot_val eq 2 then begin
      endelse
    endif
  endif
- if plot_val eq 7 then begin
+ if plot_val eq 8 then begin ;beam vertical width
    e_check=make_array(n_elements(e_beam))
    for i=0, n_elements(e_beam)-1 do begin
      Widget_control,Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),get_value=dum
@@ -12283,13 +12505,11 @@ if plot_val eq 2 then begin
    z_cal=tank_front_dist+tank_size+tank_cal_dist
    xyouts,300,160,'Z cal = '+strtrim(string(z_cal,format='(F10.3)'),2)+' m',/device,color=0,charsize=1.3
    for i=0, n_energy_sel-1 do begin
-     if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
-     e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
      oplot, z_beam, y_fwhm(i,*),color=color_ind(e_b_val(i))
      oplot, z_beam, y_fwhm1,color=color_ind(e_b_val(i)),linestyle=2
      oplot, z_beam, y_fwhm2,color=color_ind(e_b_val(i)),linestyle=2
      oplot,[z_cal,z_cal],[interpol(y_fwhm(i,*),z_beam,z_cal),interpol(y_fwhm(i,*),z_beam,z_cal)],psym=4,symsize=1.4,color=color_ind(e_b_val(i))
-     xyouts,70,130-i*20,e_str,/device,color=color_ind(e_b_val(i)),charsize=1.3
+     xyouts,70,130-i*20,e_frac_str(e_b_val[i],1),/device,color=color_ind(e_b_val(i)),charsize=1.3
      xyouts,300,130-i*20,'Y_FWHM @ cal = '+strtrim(string(interpol(y_fwhm(i,*),z_beam,z_cal),format='(F10.2)'),2)+' cm',/device,color=color_ind(e_b_val(i)),charsize=1.3
    endfor 
    xyouts,70,360,'Beam: '+beam,/device,color=0,charsize=1.3
@@ -12335,10 +12555,8 @@ if plot_val eq 2 then begin
        printf,3,'Z cal = '+strtrim(string(z_cal,format='(F10.3)'),2)+' m'
        printf,3,''
        for i=0, n_energy_sel-1 do begin
-         if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
-         e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
          printf,3,';Text'
-         printf,3,e_str
+         printf,3,e_frac_str(e_b_val[i],1)
          printf,3,''
          printf,3,';Plotx'
          printf,3,z_beam
@@ -12351,7 +12569,7 @@ if plot_val eq 2 then begin
      endelse
    endif
  endif
- if plot_val eq 8 then begin
+ if plot_val eq 9 then begin ;n_beam vs z_beam
    e_check=make_array(n_elements(e_beam))
    for i=0, n_elements(e_beam)-1 do begin
      Widget_control,Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),get_value=dum
@@ -12380,10 +12598,8 @@ if plot_val eq 2 then begin
    plot, z_beam, z_beam,color=0,/nodata,background=-1,ystyle=2,xstyle=1,yrange=[0,max_val*10.0^(-scale_coef)],charsize=1.5,$
    xtitle=xtitl,ytitle=ytitl,title=titl
    for i=0, n_energy_sel-1 do begin
-     if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
-     e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
      oplot, z_beam, n_beam_val(e_b_val(i),*,X_B_Slider_val,Y_B_Slider_val)*10.0^(-scale_coef),color=color_ind(e_b_val(i))
-     xyouts,70,130-i*20,e_str,/device,color=color_ind(e_b_val(i)),charsize=1.3
+     xyouts,70,130-i*20,e_frac_str(e_b_val[i],1),/device,color=color_ind(e_b_val(i)),charsize=1.3
    endfor 
    xyouts,330,360,'X coordinate: '+strtrim(string(x_beam(X_B_Slider_val),format='(F10.3)'),1)+' m',/device,color=0,charsize=1.3
    xyouts,330,340,'Y coordinate: '+strtrim(string(y_beam(Y_B_Slider_val),format='(F10.3)'),1)+' m',/device,color=0,charsize=1.3
@@ -12433,10 +12649,8 @@ if plot_val eq 2 then begin
        printf,3,'Y coordinate: '+strtrim(string(y_beam(Y_B_Slider_val),format='(F10.3)'),1)+' m'
        printf,3,''
        for i=0, n_energy_sel-1 do begin
-         if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
-         e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
          printf,3,';Text'
-         printf,3,e_str
+         printf,3,e_frac_str(e_b_val[i],1)
          printf,3,''
          printf,3,';Plotx'
          printf,3,z_beam
@@ -12449,7 +12663,7 @@ if plot_val eq 2 then begin
      endelse
    endif
  endif
-if plot_val eq 9 then begin
+if plot_val eq 10 then begin ;n_beam vs r_major
    e_check=make_array(n_elements(e_beam))
    for i=0, n_elements(e_beam)-1 do begin
      Widget_control,Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),get_value=dum
@@ -12490,13 +12704,10 @@ if plot_val eq 9 then begin
    x_tor2=-z_beam1*cos_pivot+x_beam1*sin_pivot+r_grid*cos(phi_grid)
    y_tor2=-z_beam1*sin_pivot-x_beam1*cos_pivot-r_grid*sin(phi_grid)
    r_tor2=sqrt(x_tor2^2.0+y_tor2^2.0)
-   min_r_tor2 = min(r_tor2,min_ind)
-   r_tor3 = r_tor2(0:min_ind)
-   ind_all = where(r_tor3 gt r_major-r_minor*1.2 and r_tor3 lt r_major+r_minor*1.2)
-   
+   ind_all = where(r_tor2 gt r_major-r_minor*1.2 and r_tor2 lt r_major+r_minor*1.2)
    ind1 = max(ind_all)
    ind2 = min(ind_all)
-   r_output=reverse(r_tor3(ind_all))   
+   r_output=reverse(r_tor2(ind_all))   
    ;---------------------------------------------------------------
 
    !X.Margin=[7,3]
@@ -12511,10 +12722,8 @@ if plot_val eq 9 then begin
    plot, r_output, r_output,color=0,/nodata,background=-1,ystyle=2,xstyle=1,yrange=[0,max_val*10.0^(-scale_coef)],charsize=1.5,$
    xtitle=xtitl,ytitle=ytitl,title=titl,xrange=[r_major-1.2*r_minor,r_major+1.2*r_minor]
    for i=0, n_energy_sel-1 do begin
-     if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
-     e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
      oplot, r_output, reverse(n_beam_val(e_b_val(i),ind2:ind1,X_B_Slider_val,Y_B_Slider_val),2)*10.0^(-scale_coef),color=color_ind(e_b_val(i))
-     xyouts,70,230-i*20,e_str,/device,color=color_ind(e_b_val(i)),charsize=1.3
+     xyouts,70,230-i*20,e_frac_str(e_b_val[i],1),/device,color=color_ind(e_b_val(i)),charsize=1.3
    endfor 
    xyouts,330,360,'X coordinate: '+strtrim(string(x_beam(X_B_Slider_val),format='(F10.3)'),1)+' m',/device,color=0,charsize=1.3
    xyouts,330,340,'Y coordinate: '+strtrim(string(y_beam(Y_B_Slider_val),format='(F10.3)'),1)+' m',/device,color=0,charsize=1.3
@@ -12564,10 +12773,8 @@ if plot_val eq 9 then begin
        printf,3,'Y coordinate: '+strtrim(string(y_beam(Y_B_Slider_val),format='(F10.3)'),1)+' m'
        printf,3,''
        for i=0, n_energy_sel-1 do begin
-         if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
-         e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
          printf,3,';Text'
-         printf,3,e_str
+         printf,3,e_frac_str(e_b_val[i],1)
          printf,3,''
          printf,3,';Plotx'
          printf,3,r_output
@@ -12580,7 +12787,7 @@ if plot_val eq 9 then begin
      endelse
    endif
  endif 
- if plot_val eq 10 then begin
+ if plot_val eq 11 then begin ;n_beam vs x_beam
    e_check=make_array(n_elements(e_beam))
    for i=0, n_elements(e_beam)-1 do begin
      Widget_control,Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),get_value=dum
@@ -12609,10 +12816,8 @@ if plot_val eq 9 then begin
    plot, x_beam, z_beam,color=0,/nodata,background=-1,ystyle=2,xstyle=1,yrange=[0,max_val*10.0^(-scale_coef)],charsize=1.5,$
    xtitle=xtitl,ytitle=ytitl,title=titl
    for i=0, n_energy_sel-1 do begin
-     if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
-     e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
      oplot, x_beam, n_beam_val(e_b_val(i),Z_B_Slider_Val,*,Y_B_Slider_val)*10.0^(-scale_coef),color=color_ind(e_b_val(i))
-     xyouts,70,130-i*20,e_str,/device,color=color_ind(e_b_val(i)),charsize=1.3
+     xyouts,70,130-i*20,e_frac_str(e_b_val[i],1),/device,color=color_ind(e_b_val(i)),charsize=1.3
      ind_1=(n_elements(x_beam)-1)/3
      ind_2=n_elements(x_beam)-1-(n_elements(x_beam)-1)/3
      val_1=n_beam_val(e_b_val(i),Z_B_Slider_val,ind_1,Y_B_Slider_val)
@@ -12670,10 +12875,8 @@ if plot_val eq 9 then begin
        printf,3,'Y coordinate: '+strtrim(string(y_beam(Y_B_Slider_val),format='(F10.3)'),1)+' m'
        printf,3,''
        for i=0, n_energy_sel-1 do begin
-         if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
-         e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
          printf,3,';Text'
-         printf,3,e_str
+         printf,3,e_frac_str(e_b_val[i],1)
          printf,3,''
          printf,3,';Plotx'
          printf,3,x_beam
@@ -12686,7 +12889,7 @@ if plot_val eq 9 then begin
      endelse
    endif
  endif
- if plot_val eq 11 then begin
+ if plot_val eq 12 then begin ;n_beam vs y_beam
    e_check=make_array(n_elements(e_beam))
    for i=0, n_elements(e_beam)-1 do begin
      Widget_control,Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),get_value=dum
@@ -12715,10 +12918,8 @@ if plot_val eq 9 then begin
    plot, y_beam, z_beam,color=0,/nodata,background=-1,ystyle=2,xstyle=1,yrange=[0,max_val*10.0^(-scale_coef)],charsize=1.5,$
    xtitle=xtitl,ytitle=ytitl,title=titl
    for i=0, n_energy_sel-1 do begin
-     if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
-     e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
      oplot, y_beam, n_beam_val(e_b_val(i),Z_B_Slider_Val,X_B_Slider_val,*)*10.0^(-scale_coef),color=color_ind(e_b_val(i))
-     xyouts,70,130-i*20,e_str,/device,color=color_ind(e_b_val(i)),charsize=1.3
+     xyouts,70,130-i*20,e_frac_str(e_b_val[i],1),/device,color=color_ind(e_b_val(i)),charsize=1.3
      ind_1=(n_elements(y_beam)-1)/3
      ind_2=n_elements(y_beam)-1-(n_elements(y_beam)-1)/3
      val_1=n_beam_val(e_b_val(i),Z_B_Slider_val,X_B_Slider_val,ind_1)
@@ -12777,10 +12978,8 @@ if plot_val eq 9 then begin
        printf,3,'X coordinate: '+strtrim(string(x_beam(X_B_Slider_val),format='(F10.3)'),1)+' m'
        printf,3,''
        for i=0, n_energy_sel-1 do begin
-         if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
-         e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
          printf,3,';Text'
-         printf,3,e_str
+         printf,3,e_frac_str(e_b_val[i],1)
          printf,3,''
          printf,3,';Plotx'
          printf,3,y_beam
@@ -12793,7 +12992,7 @@ if plot_val eq 9 then begin
      endelse
    endif
  endif
- if plot_val eq 12 then begin
+ if plot_val eq 13 then begin ;lost atoms line density
    e_check=make_array(n_elements(e_beam))
    for i=0, n_elements(e_beam)-1 do begin
      Widget_control,Widget_Info(Main_base, FIND_BY_UNAME='E_B_Check_'+strtrim(string(i+1),2)),get_value=dum
@@ -12833,10 +13032,8 @@ if plot_val eq 9 then begin
    plot, z_beam, z_beam,color=0,/nodata,background=-1,ystyle=2,xstyle=1,yrange=[0,max_val*10.0^(-scale_coef)],charsize=1.5,$
    xtitle=xtitl,ytitle=ytitl,title=titl
    for i=0, n_energy_sel-1 do begin
-     if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
-     e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
      oplot, z_beam, n_beam_lost(i,*)*10.0^(-scale_coef),color=color_ind(e_b_val(i)),psym=10
-     xyouts,70,130-i*20,e_str,/device,color=color_ind(e_b_val(i)),charsize=1.3
+     xyouts,70,130-i*20,e_frac_str(e_b_val[i],1),/device,color=color_ind(e_b_val(i)),charsize=1.3
    endfor 
    xyouts,70,360,'Beam: '+beam,/device,color=0,charsize=1.3
    xyouts,70,340,'Shot: '+strtrim(string(shot),2),/device,color=0,charsize=1.3
@@ -12878,10 +13075,8 @@ if plot_val eq 9 then begin
        printf,3,'E!Dfull!N: '+strtrim(string(e_full,format='(F10.1)'),2)+' keV'
        printf,3,''
        for i=0, n_energy_sel-1 do begin
-         if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
-         e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
          printf,3,';Text'
-         printf,3,e_str
+         printf,3,e_frac_str(e_b_val[i],1)
          printf,3,''
          printf,3,';Plotx'
          printf,3,z_beam
@@ -12894,7 +13089,7 @@ if plot_val eq 9 then begin
      endelse
    endif
  endif 
- if plot_val eq 13 then begin
+ if plot_val eq 14 then begin ;beam power loss
    n_z=n_elements(z_beam)
    n_x=n_elements(x_beam)
    n_y=n_elements(y_beam)
@@ -12970,7 +13165,7 @@ if plot_val eq 9 then begin
      endelse
    endif  
  endif
- if plot_val eq 14 then begin
+ if plot_val eq 15 then begin ;velocity contour
    e_check=make_array(n_elements(e_beam))
    if n_elements(vel_vec_x) lt  3 then begin
      Widget_control, status_wid, Get_Value=status_tx
@@ -13024,7 +13219,7 @@ if plot_val eq 9 then begin
    endelse
    if max_val ne 0 then scale_coef=round(alog10(max_val)) else scale_coef=0
    if min_val eq max_val then max_val=min_val+1
-   if e_b_val eq 0 then e_str='(E!Dfull!N energy)' else e_str='(E/'+strtrim(string(round(1.0/e_frac(e_b_val)),format='(I2)'),2)+' energy)'
+   e_str='('+e_frac_str(e_b_val)+' comp.)'
    titl='Beam velocity distribution of '+e_str
    xtitl='Velocity X coordinate, m'
    ytitl='Velocity Y coordinate, m'
@@ -13622,7 +13817,7 @@ common export_file, export_file,export_sel,export_flag
  common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,beam_port_phi,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains the parameters which describe the geometry
 ;and position of the machine plasma
-common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
+common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower,shaf_shift
  ;The following common block contains the parameter which data is
  ;curently plotted
  common draw_request,draw_req
@@ -13788,7 +13983,7 @@ if preview_val eq 1 then begin
    z_border = (z_range2-z_range1)/10.0
 
    contour, rho_grid<1.0,rgrid_arr,zgrid_arr,color=0,background=-1,ystyle=1,xstyle=1,Thick=1, xrange=[x_range1-x_border,x_range2+x_border], yrange=[z_range1-z_border,z_range2+z_border*3.0],$
-   Charsize=1.4, ticklen=0,ytitle=ytitl,xtitle=xtitl, Title=titl,levels=[0.01,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,0.99],c_colors=[120,0,0,0,0,0,0,0,0,0,120]
+   Charsize=1.4, ticklen=0,ytitle=ytitl,xtitle=xtitl, Title=titl,levels=[0.01,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,0.99],c_colors=[120,0,0,0,0,0,0,0,0,0,120],/isotropic
    xyouts,105,370,'Beam: '+beam,/device,color=0,charsize=1.3,charthick=1
    xyouts,105,350,'Shot: '+strtrim(string(shot),2),/device,color=0,charsize=1.3,charthick=1
    xyouts,320,370,'Phi0: '+strtrim(string(beam_port_phi,format='(F10.3)'),1)+' rad',/device,color=0,charsize=1.3,charthick=1
@@ -14033,13 +14228,10 @@ if preview_val eq 3 then begin
    x_tor2=-z_beam1*cos_pivot+x_beam1*sin_pivot+r_grid*cos(phi_grid)
    y_tor2=-z_beam1*sin_pivot-x_beam1*cos_pivot-r_grid*sin(phi_grid)
    r_tor2=sqrt(x_tor2^2.0+y_tor2^2.0)
-   min_r_tor2 = min(r_tor2,min_ind)
-   r_tor3 = r_tor2(0:min_ind)
-   ind_all = where(r_tor3 gt r_major-r_minor*1.2 and r_tor3 lt r_major+r_minor*1.2)
-   
+   ind_all = where(r_tor2 gt r_major-r_minor*1.2 and r_tor2 lt r_major+r_minor*1.2)
    ind1 = max(ind_all)
    ind2 = min(ind_all)
-   r_output=reverse(r_tor3(ind_all))
+   r_output=reverse(r_tor2(ind_all))   
    ;---------------------------------------------------------------
    if scale_check eq 1 then max_val=max(n_e_arr(ind2:ind1,*,*)) else max_val=max(n_e_arr(ind2:ind1,X_B_Slider_val,Y_B_Slider_val))
    scale_coef=fix(alog10(max_val))
@@ -14439,13 +14631,10 @@ if preview_val eq 8 then begin
    x_tor2=-z_beam1*cos_pivot+x_beam1*sin_pivot+r_grid*cos(phi_grid)
    y_tor2=-z_beam1*sin_pivot-x_beam1*cos_pivot-r_grid*sin(phi_grid)
    r_tor2=sqrt(x_tor2^2.0+y_tor2^2.0)
-   min_r_tor2 = min(r_tor2,min_ind)
-   r_tor3 = r_tor2(0:min_ind)
-   ind_all = where(r_tor3 gt r_major-r_minor*1.2 and r_tor3 lt r_major+r_minor*1.2)
-   
+   ind_all = where(r_tor2 gt r_major-r_minor*1.2 and r_tor2 lt r_major+r_minor*1.2)
    ind1 = max(ind_all)
    ind2 = min(ind_all)
-   r_output=reverse(r_tor3(ind_all)) 
+   r_output=reverse(r_tor2(ind_all))
    ;---------------------------------------------------------------
    if scale_check eq 1 then max_val=max(t_e_arr(ind2:ind1,*,*)) else max_val=max(t_e_arr(ind2:ind1,X_B_Slider_val,Y_B_Slider_val))
    titl='Electron temperature'
@@ -15292,7 +15481,7 @@ if preview_val eq 17 then begin
    endelse
    if min_val eq max_val then max_val=min_val+1
    scale_coef=fix(alog10(max_val))-1
-   if e_b_val eq 0 then e_str='(E!Dfull!N energy)' else e_str='(E/'+strtrim(string(round(1.0/e_frac(e_b_val)),format='(I2)'),2)+' energy)'
+   e_str='('+e_frac_str(e_b_val)+' comp.)'
    titl='Fraction in n=2 excited state of the '+e_str
    xtitl='Beam X coordinate, m'
    ytitl='Beam Y coordinate, m'
@@ -15409,10 +15598,8 @@ if preview_val eq 17 then begin
    plot, z_beam, z_beam,color=0,/nodata,background=-1,ystyle=2,xstyle=1,yrange=[0,max_val*10.0^(-scale_coef)],charsize=1.5,$
    xtitle=xtitl,ytitle=ytitl,title=titl
    for i=0, n_energy_sel-1 do begin
-     if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
-     e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
      oplot, z_beam, exc_n2_frac(e_b_val(i),*,X_B_Slider_val,Y_B_Slider_val)*10.0^(-scale_coef),color=color_ind(e_b_val(i))
-     xyouts,70,130-i*20,e_str,/device,color=color_ind(e_b_val(i)),charsize=1.3
+     xyouts,70,130-i*20,e_frac_str(e_b_val[i],1),/device,color=color_ind(e_b_val(i)),charsize=1.3
    endfor 
    xyouts,330,360,'X coordinate: '+strtrim(string(x_beam(X_B_Slider_val),format='(F10.3)'),1)+' m',/device,color=0,charsize=1.3
    xyouts,330,340,'Y coordinate: '+strtrim(string(y_beam(Y_B_Slider_val),format='(F10.3)'),1)+' m',/device,color=0,charsize=1.3
@@ -15463,10 +15650,8 @@ if preview_val eq 17 then begin
        printf,3,'Y coordinate: '+strtrim(string(y_beam(Y_B_Slider_val),format='(F10.3)'),1)+' m'
        printf,3,''
        for i=0, n_energy_sel-1 do begin
-         if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
-         e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
          printf,3,';Text'
-         printf,3,e_str
+         printf,3,e_frac_str(e_b_val[i],1)
          printf,3,''
          printf,3,';Plotx'
          printf,3,z_beam
@@ -15529,13 +15714,10 @@ if preview_val eq 17 then begin
    x_tor2=-z_beam1*cos_pivot+x_beam1*sin_pivot+r_grid*cos(phi_grid)
    y_tor2=-z_beam1*sin_pivot-x_beam1*cos_pivot-r_grid*sin(phi_grid)
    r_tor2=sqrt(x_tor2^2.0+y_tor2^2.0)
-   min_r_tor2 = min(r_tor2,min_ind)
-   r_tor3 = r_tor2(0:min_ind)
-   ind_all = where(r_tor3 gt r_major-r_minor*1.2 and r_tor3 lt r_major+r_minor*1.2)
-   
+   ind_all = where(r_tor2 gt r_major-r_minor*1.2 and r_tor2 lt r_major+r_minor*1.2)
    ind1 = max(ind_all)
    ind2 = min(ind_all)
-   r_output=reverse(r_tor3(ind_all)) 
+   r_output=reverse(r_tor2(ind_all))
    ;---------------------------------------------------------------
    if scale_check eq 1 then max_val=max(exc_n2_frac(e_b_val,ind2:ind1,*,*)) else max_val=max(exc_n2_frac(e_b_val,ind2:ind1,X_B_Slider_val,Y_B_Slider_val))
    scale_coef=fix(alog10(max_val))-1
@@ -15547,10 +15729,8 @@ if preview_val eq 17 then begin
    plot, r_output, r_output,color=0,/nodata,background=-1,ystyle=2,xstyle=1,yrange=[0,max_val*10.0^(-scale_coef)],charsize=1.5,$
    xtitle=xtitl,ytitle=ytitl,title=titl,xrange=[r_major-1.2*r_minor,r_major+1.2*r_minor]
    for i=0, n_energy_sel-1 do begin
-     if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
-     e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
      oplot, r_output, reverse(exc_n2_frac(e_b_val(i),ind2:ind1,X_B_Slider_val,Y_B_Slider_val),2)*10.0^(-scale_coef),color=color_ind(e_b_val(i))
-     xyouts,70,130-i*20,e_str,/device,color=color_ind(e_b_val(i)),charsize=1.3
+     xyouts,70,130-i*20,e_frac_str(e_b_val[i],1),/device,color=color_ind(e_b_val(i)),charsize=1.3
    endfor  
    xyouts,330,360,'X coordinate: '+strtrim(string(x_beam(X_B_Slider_val),format='(F10.3)'),1)+' m',/device,color=0,charsize=1.3
    xyouts,330,340,'Y coordinate: '+strtrim(string(y_beam(Y_B_Slider_val),format='(F10.3)'),1)+' m',/device,color=0,charsize=1.3
@@ -15600,10 +15780,8 @@ if preview_val eq 17 then begin
        printf,3,'Y coordinate: '+strtrim(string(y_beam(Y_B_Slider_val),format='(F10.3)'),1)+' m'
        printf,3,''
        for i=0, n_energy_sel-1 do begin
-         if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
-         e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
          printf,3,';Text'
-         printf,3,e_str
+         printf,3,e_frac_str(e_b_val[i],1)
          printf,3,''
          printf,3,';Plotx'
          printf,3,r_output
@@ -15653,10 +15831,8 @@ if preview_val eq 17 then begin
    plot, x_beam, z_beam,color=0,/nodata,background=-1,ystyle=2,xstyle=1,yrange=[0,max_val*10.0^(-scale_coef)],charsize=1.5,$
    xtitle=xtitl,ytitle=ytitl,title=titl
    for i=0, n_energy_sel-1 do begin
-     if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
-     e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
      oplot, x_beam, exc_n2_frac(e_b_val(i),Z_B_Slider_val,*,Y_B_Slider_val)*10.0^(-scale_coef),color=color_ind(e_b_val(i))
-     xyouts,70,130-i*20,e_str,/device,color=color_ind(e_b_val(i)),charsize=1.3
+     xyouts,70,130-i*20,e_frac_str(e_b_val[i],1),/device,color=color_ind(e_b_val(i)),charsize=1.3
    endfor
    xyouts,330,360,'Z distance  : '+strtrim(string(z_beam(Z_B_Slider_val),format='(F10.3)'),1)+' m',/device,color=0,charsize=1.3
    xyouts,330,340,'Y coordinate: '+strtrim(string(y_beam(Y_B_Slider_val),format='(F10.3)'),1)+' m',/device,color=0,charsize=1.3
@@ -15706,10 +15882,8 @@ if preview_val eq 17 then begin
        printf,3,'Y coordinate: '+strtrim(string(y_beam(Y_B_Slider_val),format='(F10.3)'),1)+' m'
        printf,3,''
        for i=0, n_energy_sel-1 do begin
-         if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
-         e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
          printf,3,';Text'
-         printf,3,e_str
+         printf,3,e_frac_str(e_b_val[i],1)
          printf,3,''
          printf,3,';Plotx'
          printf,3,x_beam
@@ -15759,10 +15933,8 @@ if preview_val eq 17 then begin
    plot, y_beam, z_beam,color=0,/nodata,background=-1,ystyle=2,xstyle=1,yrange=[0,max_val*10.0^(-scale_coef)],charsize=1.5,$
    xtitle=xtitl,ytitle=ytitl,title=titl
    for i=0, n_energy_sel-1 do begin
-     if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
-     e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
      oplot, y_beam, exc_n2_frac(e_b_val(i),Z_B_Slider_val,X_B_Slider_val,*)*10.0^(-scale_coef),color=color_ind(e_b_val(i))
-     xyouts,70,130-i*20,e_str,/device,color=color_ind(e_b_val(i)),charsize=1.3
+     xyouts,70,130-i*20,e_frac_str(e_b_val[i],1),/device,color=color_ind(e_b_val(i)),charsize=1.3
    endfor  
    xyouts,330,360,'Z distance  : '+strtrim(string(z_beam(Z_B_Slider_val),format='(F10.3)'),1)+' m',/device,color=0,charsize=1.3
    xyouts,330,340,'X coordinate: '+strtrim(string(x_beam(x_B_Slider_val),format='(F10.3)'),1)+' m',/device,color=0,charsize=1.3
@@ -15812,10 +15984,8 @@ if preview_val eq 17 then begin
        printf,3,'X coordinate: '+strtrim(string(x_beam(X_B_Slider_val),format='(F10.3)'),1)+' m'
        printf,3,''
        for i=0, n_energy_sel-1 do begin
-         if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
-         e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
          printf,3,';Text'
-         printf,3,e_str
+         printf,3,e_frac_str(e_b_val[i],1)
          printf,3,''
          printf,3,';Plotx'
          printf,3,y_beam
@@ -15869,7 +16039,7 @@ if preview_val eq 17 then begin
    endelse
    if min_val eq max_val then max_val=min_val+1
    scale_coef=fix(alog10(max_val))-1
-   if e_b_val eq 0 then e_str='(E!Dfull!N energy)' else e_str='(E/'+strtrim(string(round(1.0/e_frac(e_b_val)),format='(I2)'),2)+' energy)'
+   e_str='('+e_frac_str(e_b_val)+' comp.)'
    titl='Fraction in n=3 excited state of the '+e_str
    xtitl='Beam X coordinate, m'
    ytitl='Beam Y coordinate, m'
@@ -15986,10 +16156,8 @@ if preview_val eq 17 then begin
    plot, z_beam, z_beam,color=0,/nodata,background=-1,ystyle=2,xstyle=1,yrange=[0,max_val*10.0^(-scale_coef)],charsize=1.5,$
    xtitle=xtitl,ytitle=ytitl,title=titl
    for i=0, n_energy_sel-1 do begin
-     if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
-     e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
      oplot, z_beam, exc_n3_frac(e_b_val(i),*,X_B_Slider_val,Y_B_Slider_val)*10.0^(-scale_coef),color=color_ind(e_b_val(i))
-     xyouts,70,130-i*20,e_str,/device,color=color_ind(e_b_val(i)),charsize=1.3
+     xyouts,70,130-i*20,e_frac_str(e_b_val[i],1),/device,color=color_ind(e_b_val(i)),charsize=1.3
    endfor 
    xyouts,330,360,'X coordinate: '+strtrim(string(x_beam(X_B_Slider_val),format='(F10.3)'),1)+' m',/device,color=0,charsize=1.3
    xyouts,330,340,'Y coordinate: '+strtrim(string(y_beam(Y_B_Slider_val),format='(F10.3)'),1)+' m',/device,color=0,charsize=1.3
@@ -16039,10 +16207,8 @@ if preview_val eq 17 then begin
        printf,3,'Y coordinate: '+strtrim(string(y_beam(Y_B_Slider_val),format='(F10.3)'),1)+' m'
        printf,3,''
        for i=0, n_energy_sel-1 do begin
-         if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
-         e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
          printf,3,';Text'
-         printf,3,e_str
+         printf,3,e_frac_str(e_b_val[i],1)
          printf,3,''
          printf,3,';Plotx'
          printf,3,z_beam
@@ -16105,13 +16271,10 @@ if preview_val eq 17 then begin
    x_tor2=-z_beam1*cos_pivot+x_beam1*sin_pivot+r_grid*cos(phi_grid)
    y_tor2=-z_beam1*sin_pivot-x_beam1*cos_pivot-r_grid*sin(phi_grid)
    r_tor2=sqrt(x_tor2^2.0+y_tor2^2.0)
-   min_r_tor2 = min(r_tor2,min_ind)
-   r_tor3 = r_tor2(0:min_ind)
-   ind_all = where(r_tor3 gt r_major-r_minor*1.2 and r_tor3 lt r_major+r_minor*1.2)
-   
+   ind_all = where(r_tor2 gt r_major-r_minor*1.2 and r_tor2 lt r_major+r_minor*1.2)
    ind1 = max(ind_all)
    ind2 = min(ind_all)
-   r_output=reverse(r_tor3(ind_all)) 
+   r_output=reverse(r_tor2(ind_all))
    ;---------------------------------------------------------------
    if scale_check eq 1 then max_val=max(exc_n3_frac(e_b_val,ind2:ind1,*,*)) else max_val=max(exc_n3_frac(e_b_val,ind2:ind1,X_B_Slider_val,Y_B_Slider_val))
    scale_coef=fix(alog10(max_val))-1
@@ -16123,10 +16286,8 @@ if preview_val eq 17 then begin
    plot, r_output, r_output,color=0,/nodata,background=-1,ystyle=2,xstyle=1,yrange=[0,max_val*10.0^(-scale_coef)],charsize=1.5,$
    xtitle=xtitl,ytitle=ytitl,title=titl,xrange=[r_major-1.2*r_minor,r_major+1.2*r_minor]
    for i=0, n_energy_sel-1 do begin
-     if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
-     e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
      oplot, r_output, reverse(exc_n3_frac(e_b_val(i),ind2:ind1,X_B_Slider_val,Y_B_Slider_val),2)*10.0^(-scale_coef),color=color_ind(e_b_val(i))
-     xyouts,70,130-i*20,e_str,/device,color=color_ind(e_b_val(i)),charsize=1.3
+     xyouts,70,130-i*20,e_frac_str(e_b_val[i],1),/device,color=color_ind(e_b_val(i)),charsize=1.3
    endfor  
    xyouts,330,360,'X coordinate: '+strtrim(string(x_beam(X_B_Slider_val),format='(F10.3)'),1)+' m',/device,color=0,charsize=1.3
    xyouts,330,340,'Y coordinate: '+strtrim(string(y_beam(Y_B_Slider_val),format='(F10.3)'),1)+' m',/device,color=0,charsize=1.3
@@ -16176,10 +16337,8 @@ if preview_val eq 17 then begin
        printf,3,'Y coordinate: '+strtrim(string(y_beam(Y_B_Slider_val),format='(F10.3)'),1)+' m'
        printf,3,''
        for i=0, n_energy_sel-1 do begin
-         if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
-         e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
          printf,3,';Text'
-         printf,3,e_str
+         printf,3,e_frac_str(e_b_val[i],1)
          printf,3,''
          printf,3,';Plotx'
          printf,3,r_output
@@ -16229,10 +16388,8 @@ if preview_val eq 17 then begin
    plot, x_beam, z_beam,color=0,/nodata,background=-1,ystyle=2,xstyle=1,yrange=[0,max_val*10.0^(-scale_coef)],charsize=1.5,$
    xtitle=xtitl,ytitle=ytitl,title=titl
    for i=0, n_energy_sel-1 do begin
-     if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
-     e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
      oplot, x_beam, exc_n3_frac(e_b_val(i),Z_B_Slider_val,*,Y_B_Slider_val)*10.0^(-scale_coef),color=color_ind(e_b_val(i))
-     xyouts,70,130-i*20,e_str,/device,color=color_ind(e_b_val(i)),charsize=1.3
+     xyouts,70,130-i*20,e_frac_str(e_b_val[i],1),/device,color=color_ind(e_b_val(i)),charsize=1.3
    endfor
    xyouts,330,360,'Z distance  : '+strtrim(string(z_beam(Z_B_Slider_val),format='(F10.3)'),1)+' m',/device,color=0,charsize=1.3
    xyouts,330,340,'Y coordinate: '+strtrim(string(y_beam(Y_B_Slider_val),format='(F10.3)'),1)+' m',/device,color=0,charsize=1.3
@@ -16282,10 +16439,8 @@ if preview_val eq 17 then begin
        printf,3,'Y coordinate: '+strtrim(string(y_beam(Y_B_Slider_val),format='(F10.3)'),1)+' m'
        printf,3,''
        for i=0, n_energy_sel-1 do begin
-         if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
-         e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
          printf,3,';Text'
-         printf,3,e_str
+         printf,3,e_frac_str(e_b_val[i],1)
          printf,3,''
          printf,3,';Plotx'
          printf,3,x_beam
@@ -16335,10 +16490,8 @@ if preview_val eq 17 then begin
    plot, y_beam, z_beam,color=0,/nodata,background=-1,ystyle=2,xstyle=1,yrange=[0,max_val*10.0^(-scale_coef)],charsize=1.5,$
    xtitle=xtitl,ytitle=ytitl,title=titl
    for i=0, n_energy_sel-1 do begin
-     if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
-     e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
      oplot, y_beam, exc_n3_frac(e_b_val(i),Z_B_Slider_val,X_B_Slider_val,*)*10.0^(-scale_coef),color=color_ind(e_b_val(i))
-     xyouts,70,130-i*20,e_str,/device,color=color_ind(e_b_val(i)),charsize=1.3
+     xyouts,70,130-i*20,e_frac_str(e_b_val[i],1),/device,color=color_ind(e_b_val(i)),charsize=1.3
    endfor 
    xyouts,330,360,'Z distance  : '+strtrim(string(z_beam(Z_B_Slider_val),format='(F10.3)'),1)+' m',/device,color=0,charsize=1.3
    xyouts,330,340,'X coordinate: '+strtrim(string(x_beam(x_B_Slider_val),format='(F10.3)'),1)+' m',/device,color=0,charsize=1.3
@@ -16388,10 +16541,8 @@ if preview_val eq 17 then begin
        printf,3,'X coordinate: '+strtrim(string(x_beam(X_B_Slider_val),format='(F10.3)'),1)+' m'
        printf,3,''
        for i=0, n_energy_sel-1 do begin
-         if e_b_val(i) eq 0 then e_str='E!Dfull!N: '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV' else $
-         e_str='E/'+strtrim(string(round(1.0/e_frac(e_b_val(i))),format='(I2)'),2)+': '+strtrim(string(e_beam(e_b_val(i)),format='(F5.1)'),2)+' keV'
          printf,3,';Text'
-         printf,3,e_str
+         printf,3,e_frac_str(e_b_val[i],1)
          printf,3,''
          printf,3,';Plotx'
          printf,3,y_beam
@@ -16916,7 +17067,7 @@ end
 Pro Calc_Settings_Widget_event, ev
 ;The following common block contains some of the settings of how to
 ;run the beam attenuation and penetration calculation.
-common run_settings,div_type,div_type_names,atten_type, atten_type_names, vel_dis_type,vel_dis_names,save_output_type,save_output_file
+common run_settings,div_type,div_type_names,atten_type, atten_type_names, vel_dis_type,vel_dis_names,calc_halo_type,calc_halo_names,save_output_type,save_output_file
 ; The following common block contains general parameters: which user,
 ; what beam, what shot and time interval
 common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
@@ -16954,6 +17105,7 @@ case ev.id of
       div_type=Widget_Info(Widget_Info(ev.top, FIND_BY_UNAME='Div_Type_Droplist'), /Droplist_Select)
       atten_type=Widget_Info(Widget_Info(ev.top, FIND_BY_UNAME='Atten_Type_Droplist'), /Droplist_Select)
       vel_dis_type=Widget_Info(Widget_Info(ev.top, FIND_BY_UNAME='Vel_Dis_Droplist'), /Droplist_Select)
+      calc_halo_type=Widget_Info(Widget_Info(ev.top, FIND_BY_UNAME='calc_halo_droplist'), /Droplist_Select)
       save_output_type=Widget_Info(Widget_Info(ev.top, FIND_BY_UNAME='Save_Output_Type_Droplist'), /Droplist_Select)
       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Save_Output_File_Text'),Get_value=save_output_file
       Widget_control, status_wid, Get_Value=status_tx
@@ -17012,7 +17164,7 @@ ne_type,ne_file,te_type,te_file,z_eff_type,z_eff_file,plasma_geom_type,plasma_ge
 common save_param, save_param_file
 ;The following common block contains some of the settings of how to
 ;run the beam attenuation and penetration calculation.
-common run_settings, div_type,div_type_names,atten_type, atten_type_names, vel_dis_type,vel_dis_names,save_output_type,save_output_file
+common run_settings, div_type,div_type_names,atten_type, atten_type_names, vel_dis_type,vel_dis_names,calc_halo_type,calc_halo_names,save_output_type,save_output_file
 ;The following common block is used to transfer the pointer to the status window and availability states of each data set
 common status, status_wid,error_catch,st_err
 
@@ -17367,7 +17519,7 @@ Pro Beam_Geometry_Widget_event, ev
 common beam_geometry, x_bml,y_bml,grid_ap_diam,x_grid_focus,y_grid_focus,beam_port,beam_port_phi,r_grid, z_grid, phi_grid, r_wall, z_wall, phi_wall, tank_front_dist,tank_size,neutr_size,tank_magnet_dist,magnet_size,tank_cal_dist,tank_diam,neutr_diam,magnet_diam,neutr_front_dist
 ;The following common block contains the parameters which describe the geometry
 ;and position of the machine plasma
-common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
+common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower,shaf_shift
 ;The following common block contains the parameters which describe the
 ;positions and sizes of the beam limiters.
 common beam_limiters, n_limiters, limiters_table,limiters_arr
@@ -18176,7 +18328,7 @@ end
 Pro Plasma_Geometry_Widget_event, ev
 ;The following common block contains the parameters which describe the geometry
 ;and position of the machine plasma
-common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
+common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower,shaf_shift
 ; The following common block contains general parameters: which user,
 ; what beam, what shot and time interval
 common general, alcbeam_ver,user,beam,shot,t1,t2,run,cur_dir,file_dir, adas_dir
@@ -18223,6 +18375,8 @@ case ev.id of
       triang_upper=float(triang_u_txt(0)) 
       Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Triang_L_Text'),Get_value=triang_l_txt
       triang_lower=float(triang_l_txt(0))
+      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Shaf_Shift_Text'),Get_value=shaf_shift_txt
+      shaf_shift=float(shaf_shift_txt(0))
       Widget_control, status_wid, Get_Value=status_tx
       Widget_Control, status_wid,$
       Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : Plasma Geometry parameters were saved']], Set_text_top_line=n_elements(status_tx)-4   
@@ -18553,13 +18707,13 @@ ne_type,ne_file,te_type,te_file,z_eff_type,z_eff_file,plasma_geom_type,plasma_ge
 common neutral_gas,tank_pressure,torus_pressure,duct_pressure,duct_pressure_loc,n0_arr,n0_stop_cross_section
 ;The following common block contains the parameters which describe the geometry
 ;and position of the machine plasma
-common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
+common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower,shaf_shift
 ;The following common block contains the parameters which describe
 ;some relative  global parameters of the plasma 
 common plasma_param, main_ion,n_impur,impur_table
 ;The following common block contains some of the settings of how to
 ;run the beam attenuation and penetration calculation.
-common run_settings, div_type,div_type_names,atten_type, atten_type_names, vel_dis_type,vel_dis_names,save_output_type,save_output_file
+common run_settings, div_type,div_type_names,atten_type, atten_type_names, vel_dis_type,vel_dis_names,calc_halo_type,calc_halo_names,save_output_type,save_output_file
 ;The following common block contains the parameters which describe the non-geometrical
 ;parameters of the beam (particle and energy distribution) 
 common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
@@ -18608,7 +18762,7 @@ case ev.id of
      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Shot_Number_Text'), Get_Value=shot
      WIDGET_CONTROL,Widget_Info(ev.top, FIND_BY_UNAME='Result_Plot') , GET_VALUE=drawID
      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Beam_Text'), Get_Value=beam
-     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='User_Droplist'), Set_Value=' '
+     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='User_Droplist'), Set_UValue=' ', Set_Value=' '
      Wset,drawID
      Erase
      if strupcase(beam) eq 'DNBI_ALCATOR' and cmod_machine then begin
@@ -18622,10 +18776,10 @@ case ev.id of
          if where(output_all eq 'ALCBEAM') ne -1 then begin
            ;check which nodes are existed in the ALCBEAM
            MDSTCL,'SET DEFAULT \DNB::TOP.ALCBEAM' 
-           MDSTCL,'DIR/NOFULL',output=output
+           MDSTCL,'DIR/NOFULL',output=output ;warning, could break following format change!
          
-         if output(0) eq "" then begin
-             Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='User_Droplist'), Set_Value=' '
+         if n_elements(output) lt 7 then begin ;updated to reflect DIR output change
+             Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='User_Droplist'), Set_UValue=' ', Set_Value=' '
              Widget_control, status_wid, Get_Value=status_tx
              Widget_Control, status_wid,$
              Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+$
@@ -18637,13 +18791,13 @@ case ev.id of
            allruns=""
            for i=0,n_elements(users)-1 do begin
              MDSTCL,'SET DEFAULT \DNB::TOP.ALCBEAM.'+users(i)
-             MDSTCL,'DIR/NOFULL',output=output
-             if output(0) ne "" then runs=strtrim(STRSPLIT(strjoin(output(3:n_elements(output)-4)),' ', ESCAPE=':', /EXTRACT),1) else runs=""
+             MDSTCL,'DIR/NOFULL',output=output ;warning, could break following format change!
+             if n_elements(output) ge 7 then runs=strtrim(STRSPLIT(strjoin(output(3:n_elements(output)-4)),' ', ESCAPE=':', /EXTRACT),1) else runs=""
              allruns=[allruns,users(i)+'.'+runs]
            endfor
            allruns=allruns(1:*)
            ;Display the existed nodes
-           Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='User_Droplist'), Set_Value=allruns
+           Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='User_Droplist'), Set_UValue=allruns, Set_Value=allruns
            Widget_control, status_wid, Get_Value=status_tx
            Widget_Control, status_wid,$
            Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : '+strtrim(string(n_elements(allruns)),1)+' MDSPLUS  runs exists for DNBI_ALCBEAM']], $
@@ -18652,7 +18806,7 @@ case ev.id of
            MDSCLOSE,'DNB'
          endelse   
          endif else begin
-           Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='User_Droplist'), Set_Value=' '
+           Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='User_Droplist'), Set_UValue=' ', Set_Value=' '
            Widget_control, status_wid, Get_Value=status_tx
            Widget_Control, status_wid,$
            Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+$
@@ -18660,7 +18814,7 @@ case ev.id of
            Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Read_Results_Button'),Sensitive=0
          endelse
        endif else begin
-         Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='User_Droplist'), Set_Value=' '
+         Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='User_Droplist'), Set_UValue=' ', Set_Value=' '
          Widget_control, status_wid, Get_Value=status_tx
          Widget_Control, status_wid,$
          Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : This shot does not exist in MDSPLUS'+' *** Shot #'+strtrim(string(Shot),1)]], Set_text_top_line=n_elements(status_tx)-4
@@ -18668,7 +18822,7 @@ case ev.id of
        endelse
      endif
      ;search for the output files in the working directory  
-     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='User_Droplist'), Get_Value=all_runs
+     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='User_Droplist'), Get_UValue=all_runs
      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='File_Dir_Text'), Get_Value=file_dir
      ;check if dir ends on /
      file_dir=strtrim(file_dir,2)
@@ -18679,14 +18833,15 @@ case ev.id of
      output_files=file_search('*.abo')
      cd,cur_dir
      run_files=output_files
-     for i=0,n_elements(run_files)-1 do begin
-        if strlen(run_files(i)) gt 24 then run_files(i) = strmid(run_files(i),0,14)+'...'+strmid(run_files(i),strlen(run_files(i))-6,8)
+     abbrev_files=run_files
+     for i=0,n_elements(abbrev_files)-1 do begin
+        if strlen(abbrev_files(i)) gt 26 then abbrev_files(i) = strmid(abbrev_files(i),0,14)+'...'+strmid(abbrev_files(i),strlen(abbrev_files(i))-6,8)
      end
      if output_files(0) ne "" then begin
         if all_runs(0) eq ' ' then  begin
-          Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='User_Droplist'), Set_Value=run_files
+          Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='User_Droplist'), Set_Value=abbrev_files, Set_UValue=run_files
         endif else begin
-          Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='User_Droplist'), Set_Value=[all_runs,run_files]
+          Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='User_Droplist'), Set_Value=[all_runs,abbrev_files], Set_UValue=[all_runs,run_files]
         endelse
         Widget_Control,Widget_Info(ev.top, FIND_BY_UNAME='Read_Results_Button'),Sensitive=1
         Widget_control, status_wid, Get_Value=status_tx
@@ -18712,7 +18867,7 @@ case ev.id of
      if strmid(file_dir,strlen(file_dir)-1,1) eq '/' then file_dir=strmid(file_dir,0,strlen(file_dir)-1) 
      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='File_Dir_Text'), Set_Value=file_dir
 
-     Widget_Control, ev.id, Get_Value=allruns
+     Widget_Control, ev.id, Get_UValue=allruns
      runs_val=Widget_Info(ev.id, /Droplist_Select)
      Wset,drawID
      Erase
@@ -18782,7 +18937,7 @@ case ev.id of
      Widget_Info(ev.id, FIND_BY_UNAME='Read_Results_Button'): begin
      st_err=0
      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Shot_Number_Text'), Get_Value=shot
-     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='User_Droplist'), Get_Value=allruns
+     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='User_Droplist'), Get_UValue=allruns
      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='File_Dir_Text'), Get_Value=file_dir
      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Beam_Text'),Editable=1
      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Time_Interval_Text_1'),Editable=1
@@ -18816,16 +18971,20 @@ case ev.id of
        att_type_val=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+':ATTEN_TYPE', status=st1,/quiet)
        vel_dis_type_val=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+':VEL_DIS_TYPE', status=st1,/quiet)
        if not(st1) then vel_dis_type_val='NO'       
+       calc_halo_type_val=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+':CALC_HALO_TYPE', status=st1,/quiet)
+       if not(st1) then calc_halo_type='NO'       
        stop_plsm_cs=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+':STOP_PLSM_CS', status=st1,/quiet)
        exc_plsm_cs=MDSVALUE('\DNB::TOP.ALCBEAM.'+allruns(runs_val)+':EXC_PLSM_CS', status=st1,/quiet)
        att_type_val=att_type_val(0)
        div_type_val=div_type_val(0)
        vel_dis_type_val=vel_dis_type_val(0)
+       calc_halo_type_val=calc_halo_type_val(0)
        stop_plsm_cs=stop_plsm_cs(0)
        exc_plsm_cs=exc_plsm_cs(0)
        div_type=where(strtrim(div_type_names,2) eq div_type_val)
        atten_type=where(strtrim(atten_type_names,2) eq att_type_val)
        vel_dis_type=where(strtrim(vel_dis_names,2) eq vel_dis_type_val)
+       calc_halo_type=where(strtrim(calc_halo_names,2) eq calc_halo_type_val)
        stop_plasma_type=where(strtrim(stop_plasma_type_names,2) eq stop_plsm_cs)
        exc_plasma_type=where(strtrim(exc_plasma_type_names,2) eq exc_plsm_cs)
 
@@ -19039,7 +19198,7 @@ case ev.id of
    st_err=0
 
    Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='Shot_Number_Text'), Get_Value=shot
-     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='User_Droplist'), Get_Value=allruns
+     Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='User_Droplist'), Get_UValue=allruns
      Widget_Control, Widget_Info(ev.top, FIND_BY_UNAME='File_Dir_Text'), Get_Value=file_dir
      ;check if dir ends on /
      file_dir=strtrim(file_dir,2)
@@ -19529,6 +19688,9 @@ case ev.id of
       if st_err eq 3 then begin
          return
       endif
+
+      if calc_halo_type gt 0 then calc_halo,calc_halo_type
+
     if save_output_type eq 0 then begin
      MDSOPEN,'DNB',shot,/Quiet, status=st0
      if st0 then begin
@@ -19708,6 +19870,7 @@ case ev.id of
          MDSTCL,'ADD NODE DIV_TYPE/USAGE=TEXT'  ;divergence type, text
          MDSTCL,'ADD NODE ATTEN_TYPE/USAGE=TEXT'  ;attenuation type, text
          MDSTCL,'ADD NODE VEL_DIS_TYPE/USAGE=TEXT'  ;velocity distribution type, text
+         MDSTCL,'ADD NODE CALC_HALO_TYPE/USAGE=TEXT'  ;velocity distribution type, text
          MDSTCL,'ADD NODE EXC_PLSM_CS/USAGE=TEXT'  ;excitation type, text
          MDSTCL,'ADD NODE STOP_PLSM_CS/USAGE=TEXT'  ;stoppping type, text
          MDSTCL,'ADD NODE time_interv/USAGE=NUMERIC'  ;time_interval, [numeric,numeric]
@@ -19867,6 +20030,7 @@ case ev.id of
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.div_type',"$",strtrim(div_type_names(div_type),2)
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.atten_type',"$",strtrim(atten_type_names(atten_type),2)
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.vel_dis_type',"$",strtrim(vel_dis_names(vel_dis_type),2)
+       MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.calc_halo_type',"$",strtrim(calc_halo_names(calc_halo_type),2)
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.stop_plsm_cs',"$",strtrim(stop_plasma_type_names(stop_plasma_type),2)
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.exc_plsm_cs',"$",strtrim(exc_plasma_type_names(exc_plasma_type),2)
        MDSPUT,'\dnb::top.alcbeam.'+user_up+'.'+run_number+'.INPUT.CODE_GRID.z_min',"$",code_grid_arr.z(0)
@@ -20797,7 +20961,7 @@ common load_settings, load_set_def,load_choice,general_type, general_file, beam_
 ne_type,ne_file,te_type,te_file,z_eff_type,z_eff_file,plasma_geom_type,plasma_geom_file,gas_type,gas_file,grid_type,grid_file,plasma_param_type,plasma_param_file
 ;The following common block contains some of the settings of how to
 ;run the beam attenuation and penetration calculation.
-common run_settings, div_type,div_type_names,atten_type, atten_type_names, vel_dis_type,vel_dis_names,save_output_type,save_output_file
+common run_settings, div_type,div_type_names,atten_type, atten_type_names, vel_dis_type,vel_dis_names,calc_halo_type,calc_halo_names,save_output_type,save_output_file
 ;The following common block contains some of the settings of "saving
 ;run settings to the file"
 common settings_file, save_set_file
@@ -20819,7 +20983,7 @@ if error_catch then begin
    endif
  endif
 ;-----------------------------------------------------
-Widget_Control, Widget_Info(widget_id, FIND_BY_UNAME='Shot_Number_Text'), Get_Value=shot
+;Widget_Control, Widget_Info(widget_id, FIND_BY_UNAME='Shot_Number_Text'), Get_Value=shot
 Widget_Control, Widget_Info(widget_id, FIND_BY_UNAME='Param_Base'),Sensitive=0
 Widget_Control, Widget_Info(driver_id, FIND_BY_UNAME='Run_Driver_Button'), Get_Value=driver_val
 Widget_Control, Widget_Info(driver_id, FIND_BY_UNAME='Run_Driver_Button'), Set_Value='Pause Driver'
@@ -20861,6 +21025,7 @@ if st_err ne 1 then begin
   for l=l1, n_elements(shot_list)-1 do begin
   ;----------------------------------------
   Widget_Control, Widget_Info(widget_id, FIND_BY_UNAME='Shot_Number_Text'), Set_Value=strtrim(string(shot_list(l)),2)
+  shot = shot_list(l)
   ;adjust TS fits file names
   ;--------------------------------------------
   if ne_type eq 2 then begin
@@ -20978,6 +21143,335 @@ endif
 
 end
 
+;---------------------------------------------------------------------------------------------------------------------------------------
+;This procedure calculates the beam halo
+;---------------------------------------------------------------------------------------------------------------------------------------
+pro calc_halo,method
+;The following common block contains 1D n_e profiles of raw and smoothed data, and 3D
+;n_e array after it constructed. 
+common dens_electrons,n_e_coord,n_e_raw,n_e_raw_err,n_e_raw_r,n_e,n_e_err,n_e_r,n_e_arr,n_e_err_arr,ne_stop_cross_section
+;The following common block contains 1D t_e profiles of raw and smoothed data, and 3D
+;t_e array after it constructed. 
+common temp_electrons,t_e_coord,t_e_raw,t_e_raw_err,t_e_raw_r,t_e,t_e_err,t_e_r,t_e_arr,t_e_err_arr
+;The following common block contains 1D z_eff profiles of raw and smoothed data, and 3D
+;z_eff array after it constructed.
+common effective_charge, z_eff_coord, z_eff_raw,z_eff_raw_err,z_eff_raw_r,z_eff,z_eff_err,z_eff_r,z_eff_arr,z_eff_err_arr
+;The following common block contains neutral gas parameters used in
+;calculation of the beam attenuation in the gas. It also contains the
+;constructed 3D neutral gas array.
+common neutral_gas,tank_pressure,torus_pressure,duct_pressure,duct_pressure_loc,n0_arr,n0_stop_cross_section
+;The following common block contains the parameters which describe the
+;positions and sizes of the beam limiters. This block also contains the
+;3D array of the limiters positions after it is constructed
+common beam_limiters, n_limiters, limiters_table,limiters_arr
+;The following common block contains X,Y,Z coordinate arrays for the beam
+;calculation grid and output 3D arrays of the beam density and excitation fracitons
+common beam_data,n_beam,e_beam,z_beam,x_beam,y_beam,exc_n2_frac,exc_n3_frac,vel_vec_x,vel_vec_y,vel_vec_coef
+;The following common block contains the parameters which describe the non-geometrical
+;parameters of the beam (particle and energy distribution) 
+common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
+;The following common block contains the parameters which describe
+;some relative non-geometrical global parameters of the plasma
+common plasma_param, main_ion,n_impur,impur_table
+;The following common block contains the table of the parameters which
+;defile the 3D spatial grid which used for calculation
+common grid_arr, code_grid_arr
+;The following common block is used to transfer the pointer to the
+;status window and availability states of each data set
+common status, status_wid,error_catch,st_err
+
+common halo_data, n_halo
+
+;the following commonblock contains the id of the main widget
+common main_widget,widget_id, driver_id
+
+;Error handler---------------------------------------
+if error_catch then begin
+   Catch,error_status
+   if error_status ne 0 then begin
+     err_msg=strjoin(strsplit(!Error_State.MSG,string(10B),/extract))
+     Widget_control, status_wid, Get_Value=status_tx
+     Widget_Control, status_wid,$
+     Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+' : IDL Error. Error Status: '+$
+strtrim(string(error_status),2)+', Error message: '+err_msg]], Set_text_top_line=n_elements(status_tx)-4
+     catch,/cancel
+     st_err=1
+     return
+   endif
+endif
+
+    Widget_control, status_wid, Get_Value=status_tx
+    Widget_Control, status_wid, Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+$
+    ' : Starting Halo calculation ']], Set_text_top_line=n_elements(status_tx)-4 
+    Widget_control, status_wid, Get_Value=status_tx
+    Widget_Control, status_wid, Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+$
+    ' : Please wait... ']], Set_text_top_line=n_elements(status_tx)-4 
+    WIDGET_CONTROL,Widget_Info(widget_id, FIND_BY_UNAME='Result_Plot') , GET_VALUE=drawID
+    wset, drawID
+    !X.Margin=[7,3]
+    !Y.Margin=[3,2]
+
+    ;check if halo data already exists
+    check = where(e_beam ge 0)
+    n_beam = n_beam[check,*,*,*]
+    e_beam = e_beam[check]
+    exc_n2_frac = exc_n2_frac[check,*,*,*]
+    exc_n3_frac = exc_n3_frac[check,*,*,*]
+    e_frac = e_frac[check]
+    i_frac = i_frac[check]
+    ne_stop_cross_section = ne_stop_cross_section[check,*,*,*]
+
+    ;calculate the beam CX source rate
+    ;charge exchange cross section from ground state: H(n=1) + H+ -> H+ + H
+    ;ADAS 301; /home/adas/adas/adf01/qcx#h0/qcx#h0_old#h1.dat
+    pcx = [-3.496092687d+02, 4.724931484d+02, -2.720493064d+02, 8.158564625d+01, -1.339790721d+01, 1.138706949d+00, -3.914774156d-02]
+    sigma1 = float(1d1^poly(alog10(e_beam)+3,pcx)) ;cross section in cm^2
+    ;charge exchange cross section from n=2 state: H(n=2) + H+ -> H+ + H
+    ;ADAS 301; /home/adas/adas/adf01/qcx#h0/qcx#h0_e2p#h1.dat
+    pcxn2 = [9.151885954d+04, -1.923595128d+05, 1.782513389d+05, -9.560245378d+04, 3.270928495d+04, -7.404554668d+03, 1.109252395d+03, -1.060609861d+02, 5.874388788d+00, -1.436266800d-01]
+    sigma2 = float(1d1^poly(alog10(e_beam)+3,pcxn2)) ;cross section in cm^2
+
+    beam_atom_table=['H','D','T']
+    beam_atom_mass=[1.0,2.0,3.0]
+    m_atom=(beam_atom_mass(where(beam_atom_table eq beam_atom)))(0)
+    vel=SQRT(2.0*1.602E-19*E_beam*1000.0/1.673E-27/m_atom)*100.0 ; cm/s
+
+    ;n_beam in cm^-3, n_e_arr in cm^-3, so sourcerate in cm^-3/s
+    n_e_arr2 = rebin(reform(n_e_arr,[1,size(n_e_arr,/dim)]),size(n_beam,/dim))
+    sourcerate = n_beam*(1-exc_n2_frac)*n_e_arr2*rebin(sigma1*vel,size(n_beam,/dim)) + n_beam*exc_n2_frac*n_e_arr2*rebin(sigma2*vel,size(n_beam,/dim))
+    sourcerate = total(sourcerate,1)
+
+    ;electron ionization
+    ;ADAS 502 /home/adas/adas/adf07/szd93#h/szd93#h_h0.dat
+    pion = [-1.410301720d+01, 1.350091044d+01, -1.289563790d+01, 7.190328410d+00, -2.337463454d+00, 4.015640807d-01, -2.797708819d-02]
+    qion = float(1d1^poly(alog10(t_e_arr)+3,pion)) ;Rate coefficients cm^3/s
+    ionizrate = n_e_arr*qion; ionization probability 1/s.
+    invalid = where(ionizrate lt max(ionizrate)/10)
+    if invalid[0] ne -1 then ionizrate(invalid) = max(ionizrate) ;fix the behavior near the edge with this kludge
+
+    ;Simple no transport model
+    n_halo_simple = sourcerate/ionizrate ;cm^3, array of z_beam, x_beam, y_beam
+    ;n_halo_simple[where(~finite(n_halo_simple))] = 0
+
+    ;more complicated model with transport
+    n_x = n_elements(x_beam)
+    n_y = n_elements(y_beam)
+    n_z = n_elements(z_beam)
+    main_ion_table=['D','H','He']
+    main_ion_m=[2.0,1.0,4.0]
+    m_bulk = (main_ion_m[where(main_ion_table eq main_ion)])[0]
+    vtherm = SQRT(2.0*1.602E-19*t_e_arr*1000.0/1.673E-27/m_bulk)*100.0 ; cm/s ;1/e of distribution has velocity greater than this in any one dimension
+
+    ;diffusion is (step distance)^2/(time) which is given by (vtherm/cxrate)^2/(1/cxrate) = vtherm^2/cxrate
+    cxrate = n_e_arr*vtherm*float(1d1^poly(alog10(t_e_arr)+3,pcx)) ;1/s
+    diffusion = vtherm^2/cxrate ;cm^2/s , diffusion coefficient at the 1/e part of the distribution.
+    ;alternate calc
+    stopx = fltarr(n_z,n_x,n_y)
+    m_correction = m_atom/m_bulk ; needed because s_adas_full assumes we are using beam atoms, but here we want to calculate bulk atoms
+    for i=0,n_y-1 do begin
+	for j=0,n_x-1 do begin
+	    stopx[*,j,i] = s_adas_full(t_e_arr[*,j,i]*m_correction,n_e_arr[*,j,i],t_e_arr[*,j,i],z_eff_arr[*,j,i]) ;stopping cross section in cm^2?
+	endfor
+    endfor
+    diffusion2 = vtherm/stopx/n_e_arr ;cm^2/s, step length based on stopping distance via ADAS
+    invalid = where(~finite(diffusion2)) ;calculation is invalid outside plasma
+    if invalid[0] ne -1 then diffusion2[invalid] = 0
+
+    deltax = code_grid_arr.x[1]*100 ;cm
+    deltay = code_grid_arr.y[1]*100 ;cm
+    deltaz = code_grid_arr.z[3]*100 ;cm
+    z_domain = where(z_beam ge code_grid_arr.z[2]) ;restrict calculation to higher resolution part of z_grid
+    z_invalid = where(z_beam lt code_grid_arr.z[2]) ;restrict calculation to higher resolution part of z_grid
+    n_zv = n_elements(z_domain)
+    kernel = outer_sum([1,-2,1]/deltaz,outer_sum([1,-2,1]/deltax,[1,-2,1]/deltay))
+    max_z = round(mean(where(n_halo_simple[z_domain,n_x/2,n_y/2] gt max(n_halo_simple)/5)))
+    plot,x_beam,reform(n_halo_simple[z_domain[max_z],*,n_y/2])/1e7,xtitle='Beam X coordinate, m',ytitle='Halo density, x10^7 cm!U-3!N',title='Processing Halo Diffusion',color=0,charsize=1.4,background=-1
+
+    case method of
+	1: begin ;method 0: simple, no transport
+	    n_halo = n_halo_simple
+	end
+	2: begin
+;Simple transport calculation
+;Treats the transport as a diffusion due to random walk
+;Halo atoms are born at the local CX rate and are lost at the electron impact ionization rate.
+;Approximately calculates the diffusion coefficient by assuming that the atoms travel at the
+;thermal velocity based on the local electron temperature, and are stopped using the
+;beam stopping cross section in ADAS.
+;Note that different results are obtained if the charge exchange cross section is used instead
+;of the stopping cross section.
+	    n_halo = n_halo_simple[z_domain,*,*] ;only do calculation on dense part of z_grid
+	    timestep = deltax^2/max(diffusion2)/10 ;s. unstable oscillations if timestep too large
+;	    test = fltarr(n_x,1001)
+	    steplength = diffusion2[z_domain,*,*]*timestep ;cm^2
+	    source1 = sourcerate[z_domain,*,*]*timestep
+	    ioniz1 = (1-timestep*ionizrate[z_domain,*,*]) > 0
+	    limited = where(limiters_arr[z_domain,*,*] ne 0,limitcount)
+	    n_i = 20000
+
+	    n_halo_p = fltarr(n_zv,n_x,n_y)
+	    systime_0=systime(/seconds)
+	    for i=0l,n_i-1 do begin
+		n_halo += source1
+
+		;transport. Highly unstable algorithm requires short time step
+		stepampz = steplength/deltaz^2*n_halo
+		stepampx = steplength/deltax^2*n_halo
+		stepampy = steplength/deltay^2*n_halo
+		n_halo1 = -2*(stepampz + stepampx + stepampy) - n_halo*(steplength eq 0) ;last term removes atoms that are outside plasma
+		n_halo1 += [stepampz[1:n_zv-1,*,*],fltarr(1,n_x,n_y)] + [fltarr(1,n_x,n_y),stepampz[0:n_zv-2,*,*]]
+		n_halo1 += [[stepampx[*,1:n_x-1,*]],[fltarr(n_zv,1,n_y)]] + [[fltarr(n_zv,1,n_y)],[stepampx[*,0:n_x-2,*]]]
+		n_halo1 += [[[stepampy[*,*,1:n_y-1]]],[[fltarr(n_zv,n_x,1)]]] + [[[fltarr(n_zv,n_x,1)]],[[stepampx[*,*,0:n_y-2]]]]
+		;grid boundary is treated as a sink, 0 source
+		n_halo += n_halo1
+
+		n_halo *= ioniz1 ;ionization
+		if limitcount gt 0 then n_halo[limited] = 0
+		
+		if i mod 100 eq 0 then begin
+		    ;test convergence
+		    convergence = mean((n_halo - n_halo_p)^2)
+		    if convergence lt 1e-9 and i ge 1000 then begin
+			Widget_control, status_wid, Get_Value=status_tx
+			status_tx=status_tx(0:n_elements(status_tx)-2)
+			Widget_Control, status_wid,Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+$
+			' : Halo diffusion has converged.']], Set_text_top_line=n_elements(status_tx)-4
+			break
+		    endif
+		    n_halo_p = n_halo
+
+		    Widget_control, status_wid, Get_Value=status_tx
+		    status_tx=status_tx(0:n_elements(status_tx)-2)
+
+		    systime_1=systime(/seconds)
+		    all_sec=(systime_1-systime_0)*((n_i+1.0)/(i+1.0)-1.0)
+		    rem_hours=fix(all_sec/3600.0)
+		    rem_min=fix((all_sec-3600*rem_hours)/60.0)
+		    rem_sec=fix((all_sec-3600*rem_hours-60*rem_min))
+;		    Widget_Control, status_wid,Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+$
+;		    ' : Diffusing t='+strtrim(timestep*i,2)+'s out of '+strtrim(timestep*n_i,2)+'s. Finished: '+strtrim(string((i+1.0)*100.0/(n_i+1.0),format='(I3)'),2)+ $
+;		    ' % out of 100%, Estimated remaining time: '+strtrim(string(rem_hours,format='(I2)'),2)+' hours, '+strtrim(string(rem_min,format='(I2)'),2)+ $
+;		    ' min, '+strtrim(string(rem_sec,format='(I2)'),2)+' sec, (Press STOP CALC button to stop)']], Set_text_top_line=n_elements(status_tx)-4  
+		    Widget_Control, status_wid,Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+$
+		    ' : Diffusing t='+strtrim(timestep*i,2)+'s. Convergence:'+strtrim(convergence,2)+'. Finished: '+strtrim(string((i+1.0)*100.0/(n_i+1.0),format='(I3)'),2)+ $
+		    ' % out of 100%, Estimated remaining time: '+strtrim(string(rem_hours,format='(I2)'),2)+' hours, '+strtrim(string(rem_min,format='(I2)'),2)+ $
+		    ' min, '+strtrim(string(rem_sec,format='(I2)'),2)+' sec, (Press STOP CALC button to stop)']], Set_text_top_line=n_elements(status_tx)-4  
+		    oplot,x_beam,reform(n_halo[max_z,*,n_y/2])/1e7,color=i
+		endif
+
+		res=Widget_Event(Widget_Info(widget_id, FIND_BY_UNAME='Ready_Button'),/nowait)
+		if res.ID eq Widget_Info(widget_id, FIND_BY_UNAME='Ready_Button') then begin
+		    st_err=2
+		    break
+		endif
+	    endfor
+	    n_halo = [fltarr(n_elements(z_invalid),n_x,n_y), n_halo]
+	end
+	3: begin
+	    ;Try matrix inversion technique
+	    ; 0 = D*(n_{i-1,j,k} + n_{i+1,j,k} + n_{i,j-1,k} + n_{i,j+1,k} + n_{i,j,k-1} + n_{i,j,k+1} - 6*n_{i,j,k}) + s
+	    ;This is symmetric (I think), so can be solved via Cholesky decomposition
+	    steplength = diffusion2[z_domain,*,*]
+	    difz = steplength/deltaz^2
+	    difx = steplength/deltax^2
+	    dify = steplength/deltay^2
+	    n_p = long(n_x)*long(n_y)*long(n_zv) ;large matrix!
+	    ;number of nonzero elements in the matrix. 7 per row, except faces, which have 1 fewer, edges which have 2 fewer, and corners which have 3 fewer.
+	    n_pp = 7*n_p - 2*n_zv - 2*n_x - 2*n_y
+	    A = replicate({imsl_f_sp_elem,row:0L,col:0L,val:float(0.0)},n_pp)
+	    k = reform(ionizrate[z_domain,*,*],n_p) ;flattened ionization array
+	    b = -reform(sourcerate[z_domain,*,*],n_p) ;flattened source array
+	    pos = 0l
+	    for i=0l,n_zv-1l do begin
+		for j=0l,n_x-1l do begin
+		    for k=0l,n_y-1l do begin
+			A[pos].row = i + j*n_zv + k*n_x*n_zv
+			A[pos].col = i + j*n_zv + k*n_x*n_zv
+			A[pos].val = -2*difz[i,j,k]-2*difx[i,j,k]-2*dify[i,j,k]
+			pos += 1
+		    endfor
+		endfor
+	    endfor
+	    for i=0l,n_zv-1l do begin
+		for j=0l,n_x-1l do begin
+		    for k=1l,n_y-1l do begin
+			A[pos].row = i + j*n_zv + (k-1)*n_x*n_zv
+			A[pos].col = i + j*n_zv + (k-1)*n_x*n_zv
+			A[pos].val = dify[i,j,k]
+			pos += 1
+		    endfor
+		endfor
+	    endfor
+	    for i=0l,n_zv-1l do begin
+		for j=0l,n_x-1l do begin
+		    for k=0l,n_y-2l do begin
+			A[pos].row = i + j*n_zv + (k+1)*n_x*n_zv
+			A[pos].col = i + j*n_zv + (k+1)*n_x*n_zv
+			A[pos].val = dify[i,j,k]
+			pos += 1
+		    endfor
+		endfor
+	    endfor
+	    for i=0l,n_zv-1l do begin
+		for j=1l,n_x-1l do begin
+		    for k=0l,n_y-1l do begin
+			A[pos].row = i + (j-1)*n_zv + k*n_x*n_zv
+			A[pos].col = i + (j-1)*n_zv + k*n_x*n_zv
+			A[pos].val = difx[i,j,k]
+			pos += 1
+		    endfor
+		endfor
+	    endfor
+	    for i=0l,n_zv-1l do begin
+		for j=0l,n_x-2l do begin
+		    for k=0l,n_y-1l do begin
+			A[pos].row = i + (j+1)*n_zv + k*n_x*n_zv
+			A[pos].col = i + (j+1)*n_zv + k*n_x*n_zv
+			A[pos].val = difx[i,j,k]
+			pos += 1
+		    endfor
+		endfor
+	    endfor
+	    for i=1l,n_zv-1l do begin
+		for j=0l,n_x-1l do begin
+		    for k=0l,n_y-1l do begin
+			A[pos].row = i-1 + j*n_zv + k*n_x*n_zv
+			A[pos].col = i-1 + j*n_zv + k*n_x*n_zv
+			A[pos].val = difz[i,j,k]
+			pos += 1
+		    endfor
+		endfor
+	    endfor
+	    for i=0l,n_zv-2l do begin
+		for j=0l,n_x-1l do begin
+		    for k=0l,n_y-1l do begin
+			A[pos].row = i+1 + j*n_zv + k*n_x*n_zv
+			A[pos].col = i+1 + j*n_zv + k*n_x*n_zv
+			A[pos].val = difz[i,j,k]
+			pos += 1
+		    endfor
+		endfor
+	    endfor
+	    n_sol = imsl_sp_pdsol(b,a) ;requires IDL Analyst.
+	    n_halo = reform(n_sol,n_zv,n_x,n_y)
+	    n_halo = [fltarr(n_elements(z_invalid),n_x,n_y), n_halo]
+	end
+    endcase
+
+    ;combine halo data with rest of beam data. Treat it as an extra beam component.
+    sz = [1,size(n_halo,/dim)]
+    n_beam = [n_beam, reform(n_halo,sz)]
+    e_beam = [e_beam, -1]
+    exc_n2_frac = [exc_n2_frac, fltarr(sz)]
+    exc_n3_frac = [exc_n3_frac, fltarr(sz)]
+    ne_stop_cross_section = [ne_stop_cross_section, fltarr(sz)]
+
+    ;prepare_sliders,widget_id
+    Widget_control, status_wid, Get_Value=status_tx
+    Widget_Control, status_wid, Set_Value=[status_tx,[strtrim(string(Fix(status_tx(n_elements(status_tx)-1))+1),1)+$
+    ' : Halo calculation complete. ']], Set_text_top_line=n_elements(status_tx)-4 
+end
+
 ;Some external functions (only for C-Mod)
 @/usr/local/rsi/idl_6.3/lib/mean.pro
 @/home/bespam/quickfit/quick_fit.pro
@@ -21018,10 +21512,10 @@ ne_file,te_type,te_file,z_eff_type,z_eff_file,plasma_geom_type,plasma_geom_file,
 common neutral_gas,tank_pressure,torus_pressure,duct_pressure,duct_pressure_loc,n0_arr,n0_stop_cross_section
 ;The following common block contains the parameters which describe the geometry
 ;and position of the machine plasma
-common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower
+common plasma_geometry, r_major,z_major,r_minor,elong,triang_upper,triang_lower,shaf_shift
 ;The following common block contains some of the settings of how to
 ;run the beam attenuation and penetration calculation.
-common run_settings, div_type,div_type_names,atten_type, atten_type_names, vel_dis_type,vel_dis_names,save_output_type,save_output_file
+common run_settings, div_type,div_type_names,atten_type, atten_type_names, vel_dis_type,vel_dis_names,calc_halo_type,calc_halo_names,save_output_type,save_output_file
 ;The following common block contains the parameters which describe the non-geometrical
 ;parameters of the beam (particle and energy distribution) 
 common beam_param, beam_atom, e_full, E_frac, I_beam, I_frac, I_opt, I_dens_par, neutr_dens_ns_tot,neutr_dens_frac,x_div_bml_opt, y_div_bml_opt,div_dist_par
@@ -21053,9 +21547,9 @@ common settings_file, save_set_file
 ;graph to the file"
 common export_file, export_file,export_sel,export_flag
 
-  alcbeam_ver='4.14'
+  alcbeam_ver='4.17'
   ;debuging parameter (default=1:catch errors, debug=0:pass errors)  
-  error_catch=1
+  error_catch=0
   st_err=0;initial error status 0
   ;-------------------load default settings for code and zero values for
   ;all the parameters 
@@ -21129,6 +21623,8 @@ common export_file, export_file,export_sel,export_flag
   atten_type_names=[['Full attenuation '],['Plasma only'],['Gas only'],['Limiters only'],['Gas + Limiters'],['Skip attenuation']]
   vel_dis_names=[['YES'],['NO']]
   vel_dis_type=1
+  calc_halo_names=[['NO'],['Neglect transport (fast)'],['Transport model']]
+  calc_halo_type=0
   save_output_type=2
   save_output_file=file_dir+'/'+beam+'_'+strtrim(string(run),2)+'.abo' 
   ;grid_arr
@@ -21144,7 +21640,7 @@ common export_file, export_file,export_sel,export_flag
   n_limiters=0
   limiters_table='';[['none','0.000','0.000','0.000','','']]
   ;plasma_geometry
-  r_major=0.0 & z_major=0.0 & r_minor=0.0 & elong=0.0 & triang_upper=0.0 & triang_lower=0.0
+  r_major=0.0 & z_major=0.0 & r_minor=0.0 & elong=0.0 & triang_upper=0.0 & triang_lower=0.0 & shaf_shift=0.0
   ;neutral_gas
   tank_pressure=0.0 & torus_pressure=0.0 & duct_pressure=0.0 & duct_pressure_loc=0.0 
   ;save_param
@@ -21577,7 +22073,7 @@ common export_file, export_file,export_sel,export_flag
   
 
   Plot_Choice_Droplist=Widget_Droplist(Main_Base, UNAME='Plot_Choice_Droplist'$
-      ,XOFFSET=510,YOFFSET=693,XSIZE=120,YSIZE=15,value=[['n_beam volume'],['n_beam contour'],['beam line density vs z_beam'],['beam line density vs r_major'],$
+      ,XOFFSET=510,YOFFSET=693,XSIZE=120,YSIZE=15,value=[['n_beam volume'],['n_beam contour'],['beam line density vs z_beam'],['beam line density vs r_major'],['beam line density vs rho'],$
 ['beam deposition vs rho'],['total beam power (in atoms)'],['beam horizontal width'],['beam vertical width'],['n_beam vs z_beam'],['n_beam vs r_major'],$
 ['n_beam vs x_beam'],['n_beam vs y_beam'],['lost atoms line density'],['beam power loss'],['velocity contour']])  
 
@@ -21608,4 +22104,5 @@ XMANAGER, 'Main_Widget', Main_Widget, /No_block
 Widget_control, Status_Wid, Get_Value=status_tx
 Widget_Control, Status_Wid, Set_Value=[status_tx,['1 : '+systime()+' Ready !!!']], Set_text_top_line=n_elements(status_tx)-4
 end
+
 ;---------------------------------------------------------------------------------------------------------------------------------------
